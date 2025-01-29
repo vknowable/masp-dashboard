@@ -1,4 +1,6 @@
 export type MaspInfo = {
+  epoch: number
+  maspEpoch: number
   totalRewards: number
   rewardTokens : RewardToken[]
 }

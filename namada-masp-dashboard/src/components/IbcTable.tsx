@@ -50,7 +50,7 @@ function IbcTable({ registryData, isLoading = true, error = null }: IbcTableProp
 function findChainIdByName(chainMetadata: ChainMetadata, chainName: string): string | undefined {
   // Check the main chain's `chain_name`
   if (chainMetadata.chain.chain_name === chainName) {
-    return chainMetadata.chain.chain_id;
+    return chainMetadata.chain.chain_id
   }
 
   // Check the `counterParties` array for matching `chain_name`

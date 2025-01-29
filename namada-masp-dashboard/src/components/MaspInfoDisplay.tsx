@@ -1,4 +1,3 @@
-import { useRef } from "react"
 import { RegistryAssetList } from "../types/chainRegistry"
 import { MaspInfo } from "../types/masp"
 
@@ -15,8 +14,12 @@ function MaspInfoDisplay({ maspInfo, assetList, isLoading = true, error = null }
 
   return (
     <div>
+      <p>Epoch: <span className="font-bold">{maspInfo?.epoch ?? "not found"}</span></p>
+      <p>MASP Epoch: <span className="font-bold">{maspInfo?.maspEpoch ?? "not found"}</span></p>
       <p>Total MASP rewards to date: <span className="font-bold">{maspInfo?.totalRewards ?? "not found"}</span> (uNAM)</p>
-      <p>List of SSR eligible tokens:</p>
+      <p>MASP Reward Tokens:</p>
+      <p>(note: it's normal to see non-earning tokens appear in this list if their parameters have been explicitly set to 0, e.g. NAM.</p>
+      <p>These could be filtered out by checking `max_reward_rate != 0`. This list is equivalent to the output of `namadac masp-reward-tokens`)</p>
       <ul className="list-disc mt-2 mx-8">
         {maspInfo?.rewardTokens ?
           maspInfo.rewardTokens.map(

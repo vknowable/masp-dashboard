@@ -1,25 +1,15 @@
 import { useState, useMemo } from 'react'
 import { useReactTable, getCoreRowModel, getSortedRowModel, SortingState, ColumnDef, flexRender } from '@tanstack/react-table'
 import { TokenDisplayRow } from '../types/token'
-import { useQuery } from '@tanstack/react-query'
-import { fetchTokens } from '../api/tokens'
-import { RewardToken } from '../types/masp'
-import { RegistryAssetList } from '../types/chainRegistry'
 
 type TokenTableProps = {
-  rewardTokens?: RewardToken[]
-  assetList?: RegistryAssetList
+  tokenData?: TokenDisplayRow[]
+  isLoading: boolean
+  error: Error | null
 }
 
-function TokenTable({ rewardTokens, assetList }: TokenTableProps) {
+function TokenTable({ tokenData, isLoading, error }: TokenTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
-
-  const { data: tokens = [], isLoading, error } = useQuery({
-    queryKey: ['tokens', rewardTokens],
-    queryFn: () => fetchTokens(rewardTokens ?? [], assetList?.assets ?? []),
-    refetchInterval: 10000,
-    staleTime: 300000,
-  })
 
   const columns = useMemo<ColumnDef<TokenDisplayRow>[]>(
     () => [
@@ -41,18 +31,18 @@ function TokenTable({ rewardTokens, assetList }: TokenTableProps) {
       { accessorKey: 'usdPrice', header: 'Price ($) (using placeholder 0.05/Token)', },
       { accessorKey: 'maspAmount', header: 'Tokens in MASP', },
       { accessorKey: 'maspMarketCap', header: 'MASP TVL ($)', },
-      { accessorKey: 'ssrRateLast', header: 'Last epoch Rewards Rate (NAM minted / token)', },
-      { accessorKey: 'estRateCur', header: 'Expected Rewards Rate (this epoch) (NAM minted / token)', },
-      { accessorKey: 'ssrRewardsLast', header: 'NAM Rewards (last epoch)', },
-      { accessorKey: 'estRewardsCur', header: 'Expected Nam Rewards (this epoch)', },
-      { accessorKey: 'usdRewards', header: 'Expected Rewards ($) (this epoch)', },
+      { accessorKey: 'ssrRateLast', header: 'Last masp-epoch Rewards Rate (NAM minted / token)', },
+      { accessorKey: 'estRateCur', header: 'Expected Rewards Rate (this masp-epoch) (NAM minted / token)', },
+      // { accessorKey: 'ssrRewardsLast', header: 'NAM Rewards (last masp-epoch)', }, // this row and the one below have the same value
+      { accessorKey: 'estRewardsCur', header: 'Expected Nam Rewards (this masp-epoch)', },
+      { accessorKey: 'usdRewards', header: 'Expected Rewards ($) (this masp-epoch)', },
     ],
     []
   )
 
   const table = useReactTable({
     columns,
-    data: tokens,
+    data: tokenData ?? [],
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
@@ -64,8 +54,8 @@ function TokenTable({ rewardTokens, assetList }: TokenTableProps) {
   if (error) return <div>Error fetching tokens</div>
 
   return (
-    <div className='p-2'>
-      <div className='h-2'>
+    <div className='p-2 border'>
+      <div className='overflow-auto'>
         <table className="border-separate border border-slate-400">
           <thead>
             {table.getHeaderGroups().map(headerGroup => (

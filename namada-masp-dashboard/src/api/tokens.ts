@@ -1,7 +1,7 @@
-import axios from 'axios'
-import { TokenDisplayRow, TokensResponse, NativeToken, IbcToken, AccountResponse } from '../types/token'
+import apiClient from './apiClient'
+import { TokenDisplayRow, TokensResponse, NativeToken, IbcToken, AccountResponse, AggregatesResponse } from '../types/token'
 import { AbciQueryResponse } from '../types/abci'
-import { decode_amount, decode_reward_tokens } from 'masp_dashboard_wasm'
+import { decode_amount, decode_epoch, decode_reward_tokens } from 'masp_dashboard_wasm'
 import { MaspInfo, RewardToken } from '../types/masp'
 import { RegistryAsset } from '../types/chainRegistry'
 
@@ -10,32 +10,89 @@ const indexerUrl = import.meta.env.VITE_INDEXER_URL
 const apiBaseIndexer = 'api/v1'
 
 const fetchMaspBalances = async (): Promise<AccountResponse> => {
-  const { data }: { data: AccountResponse } = await axios.get(`${indexerUrl}/${apiBaseIndexer}/account/tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah`)
-  return data
+  try {
+    const { data }: { data: AccountResponse } = await apiClient.get(`${indexerUrl}/${apiBaseIndexer}/account/tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah`)
+    return data
+  } catch (error) {
+    console.error('Error fetching Masp Balances', error)
+    return []
+  }
+}
+
+const fetchMaspAggregates = async (): Promise<AggregatesResponse> => {
+  try {
+    const { data }: { data: AggregatesResponse } = await apiClient.get(`${indexerUrl}/${apiBaseIndexer}/masp/aggregates`)
+    return data
+  } catch (error) {
+    console.error('Error fetching Masp Aggregates', error)
+    return []
+  }
 }
 
 const fetchTokenList = async (): Promise<TokensResponse> => {
-  const { data }: { data: TokensResponse } = await axios.get(`${indexerUrl}/${apiBaseIndexer}/chain/token`)
-  return data
+  try {
+    const { data }: { data: TokensResponse } = await apiClient.get(`${indexerUrl}/${apiBaseIndexer}/chain/token`)
+    return data
+  } catch (error) {
+    console.error('Error fetching Token List', error)
+    return []
+  }
 }
 
-const fetchAbciQuery = async (path: string): Promise<AbciQueryResponse> => {
-  const { data }: { data: AbciQueryResponse } = await axios.get(`${rpcUrl}/abci_query`, {
-    params: { path: `\"${path}\"` },
-  })
-  return data
+const fetchAbciQuery = async (path: string): Promise<AbciQueryResponse | null> => {
+  try {
+    const { data }: { data: AbciQueryResponse } = await apiClient.get(`${rpcUrl}/abci_query`, {
+      params: { path: `\"${path}\"` },
+    })
+    return data
+  } catch (error) {
+    console.error(`Error fetching ABCI query for path: ${path}`, error)
+    return null
+  }
 }
 
 /// Fetch the token amounts to fill out all rows of the masp token table
 export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets: RegistryAsset[]): Promise<TokenDisplayRow[]> => {
-  const [tokenList, maspBalances] = await Promise.all([
+  const [tokenListResult, maspBalancesResult, maspAggregatesResult] = await Promise.allSettled([
     fetchTokenList(),
     fetchMaspBalances(),
+    fetchMaspAggregates(),
   ])
 
+  const tokenList = tokenListResult.status === 'fulfilled' ? tokenListResult.value : []
+  const maspBalances = maspBalancesResult.status === 'fulfilled' ? maspBalancesResult.value : []
+  const maspAggregates = maspAggregatesResult.status === 'fulfilled' ? maspAggregatesResult.value : []
+
   const fetchTokenData = async (token: NativeToken | IbcToken): Promise<TokenDisplayRow> => {
-    const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
-    const maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
+    // Old method of getting masp balances, by querying the balance of account tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah
+    // This no longer works for all tokens after the masp aggregates update to namada-indexer
+    // const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
+    // const maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
+
+    // We still get the native token masp balance by querying the masp account balance, but for ibc tokens we calculate it from the net all-time inflow-outflow
+    let maspAmount = null
+    if ('trace' in token) {
+      const inflows = maspAggregates.find(
+        item =>
+          item.kind === "inflows" &&
+          item.timeWindow === "allTime" &&
+          item.tokenAddress === token.address
+      )?.totalAmount
+
+      const outflows = maspAggregates.find(
+        item =>
+          item.kind === "outflows" &&
+          item.timeWindow === "allTime" &&
+          item.tokenAddress === token.address
+      )?.totalAmount
+
+      maspAmount = (parseInt(inflows ?? "0") - parseInt(outflows ?? "0"))
+    } else {
+      const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
+      maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
+    }
+
+    const aggregates = maspAggregates.filter(item => item.tokenAddress === token.address)
 
     const matchingRewardToken = rewardTokens.find(rewardToken => rewardToken.address === token.address)
     const matchingRegistryAsset = registeredAssets.find(asset => asset.address === token.address)
@@ -44,12 +101,12 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
     const usdPrice = 0.05
 
     const [
-      depositAmtQuery,
-      withdrawAmtQuery,
-      totalAmtQuery,
-      lastInflationQuery,
-      lastLockedQuery,
-    ] = await Promise.all([
+      depositAmtQueryResult,
+      withdrawAmtQueryResult,
+      totalAmtQueryResult,
+      lastInflationQueryResult,
+      lastLockedQueryResult,
+    ] = await Promise.allSettled([
       fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/deposit/${token.address}`),
       fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/withdraw/${token.address}`),
       fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/balance/minted`),
@@ -57,15 +114,17 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
       matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_locked_amount`) : Promise.resolve(null),
     ])
 
-    const depositAmt = decodeBorshAmt(depositAmtQuery)
-    const withdrawAmt = decodeBorshAmt(withdrawAmtQuery)
-    const totalAmt = decodeBorshAmt(totalAmtQuery)
+    const depositAmt = depositAmtQueryResult.status === 'fulfilled' ? decodeBorshAmt(depositAmtQueryResult.value) : 0
+    const withdrawAmt = withdrawAmtQueryResult.status === 'fulfilled' ? decodeBorshAmt(withdrawAmtQueryResult.value) : 0
+    const totalAmt = totalAmtQueryResult.status === 'fulfilled' ? decodeBorshAmt(totalAmtQueryResult.value) : 0
 
     const exponent = matchingRegistryAsset?.denom_units?.find(unit => unit.denom === matchingRegistryAsset.display)?.exponent ?? 6
     const divisor = 10 ** exponent
 
+    const ssrEligible: boolean = matchingRewardToken?.max_reward_rate !== undefined && matchingRewardToken.max_reward_rate > 0
+
     const baseData = {
-      ssrEligible: !!matchingRewardToken,
+      ssrEligible,
       logo: matchingRegistryAsset?.logo_URIs.svg ?? "",
       name: matchingRegistryAsset?.symbol ?? "",
       address: token.address,
@@ -76,15 +135,17 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
       maspAmount: maspAmount / divisor,
       usdPrice,
       maspMarketCap: (maspAmount / divisor * usdPrice).toFixed(2),
+      aggregates,
     }
 
     if (matchingRewardToken) {
-      const lastInflation = decodeBorshAmt(lastInflationQuery as AbciQueryResponse)
-      const lastLocked = decodeBorshAmt(lastLockedQuery as AbciQueryResponse)
-      const maxRate = matchingRewardToken.max_reward_rate
+      const lastInflation = lastInflationQueryResult.status === 'fulfilled' ? decodeBorshAmt(lastInflationQueryResult.value as AbciQueryResponse) : 0
+      const lastLocked = lastLockedQueryResult.status === 'fulfilled' ? decodeBorshAmt(lastLockedQueryResult.value as AbciQueryResponse) : 0
+      // const maxRate = matchingRewardToken.max_reward_rate
 
-      const ssrRateLast = lastLocked != 0 ? lastInflation / lastLocked : maxRate
-      const estRateCur = maspAmount != 0 ? lastInflation / maspAmount : maspAmount
+      const ssrRateLast = lastLocked != 0 ? lastInflation / lastLocked : 0
+      const estRateCur = maspAmount != 0 ? lastInflation / maspAmount : matchingRewardToken.max_reward_rate
+      // TODO: this value is meaningless since the terms cancel out and it simply equals the last inflation
       const estRewardsCur = (maspAmount * estRateCur) / divisor
       const usdRewards = estRewardsCur * usdPrice
 
@@ -108,41 +169,68 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
     }
   }
 
-  const tokenData = await Promise.all(tokenList.map(fetchTokenData))
-  return tokenData
+  const tokenDataResults = await Promise.allSettled(tokenList.map(fetchTokenData))
+
+  return tokenDataResults
+    .filter(result => result.status === 'fulfilled')
+    .map(result => (result as PromiseFulfilledResult<TokenDisplayRow>).value)
 }
 
 export const fetchMaspInfo = async (): Promise<MaspInfo> => {
-  const [totalRewardsQuery, maspRewardTokensQuery] = await Promise.all([
+  const [epochQueryResults, maspEpochQueryResults, totalRewardsQueryResults, maspRewardTokensQueryResults] = await Promise.allSettled([
+    fetchAbciQuery(`/shell/epoch`),
+    fetchAbciQuery(`/shell/masp_epoch`),
     fetchAbciQuery(`/shell/value/#tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah/max_total_rewards`),
     fetchAbciQuery(`/shell/masp_reward_tokens`),
   ])
 
-  const totalRewards = decodeBorshAmt(totalRewardsQuery)
-  const rewardTokens = decodeBorshMaspTokens(maspRewardTokensQuery)
+  const epoch = epochQueryResults.status === 'fulfilled' ? decodeBorshEpoch(epochQueryResults.value) : 0
+  const maspEpoch = maspEpochQueryResults.status === 'fulfilled' ? decodeBorshEpoch(maspEpochQueryResults.value) : 0
+  const totalRewards = totalRewardsQueryResults.status === 'fulfilled' ? decodeBorshAmt(totalRewardsQueryResults.value) : 0
+  const rewardTokens = maspRewardTokensQueryResults.status === 'fulfilled' ? decodeBorshMaspTokens(maspRewardTokensQueryResults.value) : []
 
   return {
+    epoch,
+    maspEpoch,
     totalRewards,
     rewardTokens,
   }
 }
 
-function decodeBorshAmt(response: AbciQueryResponse): number {
-    const base64 = response?.result?.response?.value
-    if (base64 == null) return 0
-    
-    try {
-      return decode_amount(base64)
-    } catch {
-      console.error("error decoding abci borsh")
-      return 0
-    }
+function decodeBorshAmt(response: AbciQueryResponse | null): number {
+  const base64 = response?.result?.response?.value
+  if (!base64) {
+    return 0
+  }
+
+  try {
+    return decode_amount(base64)
+  } catch {
+    console.error("error decoding abci borsh")
+    return 0
+  }
 }
 
-function decodeBorshMaspTokens(response: AbciQueryResponse): RewardToken[] {
+function decodeBorshEpoch(response: AbciQueryResponse | null): number {
   const base64 = response?.result?.response?.value
-  if (base64 == null) return []
-  
+  if (!base64) {
+    return 0
+  }
+
+  try {
+    return decode_epoch(base64)
+  } catch {
+    console.error("error decoding abci borsh")
+    return 0
+  }
+}
+
+function decodeBorshMaspTokens(response: AbciQueryResponse | null): RewardToken[] {
+  const base64 = response?.result?.response?.value
+  if (!base64) {
+    return []
+  }
+
   try {
     return decode_reward_tokens(base64)
   } catch {

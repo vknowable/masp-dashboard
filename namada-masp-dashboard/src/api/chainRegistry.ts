@@ -1,17 +1,27 @@
-import axios from 'axios'
+import apiClient from './apiClient'
 import { ChainMetadata, IbcFileList, RegistryAssetList, RegistryChainJson, RegistryIbcMetadata } from '../types/chainRegistry'
 
 const GITHUB_REPO = "vknowable/mock-registry"
 const REPO_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/refs/heads/main`
 
-const fetchRegistyJson = async (url: string): Promise<RegistryChainJson | RegistryAssetList | RegistryIbcMetadata> => {
-  const { data }: { data: RegistryChainJson | RegistryAssetList | RegistryIbcMetadata } = await axios.get(url)
-  return data
+const fetchRegistyJson = async (url: string): Promise<RegistryChainJson | RegistryAssetList | RegistryIbcMetadata | null> => {
+  try {
+    const { data }: { data: RegistryChainJson | RegistryAssetList | RegistryIbcMetadata } = await apiClient.get(url)
+    return data
+  } catch (error) {
+    console.error(`Error fetching Registry Json from: ${url}`, error)
+    return null
+  }
 }
 
-const fetchIbcFileList = async (url: string): Promise<IbcFileList> => {
-  const { data }: { data: IbcFileList } = await axios.get(url)
-  return data
+const fetchIbcFileList = async (url: string): Promise<IbcFileList | null> => {
+  try {
+    const { data }: { data: IbcFileList } = await apiClient.get(url)
+    return data
+  } catch (error) {
+    console.error(`Error fetching Registry IBC files from: ${url}`, error)
+    return null
+  }
 }
 
 /// Fetch the chain registry data
@@ -26,7 +36,8 @@ export const fetchChainMetadata = async (name: string, fetchIbc: boolean): Promi
 
   if (fetchIbc) {
     const chain_name = (chainJson as RegistryChainJson).chain_name
-    const fileList = await fetchIbcFileList(`https://api.github.com/repos/${GITHUB_REPO}/contents/_IBC`)
+    const fileListResult = await fetchIbcFileList(`https://api.github.com/repos/${GITHUB_REPO}/contents/_IBC`)
+    const fileList = fileListResult ? fileListResult : []
 
     // filter the fileList for matches of the form {name}-{chainB}.json or {chainA}-{name}.json
     const matchingFiles = fileList.filter(file => {

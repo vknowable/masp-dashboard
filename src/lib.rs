@@ -3,7 +3,7 @@ extern crate wasm_bindgen;
 use gloo_utils::format::JsValueSerdeExt;
 use base64::decode;
 use namada_sdk::{
-    borsh::BorshDeserialize, masp::MaspTokenRewardData, token::Amount,
+    borsh::BorshDeserialize, masp::MaspTokenRewardData, token::Amount, chain::Epoch,
 };
 use serde::Serialize;
 use thiserror::Error;
@@ -59,6 +59,12 @@ impl From<MaspTokenRewardData> for SerializableMaspTokenRewardData {
 pub fn decode_amount(base64_str: &str) -> JsResult<JsValue> {
     let amount: Amount = decode_abci_value_str(base64_str)?;
     to_js_result(amount)
+}
+
+#[wasm_bindgen]
+pub fn decode_epoch(base64_str: &str) -> JsResult<JsValue> {
+    let epoch: Epoch = decode_abci_value_str(base64_str)?;
+    to_js_result(epoch)
 }
 
 #[wasm_bindgen]
