@@ -55,7 +55,13 @@ function findChainIdByName(chainMetadata: ChainMetadata, chainName: string): str
 
   // Check the `counterParties` array for matching `chain_name`
   const matchingCounterparty = chainMetadata.counterParties.find(
-    cp => cp.chain.chain_name === chainName
+    cp => {
+      try {
+        return cp.chain.chain_name === chainName
+      } catch {
+        return ""
+      }
+    }
   )
 
   return matchingCounterparty?.chain.chain_id

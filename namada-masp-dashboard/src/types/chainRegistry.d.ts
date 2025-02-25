@@ -82,6 +82,7 @@ export type RegistryAsset = {
   logo_URIs: {
     svg: string
   }
+  coingecko_id: string
 }
 
 export type RegistryAssetDenom = {

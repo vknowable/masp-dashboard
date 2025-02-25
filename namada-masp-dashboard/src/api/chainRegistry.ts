@@ -3,6 +3,8 @@ import { ChainMetadata, IbcFileList, RegistryAssetList, RegistryChainJson, Regis
 
 const GITHUB_REPO = "vknowable/mock-registry"
 const REPO_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/refs/heads/main`
+const COSMOS_REGISTRY_REPO = "cosmos/chain-registry"
+const COSMOS_REGISTRY_URL = `https://raw.githubusercontent.com/${COSMOS_REGISTRY_REPO}/refs/heads/master`
 
 const fetchRegistyJson = async (url: string): Promise<RegistryChainJson | RegistryAssetList | RegistryIbcMetadata | null> => {
   try {
@@ -58,10 +60,10 @@ export const fetchChainMetadata = async (name: string, fetchIbc: boolean): Promi
       })()
 
       // fetch chain.json and assetlist.json for the counterparty chain
-      // we don't really need this data for this app, it's just provided here as an example
+      // we don't really need most of this data for this app, it's just provided here as an example
       const [counterPartyChainJson, counterPartyAssetListJson] = await Promise.all([
-        fetchRegistyJson(`${REPO_URL}/${counterPartyChainName}/chain.json`),
-        fetchRegistyJson(`${REPO_URL}/${counterPartyChainName}/assetlist.json`),
+        fetchRegistyJson(`${COSMOS_REGISTRY_URL}/${counterPartyChainName}/chain.json`),
+        fetchRegistyJson(`${COSMOS_REGISTRY_URL}/${counterPartyChainName}/assetlist.json`),
       ])
 
       // Push the counterparty chain and asset list to the counterParties array

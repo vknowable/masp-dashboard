@@ -8,14 +8,14 @@ export type TokenDisplayRow = {
   exponent: number
   volume: number
   totalAmount: number
-  usdPrice: number
-  maspMarketCap: number|string
+  usdPrice: number|null
+  maspMarketCap: number|null
   maspAmount: number
-  ssrRateLast: number|string
-  estRateCur: number|string
-  ssrRewardsLast: number|string
-  estRewardsCur: number|string
-  usdRewards: number|string
+  ssrRateLast: number|null
+  estRateCur: number|null
+  ssrRewardsLast: number|null
+  estRewardsCur: number|null
+  usdRewards: number|null
   aggregates: MaspAggregate[]
 }
 
@@ -47,4 +47,10 @@ export type MaspAggregate = {
   timeWindow: string
   kind: string
   totalAmount: string
+}
+
+export type CgPriceResponse = {
+  [asset: string]: {
+    usd: number
+  }
 }

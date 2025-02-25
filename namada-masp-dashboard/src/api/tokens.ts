@@ -1,5 +1,5 @@
 import apiClient from './apiClient'
-import { TokenDisplayRow, TokensResponse, NativeToken, IbcToken, AccountResponse, AggregatesResponse } from '../types/token'
+import { TokenDisplayRow, TokensResponse, NativeToken, IbcToken, AccountResponse, AggregatesResponse, CgPriceResponse } from '../types/token'
 import { AbciQueryResponse } from '../types/abci'
 import { decode_amount, decode_epoch, decode_reward_tokens } from 'masp_dashboard_wasm'
 import { MaspInfo, RewardToken } from '../types/masp'
@@ -8,6 +8,8 @@ import { RegistryAsset } from '../types/chainRegistry'
 const rpcUrl = import.meta.env.VITE_RPC_URL
 const indexerUrl = import.meta.env.VITE_INDEXER_URL
 const apiBaseIndexer = 'api/v1'
+const coinGeckoUrl = 'https://api.coingecko.com/api/v3/simple/price'
+const coinGeckoApiKey = import.meta.env.COINGECKO_API_KEY
 
 const fetchMaspBalances = async (): Promise<AccountResponse> => {
   try {
@@ -47,6 +49,25 @@ const fetchAbciQuery = async (path: string): Promise<AbciQueryResponse | null> =
     return data
   } catch (error) {
     console.error(`Error fetching ABCI query for path: ${path}`, error)
+    return null
+  }
+}
+
+const fetchCgPrice = async (assetId: string): Promise<CgPriceResponse | null> => {
+  try {
+    const { data }: { data: CgPriceResponse } = await apiClient.get(coinGeckoUrl, {
+      headers: {
+        accept: "application/json",
+        "api-key": coinGeckoApiKey,
+      },
+      params: {
+        ids: assetId,
+        vs_currencies: "usd",
+      },
+    })
+    return data
+  } catch (error) {
+    console.error(`Error fetching Coingecko Price for asset ${assetId}`, error)
     return null
   }
 }
@@ -97,8 +118,8 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
     const matchingRewardToken = rewardTokens.find(rewardToken => rewardToken.address === token.address)
     const matchingRegistryAsset = registeredAssets.find(asset => asset.address === token.address)
 
-    // Placeholder; replace with API call to e.g., CoinGecko
-    const usdPrice = 0.05
+    // Lookup price from CoinGecko
+    const assetId = matchingRegistryAsset?.coingecko_id ?? ""
 
     const [
       depositAmtQueryResult,
@@ -106,12 +127,14 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
       totalAmtQueryResult,
       lastInflationQueryResult,
       lastLockedQueryResult,
+      usdPriceResult,
     ] = await Promise.allSettled([
       fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/deposit/${token.address}`),
       fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/withdraw/${token.address}`),
       fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/balance/minted`),
       matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_inflation`) : Promise.resolve(null),
       matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_locked_amount`) : Promise.resolve(null),
+      assetId !== "" ? fetchCgPrice(assetId) : Promise.resolve(null),
     ])
 
     const depositAmt = depositAmtQueryResult.status === 'fulfilled' ? decodeBorshAmt(depositAmtQueryResult.value) : 0
@@ -122,6 +145,10 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
     const divisor = 10 ** exponent
 
     const ssrEligible: boolean = matchingRewardToken?.max_reward_rate !== undefined && matchingRewardToken.max_reward_rate > 0
+
+    // price is null if either no repsonse or assetId === "" (not listed)
+    const usdPrice = usdPriceResult?.status === 'fulfilled' ? usdPriceResult.value?.assetId?.usd ?? null : null
+    const maspMarketCap = usdPrice ? (maspAmount / divisor * usdPrice) : null
 
     const baseData = {
       ssrEligible,
@@ -134,7 +161,7 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
       totalAmount: totalAmt / divisor,
       maspAmount: maspAmount / divisor,
       usdPrice,
-      maspMarketCap: (maspAmount / divisor * usdPrice).toFixed(2),
+      maspMarketCap,
       aggregates,
     }
 
@@ -147,7 +174,7 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
       const estRateCur = maspAmount != 0 ? lastInflation / maspAmount : matchingRewardToken.max_reward_rate
       // TODO: this value is meaningless since the terms cancel out and it simply equals the last inflation
       const estRewardsCur = (maspAmount * estRateCur) / divisor
-      const usdRewards = estRewardsCur * usdPrice
+      const usdRewards = usdPrice ? estRewardsCur * usdPrice : null
 
       return {
         ...baseData,
@@ -155,17 +182,17 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
         estRateCur,
         ssrRewardsLast: lastInflation / divisor,
         estRewardsCur,
-        usdRewards: usdRewards.toFixed(2),
+        usdRewards: usdRewards,
       }
     }
 
     return {
       ...baseData,
-      ssrRateLast: "n/a",
-      estRateCur: "n/a",
-      ssrRewardsLast: "n/a",
-      estRewardsCur: "n/a",
-      usdRewards: "n/a",
+      ssrRateLast: null,
+      estRateCur: null,
+      ssrRewardsLast: null,
+      estRewardsCur: null,
+      usdRewards: null,
     }
   }
 

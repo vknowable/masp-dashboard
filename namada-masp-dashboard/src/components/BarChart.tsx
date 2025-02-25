@@ -72,7 +72,7 @@ function BarChart({ tokenData, isLoading, error, hideNam }: BarChartProps) {
         const divisor = 10 ** token.exponent
         const inflows = parseInt(token.aggregates.find(item => item.timeWindow === window && item.kind === 'inflows')?.totalAmount ?? "0") / divisor
         const outflows = parseInt(token.aggregates.find(item => item.timeWindow === window && item.kind === 'outflows')?.totalAmount ?? "0") / divisor
-        const netUSD = (inflows - outflows) * token.usdPrice
+        const netUSD = token.usdPrice ? (inflows - outflows) * token.usdPrice : 0
         return parseFloat(netUSD.toFixed(2))
       })
       setYData(yData)
