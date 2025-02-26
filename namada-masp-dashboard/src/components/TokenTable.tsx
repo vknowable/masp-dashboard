@@ -28,14 +28,56 @@ function TokenTable({ tokenData, isLoading, error }: TokenTableProps) {
       { accessorKey: 'exponent', header: 'Exponent', },
       { accessorKey: 'volume', header: 'Net IBC deposit This Epoch', },
       { accessorKey: 'totalAmount', header: 'Total tokens on chain', },
-      { accessorKey: 'usdPrice', header: 'Price ($) (using placeholder 0.05/Token)', },
+      { 
+        accessorKey: 'usdPrice', 
+        header: 'Price ($USD)', 
+        cell: ({ getValue }) => {
+          const value = getValue<number | null>();
+          return value !== null ? value.toFixed(2) : "n/a";
+        },
+      },
       { accessorKey: 'maspAmount', header: 'Tokens in MASP', },
-      { accessorKey: 'maspMarketCap', header: 'MASP TVL ($)', },
-      { accessorKey: 'ssrRateLast', header: 'Last masp-epoch Rewards Rate (NAM minted / token)', },
-      { accessorKey: 'estRateCur', header: 'Expected Rewards Rate (this masp-epoch) (NAM minted / token)', },
+      { 
+        accessorKey: 'maspMarketCap', 
+        header: 'MASP TVL ($USD)', 
+        cell: ({ getValue }) => {
+          const value = getValue<number | null>();
+          return value !== null ? value.toFixed(2) : "n/a";
+        },
+      },
+      { 
+        accessorKey: 'ssrRateLast', 
+        header: 'Last masp-epoch Rewards Rate (NAM minted / token)', 
+        cell: ({ getValue }) => {
+          const value = getValue<number | null>();
+          return value !== null ? value : "n/a";
+        },
+      },
+      { 
+        accessorKey: 'estRateCur', 
+        header: 'Expected Rewards Rate (this masp-epoch) (NAM minted / token)', 
+        cell: ({ getValue }) => {
+          const value = getValue<number | null>();
+          return value !== null ? value : "n/a";
+        },
+      },
       // { accessorKey: 'ssrRewardsLast', header: 'NAM Rewards (last masp-epoch)', }, // this row and the one below have the same value
-      { accessorKey: 'estRewardsCur', header: 'Expected Nam Rewards (this masp-epoch)', },
-      { accessorKey: 'usdRewards', header: 'Expected Rewards ($) (this masp-epoch)', },
+      { 
+        accessorKey: 'estRewardsCur', 
+        header: 'Expected Nam Rewards (this masp-epoch)', 
+        cell: ({ getValue }) => {
+          const value = getValue<number | null>();
+          return value !== null ? value : "n/a";
+        },
+      },
+      { 
+        accessorKey: 'usdRewards', 
+        header: 'Expected Rewards ($USD) (this masp-epoch)', 
+        cell: ({ getValue }) => {
+          const value = getValue<number | null>();
+          return value !== null ? value.toFixed(2) : "n/a";
+        },
+      },
     ],
     []
   )

@@ -15,7 +15,7 @@ function MainContent() {
   const { data: maspInfo = undefined, isLoading: isLoadingMaspInfo, error: errorMaspInfo } = useQuery({
     queryKey: ['maspInfo'],
     queryFn: fetchMaspInfo,
-    refetchInterval: 10000,
+    refetchInterval: 30000,
     staleTime: 300000,
   })
 
@@ -27,7 +27,7 @@ function MainContent() {
   const { data: tokens = [], isLoading: isLoadingTokens, error: errorTokens } = useQuery({
     queryKey: ['tokens'],
     queryFn: () => fetchTokens(maspInfo?.rewardTokens ?? [], registryData?.assetList?.assets ?? []),
-    refetchInterval: 10000,
+    refetchInterval: 30000,
     staleTime: 300000,
     enabled: !!maspInfo && !!registryData,
   })
@@ -64,6 +64,7 @@ function MainContent() {
 
       <h2 className="text-lg font-semibold mt-8">MASP metrics: (click column to sort)</h2>
       <p>Values are in denominated units (e.g. 10^-6)</p>
+      <p className="italic text-sm text-gray-600 px-2">Powered by <a href="https://www.coingecko.com/en/api/" className="text-blue-600">CoinGecko API</a></p>
 
       <TokenTable tokenData={tokens} isLoading={isLoadingTokens} error={errorTokens} />
     </div>

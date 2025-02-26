@@ -147,7 +147,7 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
     const ssrEligible: boolean = matchingRewardToken?.max_reward_rate !== undefined && matchingRewardToken.max_reward_rate > 0
 
     // price is null if either no repsonse or assetId === "" (not listed)
-    const usdPrice = usdPriceResult?.status === 'fulfilled' ? usdPriceResult.value?.assetId?.usd ?? null : null
+    const usdPrice = usdPriceResult?.status === 'fulfilled' ? usdPriceResult.value?.[assetId]?.usd ?? null : null
     const maspMarketCap = usdPrice ? (maspAmount / divisor * usdPrice) : null
 
     const baseData = {
@@ -165,7 +165,7 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
       aggregates,
     }
 
-    if (matchingRewardToken) {
+    if (matchingRewardToken && ssrEligible) {
       const lastInflation = lastInflationQueryResult.status === 'fulfilled' ? decodeBorshAmt(lastInflationQueryResult.value as AbciQueryResponse) : 0
       const lastLocked = lastLockedQueryResult.status === 'fulfilled' ? decodeBorshAmt(lastLockedQueryResult.value as AbciQueryResponse) : 0
       // const maxRate = matchingRewardToken.max_reward_rate
