@@ -8,8 +8,8 @@ import { RegistryAsset } from '../types/chainRegistry'
 const rpcUrl = import.meta.env.VITE_RPC_URL
 const indexerUrl = import.meta.env.VITE_INDEXER_URL
 const apiBaseIndexer = 'api/v1'
-const coinGeckoUrl = 'https://api.coingecko.com/api/v3/simple/price'
-const coinGeckoApiKey = import.meta.env.COINGECKO_API_KEY
+const coinGeckoUrl = import.meta.env.VITE_PRICE_URL
+// const coinGeckoApiKey = import.meta.env.COINGECKO_API_KEY
 
 const fetchMaspBalances = async (): Promise<AccountResponse> => {
   try {
@@ -22,13 +22,16 @@ const fetchMaspBalances = async (): Promise<AccountResponse> => {
 }
 
 const fetchMaspAggregates = async (): Promise<AggregatesResponse> => {
-  try {
-    const { data }: { data: AggregatesResponse } = await apiClient.get(`${indexerUrl}/${apiBaseIndexer}/masp/aggregates`)
-    return data
-  } catch (error) {
-    console.error('Error fetching Masp Aggregates', error)
-    return []
-  }
+  // Temporarily disable this query until masp aggregates are implemented in namada-indexer
+
+  // try {
+  //   const { data }: { data: AggregatesResponse } = await apiClient.get(`${indexerUrl}/${apiBaseIndexer}/masp/aggregates`)
+  //   return data
+  // } catch (error) {
+  //   console.error('Error fetching Masp Aggregates', error)
+  //   return []
+  // }
+  return []
 }
 
 const fetchTokenList = async (): Promise<TokensResponse> => {
@@ -55,21 +58,17 @@ const fetchAbciQuery = async (path: string): Promise<AbciQueryResponse | null> =
 
 const fetchCgPrice = async (assetId: string): Promise<CgPriceResponse | null> => {
   try {
-    const { data }: { data: CgPriceResponse } = await apiClient.get(coinGeckoUrl, {
-      headers: {
-        accept: "application/json",
-        "api-key": coinGeckoApiKey,
-      },
-      params: {
-        ids: assetId,
-        vs_currencies: "usd",
-      },
-    })
+    const { data }: { data: CgPriceResponse } = await apiClient.get(`${coinGeckoUrl}/api/v1/${assetId}/price`)
     return data
   } catch (error) {
     console.error(`Error fetching Coingecko Price for asset ${assetId}`, error)
     return null
   }
+  // return {
+  //   [assetId]: {
+  //     usd: 4
+  //   }
+  // }
 }
 
 /// Fetch the token amounts to fill out all rows of the masp token table
@@ -80,38 +79,40 @@ export const fetchTokens = async (rewardTokens: RewardToken[], registeredAssets:
     fetchMaspAggregates(),
   ])
 
-  const tokenList = tokenListResult.status === 'fulfilled' ? tokenListResult.value : []
+  // Temporary fix: filter the bugged ibc traces out of the token list returned by the indexer
+  const tokenListBugged = tokenListResult.status === 'fulfilled' ? tokenListResult.value : []
+  const tokenList = tokenListBugged.filter(token => registeredAssets.find(asset => token.address === asset.address))
   const maspBalances = maspBalancesResult.status === 'fulfilled' ? maspBalancesResult.value : []
   const maspAggregates = maspAggregatesResult.status === 'fulfilled' ? maspAggregatesResult.value : []
 
   const fetchTokenData = async (token: NativeToken | IbcToken): Promise<TokenDisplayRow> => {
     // Old method of getting masp balances, by querying the balance of account tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah
     // This no longer works for all tokens after the masp aggregates update to namada-indexer
-    // const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
-    // const maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
+    const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
+    const maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
 
     // We still get the native token masp balance by querying the masp account balance, but for ibc tokens we calculate it from the net all-time inflow-outflow
-    let maspAmount = null
-    if ('trace' in token) {
-      const inflows = maspAggregates.find(
-        item =>
-          item.kind === "inflows" &&
-          item.timeWindow === "allTime" &&
-          item.tokenAddress === token.address
-      )?.totalAmount
+    // let maspAmount = null
+    // if ('trace' in token) {
+    //   const inflows = maspAggregates.find(
+    //     item =>
+    //       item.kind === "inflows" &&
+    //       item.timeWindow === "allTime" &&
+    //       item.tokenAddress === token.address
+    //   )?.totalAmount
 
-      const outflows = maspAggregates.find(
-        item =>
-          item.kind === "outflows" &&
-          item.timeWindow === "allTime" &&
-          item.tokenAddress === token.address
-      )?.totalAmount
+    //   const outflows = maspAggregates.find(
+    //     item =>
+    //       item.kind === "outflows" &&
+    //       item.timeWindow === "allTime" &&
+    //       item.tokenAddress === token.address
+    //   )?.totalAmount
 
-      maspAmount = (parseInt(inflows ?? "0") - parseInt(outflows ?? "0"))
-    } else {
-      const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
-      maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
-    }
+    //   maspAmount = (parseInt(inflows ?? "0") - parseInt(outflows ?? "0"))
+    // } else {
+      // const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
+      // maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
+    // }
 
     const aggregates = maspAggregates.filter(item => item.tokenAddress === token.address)
 

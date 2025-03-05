@@ -50,6 +50,7 @@ export type MaspAggregate = {
 }
 
 export type CgPriceResponse = {
+  attribution?: string
   [asset: string]: {
     usd: number
   }

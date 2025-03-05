@@ -1,0 +1,20 @@
+{
+  "name": "pricefetch",
+  "version": "1.0.0",
+  "description": "A (very basic) backend for fetching the asset prices from Coingecko and serving them to the frontend app at `{base url}/api/v1/{asset}/price`.",
+  "main": "priceFetch.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0"
+  }
+}
