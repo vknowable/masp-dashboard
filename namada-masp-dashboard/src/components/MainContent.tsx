@@ -27,7 +27,7 @@ function MainContent() {
   const { data: tokens = [], isLoading: isLoadingTokens, error: errorTokens } = useQuery({
     queryKey: ['tokens'],
     queryFn: () => fetchTokens(maspInfo?.rewardTokens ?? [], registryData?.assetList?.assets ?? []),
-    refetchInterval: 10000,
+    refetchInterval: 30000,
     staleTime: 300000,
     enabled: !!maspInfo && !!registryData,
   })

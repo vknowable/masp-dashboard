@@ -9,7 +9,6 @@ const rpcUrl = import.meta.env.VITE_RPC_URL
 const indexerUrl = import.meta.env.VITE_INDEXER_URL
 const apiBaseIndexer = 'api/v1'
 const coinGeckoUrl = import.meta.env.VITE_PRICE_URL
-// const coinGeckoApiKey = import.meta.env.COINGECKO_API_KEY
 
 const fetchMaspBalances = async (): Promise<AccountResponse> => {
   try {
@@ -64,11 +63,6 @@ const fetchCgPrice = async (assetId: string): Promise<CgPriceResponse | null> =>
     console.error(`Error fetching Coingecko Price for asset ${assetId}`, error)
     return null
   }
-  // return {
-  //   [assetId]: {
-  //     usd: 4
-  //   }
-  // }
 }
 
 /// Fetch the token amounts to fill out all rows of the masp token table
