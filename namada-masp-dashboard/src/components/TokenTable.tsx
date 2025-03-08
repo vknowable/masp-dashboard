@@ -1,171 +1,178 @@
-import { useState, useMemo } from 'react'
-import { useReactTable, getCoreRowModel, getSortedRowModel, SortingState, ColumnDef, flexRender } from '@tanstack/react-table'
+import { useMemo, useState } from 'react'
+import {
+  ColumnDef,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import { useTokenDisplay } from '../hooks/useTokenDisplay'
 import { TokenDisplayRow } from '../types/token'
+import { ChainMetadata } from '../types/chainRegistry'
 
-type TokenTableProps = {
-  tokenData?: TokenDisplayRow[]
-  isLoading: boolean
-  error: Error | null
+interface TokenTableProps {
+  chainData: ChainMetadata | null | undefined
 }
 
-function TokenTable({ tokenData, isLoading, error }: TokenTableProps) {
+export default function TokenTable({ chainData }: TokenTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
+  const { tokenRows, isLoading, error } = useTokenDisplay({ chainData })
 
   const columns = useMemo<ColumnDef<TokenDisplayRow>[]>(
     () => [
-      { accessorKey: 'ssrEligible', header: 'SSR Eligible', },
       {
         accessorKey: 'logo',
         header: 'Logo',
-        cell: ({ getValue }) => {
-          const logoUrl = getValue() as string
-          return logoUrl ? <img src={logoUrl} alt="Logo" style={{ width: '32px', height: '32px' }} /> : null
-        },
-      },
-      { accessorKey: 'name', header: 'Symbol', },
-      { accessorKey: 'address', header: 'Address', },
-      { accessorKey: 'trace', header: 'Trace', },
-      { accessorKey: 'exponent', header: 'Exponent', },
-      { accessorKey: 'volume', header: 'Net IBC deposit This Epoch', },
-      { accessorKey: 'totalAmount', header: 'Total tokens on chain', },
-      { 
-        accessorKey: 'usdPrice', 
-        header: 'Price ($USD)', 
-        cell: ({ getValue }) => {
-          const value = getValue<number | null>();
-          return value !== null ? value.toFixed(2) : "n/a";
-        },
-      },
-      { accessorKey: 'maspAmount', header: 'Tokens in MASP', },
-      { 
-        accessorKey: 'maspMarketCap', 
-        header: 'MASP TVL ($USD)', 
-        cell: ({ getValue }) => {
-          const value = getValue<number | null>();
-          return value !== null ? value.toFixed(2) : "n/a";
+        cell: ({ row }) => {
+          const logoUrl = row.original.logoUrl
+          return logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={`${row.original.symbol} logo`} 
+              className="w-8 h-8"
+            />
+          ) : null
         },
       },
       { 
-        accessorKey: 'ssrRateLast', 
-        header: 'Last masp-epoch Rewards Rate (NAM minted / token)', 
-        cell: ({ getValue }) => {
-          const value = getValue<number | null>();
-          return value !== null ? value : "n/a";
-        },
+        accessorKey: 'symbol', 
+        header: 'Symbol',
       },
       { 
-        accessorKey: 'estRateCur', 
-        header: 'Expected Rewards Rate (this masp-epoch) (NAM minted / token)', 
-        cell: ({ getValue }) => {
-          const value = getValue<number | null>();
-          return value !== null ? value : "n/a";
-        },
+        accessorKey: 'address', 
+        header: 'Address',
       },
-      // { accessorKey: 'ssrRewardsLast', header: 'NAM Rewards (last masp-epoch)', }, // this row and the one below have the same value
-      { 
-        accessorKey: 'estRewardsCur', 
-        header: 'Expected Nam Rewards (this masp-epoch)', 
-        cell: ({ getValue }) => {
-          const value = getValue<number | null>();
-          return value !== null ? value : "n/a";
-        },
+      {
+        accessorKey: 'totalShielded',
+        header: 'Total Shielded',
+        cell: ({ row }) => {
+          const value = row.original.totalShielded
+          const symbol = row.original.symbol
+          return `${value} ${symbol}`
+        }
       },
-      { 
-        accessorKey: 'usdRewards', 
-        header: 'Expected Rewards ($USD) (this masp-epoch)', 
-        cell: ({ getValue }) => {
-          const value = getValue<number | null>();
-          return value !== null ? value.toFixed(2) : "n/a";
-        },
+      {
+        accessorKey: 'currentShielded',
+        header: 'Current Shielded',
+        cell: ({ row }) => {
+          const value = row.original.currentShielded
+          const symbol = row.original.symbol
+          return `${value} ${symbol}`
+        }
       },
+      {
+        accessorKey: 'usdPrice',
+        header: 'Price (USD)',
+        cell: ({ row }) => {
+          const price = row.original.usdPrice
+          return price !== null ? `$${price.toFixed(2)}` : 'N/A'
+        }
+      },
+      {
+        accessorKey: 'rewardsParam',
+        header: 'Rewards Parameter',
+      },
+      {
+        id: 'percentageChanges',
+        header: 'Changes',
+        cell: ({ row }) => {
+          const changes = row.original.percentageChanges
+          return (
+            <div className="flex gap-2">
+              <span className={changes['24h'] >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {changes['24h'].toFixed(2)}% (24h)
+              </span>
+              <span className={changes['7d'] >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {changes['7d'].toFixed(2)}% (7d)
+              </span>
+              <span className={changes['30d'] >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {changes['30d'].toFixed(2)}% (30d)
+              </span>
+            </div>
+          )
+        }
+      }
     ],
     []
   )
 
   const table = useReactTable({
+    data: tokenRows,
     columns,
-    data: tokenData ?? [],
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    state: { sorting },
-
   })
 
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error fetching tokens</div>
+  if (isLoading) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-700 rounded mb-4" />
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-16 bg-gray-700 rounded mb-2" />
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-400 bg-red-900/20 rounded-lg p-4">
+        Error loading token data: {error.message}
+      </div>
+    )
+  }
 
   return (
-    <div className='p-2 border'>
-      <div className='overflow-auto'>
-        <table className="border-separate border border-slate-400">
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  return (
-                    <th key={header.id} colSpan={header.colSpan} className='min-w-28'>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={
-                            header.column.getCanSort()
-                              ? 'cursor-pointer select-none'
-                              : ''
-                          }
-                          onClick={header.column.getToggleSortingHandler()}
-                          title={
-                            header.column.getCanSort()
-                              ? header.column.getNextSortingOrder() === 'asc'
-                                ? 'Sort ascending'
-                                : header.column.getNextSortingOrder() === 'desc'
-                                  ? 'Sort descending'
-                                  : 'Clear sort'
-                              : undefined
-                          }
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {header.column.getCanSort() && (
-                            {
-                              asc: ' 🔼',
-                              desc: ' 🔽',
-                            }[header.column.getIsSorted() as string] ?? ' 📶'
-                          )}
-                        </div>
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-700">
+        <thead>
+          {table.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <th
+                  key={header.id}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider"
+                >
+                  {header.isPlaceholder ? null : (
+                    <div
+                      className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
                       )}
-                    </th>
-                  )
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table
-              .getRowModel()
-              .rows.slice(0, 10)
-              .map(row => {
-                return (
-                  <tr key={row.id} className={row.original.ssrEligible ? "bg-green-300" : ""}>
-                    {row.getVisibleCells().map(cell => {
-                      return (
-                        <td key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
-          </tbody>
-        </table>
-      </div>
+                      {{
+                        asc: ' 🔼',
+                        desc: ' 🔽',
+                      }[header.column.getIsSorted() as string] ?? null}
+                    </div>
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody className="divide-y divide-gray-700">
+          {table.getRowModel().rows.map(row => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map(cell => (
+                <td
+                  key={cell.id}
+                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-200"
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
-
-export default TokenTable

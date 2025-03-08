@@ -1,24 +1,3 @@
-// Represents a row in the display table of masp tokens
-export type TokenDisplayRow = {
-  ssrEligible: boolean
-  logo: string
-  name: string
-  address: string
-  trace?: string
-  exponent: number
-  volume: number
-  totalAmount: number
-  usdPrice: number|null
-  maspMarketCap: number|null
-  maspAmount: number
-  ssrRateLast: number|null
-  estRateCur: number|null
-  ssrRewardsLast: number|null
-  estRewardsCur: number|null
-  usdRewards: number|null
-  aggregates: MaspAggregate[]
-}
-
 // Represents a response from the namada-indexer api/v1/chain/token endpoint
 export type TokensResponse = Array<NativeToken | IbcToken>
 
@@ -50,8 +29,6 @@ export type MaspAggregate = {
 }
 
 export type CgPriceResponse = {
+  [key: string]: { usd: number } | string | undefined
   attribution?: string
-  [asset: string]: {
-    usd: number
-  }
 }
