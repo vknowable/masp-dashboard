@@ -1,38 +1,38 @@
-export interface TokenDisplayRow {
-  symbol: string
-  address: string
-  name: string
-  logoUrl?: string
-  decimals: number
-  totalShielded: string
-  currentShielded: string
-  rewardsParam: string
-  usdPrice: number | null
-  percentageChanges: {
-    '24h': number
-    '7d': number
-    '30d': number
-  }
-}
-
-export interface NativeToken {
+// Base token interface that can be extended
+interface BaseToken {
   address: string
 }
 
-export interface IbcToken {
-  address: string
+// Extend base token for specific token types
+interface NativeToken extends BaseToken {
+  type: 'native'
+}
+
+interface IbcToken extends BaseToken {
+  type: 'ibc'
   trace: string
 }
 
-export type TokensResponse = Array<NativeToken | IbcToken>
+// Use type for union of possible tokens
+export type Token = NativeToken | IbcToken
 
-export interface TokenBalance {
+// Use type for response arrays and unions
+export type TokensResponse = Token[]
+
+/**
+ * Balance information for a token
+ */
+export interface Balance {
   tokenAddress: string
   minDenomAmount: string
 }
 
-export type AccountResponse = Array<TokenBalance>
+/**
+ * Response type for account balance queries
+ */
+export type AccountResponse = Balance[]
 
+// Use interface for extensible aggregate data
 export interface MaspAggregate {
   tokenAddress: string
   timeWindow: string
@@ -40,9 +40,34 @@ export interface MaspAggregate {
   totalAmount: string
 }
 
-export type AggregatesResponse = Array<MaspAggregate>
+export type AggregatesResponse = MaspAggregate[]
 
-export interface CgPriceResponse {
+// Use type for strict object shape with literal types
+export type TimeWindow = '24h' | '7d' | '30d'
+
+// Use interface for display data that might need extension
+export interface TokenDisplayRow {
+  symbol: string
+  address: string
+  name: string
+  logoUrl: string
+  decimals: number
+  totalSupply: {
+    currentSupply: string
+    '1d': string | null
+    '7d': string | null
+    '30d': string | null
+  }
+  totalShielded: string
+  totalTransparent: string
+  currentShielded: string
+  currentTransparent: string
+  rewardsParam: string
+  usdPrice: number
+}
+
+// Use type for API response with dynamic keys
+export type CgPriceResponse = {
   [key: string]: { usd: number } | string | undefined
   attribution?: string
 } 

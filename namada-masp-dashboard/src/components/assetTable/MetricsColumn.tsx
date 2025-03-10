@@ -1,4 +1,4 @@
-import { RegistryAsset } from '../../types/chainRegistry'
+import { TokenDisplayRow } from '../../types/token'
 import MetricsRow from './MetricsRow'
 import ViewToggle from './ViewToggle'
 
@@ -7,21 +7,19 @@ type ViewMode = 'shielded' | 'transparent'
 interface MetricsColumnProps {
     viewMode: ViewMode
     onViewChange: (view: ViewMode) => void
-    assets?: RegistryAsset[]
+    tokens: TokenDisplayRow[]
     metrics?: Record<string, {
-        totalValue: string
-        currentValue: string
-        percentageChanges: {
-            '24h': number
-            '7d': number
-            '30d': number
-        }
+        symbol: string
+        totalShielded: string
+        currentShielded: string
+        totalTransparent: string
+        currentTransparent: string
         rewardsParam?: string
     }>
     isLoading?: boolean
 }
 
-function MetricsColumn({ viewMode, onViewChange, assets = [], metrics = {}, isLoading = false }: MetricsColumnProps) {
+function MetricsColumn({ viewMode, onViewChange, tokens = [], metrics = {}, isLoading = false }: MetricsColumnProps) {
     if (isLoading) {
         return (
             <div className="p-4">
@@ -40,7 +38,7 @@ function MetricsColumn({ viewMode, onViewChange, assets = [], metrics = {}, isLo
                 <div className="flex-1">
                     <ViewToggle currentView={viewMode} onViewChange={onViewChange} />
                 </div>
-                <div className="h-[40px] px-4 flex items-center border-b border-gray-800">
+                <div className="h-[40px] px-4 flex items-center">
                     <div className="flex text-xs text-gray-400 w-full">
                         {viewMode === 'shielded' ? (
                             <>
@@ -58,10 +56,10 @@ function MetricsColumn({ viewMode, onViewChange, assets = [], metrics = {}, isLo
                 </div>
             </div>
             <div className="divide-y divide-gray-800">
-                {assets?.map((asset) => (
+                {tokens.map((token) => (
                     <MetricsRow
-                        key={asset.address}
-                        metrics={metrics[asset.address]}
+                        key={token.address}
+                        metrics={metrics[token.address]}
                         viewMode={viewMode}
                     />
                 ))}

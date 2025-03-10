@@ -1,14 +1,14 @@
+import { denomAmount, formatNumber } from "../../utils/numbers"
+
 type ViewMode = 'shielded' | 'transparent'
 
 interface MetricsRowProps {
     metrics?: {
-        totalValue: string
-        currentValue: string
-        percentageChanges: {
-            '24h': number
-            '7d': number
-            '30d': number
-        }
+        symbol: string
+        totalShielded: string
+        currentShielded: string
+        totalTransparent: string
+        currentTransparent: string
         rewardsParam?: string
     }
     viewMode: ViewMode
@@ -16,17 +16,6 @@ interface MetricsRowProps {
 
 function MetricsRow({ metrics, viewMode }: MetricsRowProps) {
     if (!metrics) return null
-
-    const formatPercentage = (value: number, period: string) => {
-        const formatted = value.toFixed(2)
-        const isPositive = value > 0
-        return (
-            <span className={`${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                {isPositive ? '+' : ''}{formatted}%
-                <span className="text-gray-500 ml-1">({period})</span>
-            </span>
-        )
-    }
 
     const formatValue = (value: string) => {
         // Add proper formatting logic here if needed
@@ -38,14 +27,14 @@ function MetricsRow({ metrics, viewMode }: MetricsRowProps) {
             {/* Total Value Column */}
             <div className="flex-1">
                 <div className="text-sm text-white">
-                    {formatValue(metrics.totalValue)}
+                    {`${formatNumber(denomAmount(viewMode === 'shielded' ? metrics.totalShielded : metrics.totalTransparent, 6), 6)} ${metrics.symbol}`}
                 </div>
                 <div className="flex gap-2 mt-1 text-xs">
-                    {formatPercentage(metrics.percentageChanges['24h'], '24h')}
+                    {"-- '24h'"}
                     <span className="text-gray-500">/</span>
-                    {formatPercentage(metrics.percentageChanges['7d'], '7d')}
+                    {"-- '24h'"}
                     <span className="text-gray-500">/</span>
-                    {formatPercentage(metrics.percentageChanges['30d'], '30d')}
+                    {"-- '24h'"}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                     $0,000,000.000000
@@ -55,14 +44,14 @@ function MetricsRow({ metrics, viewMode }: MetricsRowProps) {
             {/* Current Value Column */}
             <div className="flex-1">
                 <div className="text-sm text-white">
-                    {formatValue(metrics.currentValue)}
+                    {`${formatNumber(denomAmount(viewMode === 'shielded' ? metrics.currentShielded : metrics.currentTransparent, 6), 6)} ${metrics.symbol}`}
                 </div>
                 <div className="flex gap-2 mt-1 text-xs">
-                    {formatPercentage(metrics.percentageChanges['24h'], '24h')}
+                    {"-- '24h'"}
                     <span className="text-gray-500">/</span>
-                    {formatPercentage(metrics.percentageChanges['7d'], '7d')}
+                    {"-- '24h'"}
                     <span className="text-gray-500">/</span>
-                    {formatPercentage(metrics.percentageChanges['30d'], '30d')}
+                    {"-- '24h'"}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                     $0,000,000.000000

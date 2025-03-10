@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import Chart from './Chart'
 import ChartTopBar from './ChartTopBar'
+import { useRegistryData } from '../../hooks/useRegistryData'
+import { useMaspAggregates } from '../../hooks/useMaspAggregates'
 
 interface ChartContainerProps {
     isLoading?: boolean;
@@ -15,7 +17,10 @@ export default function ChartContainer({ isLoading = false, error = null }: Char
     const [showTransparentInflow, setShowTransparentInflow] = useState(true)
     const [showTransparentOutflow, setShowTransparentOutflow] = useState(true)
 
-    if (isLoading) {
+    const { assets = [], isLoading: isLoadingRegistry } = useRegistryData()
+    const { data: maspAggregates = [], isLoading: isLoadingAggregates } = useMaspAggregates()
+
+    if (isLoading || isLoadingRegistry || isLoadingAggregates) {
         return (
             <div className="px-4 py-4">
                 <div className="rounded-[5px] bg-[#F5F5F5] dark:bg-[#191919] min-w-full min-h-[508px] pt-2 px-2">
@@ -54,6 +59,7 @@ export default function ChartContainer({ isLoading = false, error = null }: Char
                     onTransparentInflowToggle={setShowTransparentInflow}
                     showTransparentOutflow={showTransparentOutflow}
                     onTransparentOutflowToggle={setShowTransparentOutflow}
+                    assets={assets}
                 />
                 <Chart 
                     selectedAsset={selectedAsset}
@@ -62,6 +68,8 @@ export default function ChartContainer({ isLoading = false, error = null }: Char
                     showShieldedOutflow={showShieldedOutflow}
                     showTransparentInflow={showTransparentInflow}
                     showTransparentOutflow={showTransparentOutflow}
+                    assets={assets}
+                    maspAggregates={maspAggregates}
                 />
             </div>
         </div>

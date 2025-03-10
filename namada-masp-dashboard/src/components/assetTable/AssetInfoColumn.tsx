@@ -1,12 +1,12 @@
-import { RegistryAsset } from '../../types/chainRegistry'
+import { TokenDisplayRow } from '../../types/token'
 import AssetRow from './AssetRow'
 
 interface AssetInfoColumnProps {
-    assets?: RegistryAsset[]
+    tokens: TokenDisplayRow[]
     isLoading?: boolean
 }
 
-function AssetInfoColumn({ assets = [], isLoading = false }: AssetInfoColumnProps) {
+function AssetInfoColumn({ tokens = [], isLoading = false }: AssetInfoColumnProps) {
     if (isLoading) {
         return (
             <div className="p-4">
@@ -41,10 +41,10 @@ function AssetInfoColumn({ assets = [], isLoading = false }: AssetInfoColumnProp
 
             {/* Asset rows */}
             <div className="divide-y divide-gray-800">
-                {assets.map((asset) => (
+                {tokens.map((token) => (
                     <AssetRow 
-                        key={asset.address} 
-                        asset={asset}
+                        key={token.address} 
+                        token={token}
                     />
                 ))}
             </div>

@@ -1,45 +1,7 @@
 import ReactECharts from 'echarts-for-react'
-import { useEffect, useMemo, useState } from 'react'
-
-// Placeholder data structure
-interface AssetFlow {
-  symbol: string
-  shieldedInflow: number
-  shieldedOutflow: number
-  transparentInflow: number
-  transparentOutflow: number
-}
-
-const placeholderData: AssetFlow[] = [
-  {
-    symbol: 'ATOM',
-    shieldedInflow: 2000000,
-    shieldedOutflow: 1500000,
-    transparentInflow: 1800000,
-    transparentOutflow: 1200000
-  },
-  {
-    symbol: 'OSMO',
-    shieldedInflow: 1200000,
-    shieldedOutflow: 800000,
-    transparentInflow: 1000000,
-    transparentOutflow: 900000
-  },
-  {
-    symbol: 'TIA',
-    shieldedInflow: 1500000,
-    shieldedOutflow: 1100000,
-    transparentInflow: 1300000,
-    transparentOutflow: 1000000
-  },
-  {
-    symbol: 'INJ',
-    shieldedInflow: 1700000,
-    shieldedOutflow: 1400000,
-    transparentInflow: 1600000,
-    transparentOutflow: 1100000
-  }
-]
+import { useEffect, useMemo } from 'react'
+import { RegistryAsset } from '../../types/chainRegistry'
+import { AggregatesResponse } from '../../types/token'
 
 interface ChartProps {
   selectedAsset?: string
@@ -48,6 +10,8 @@ interface ChartProps {
   showShieldedOutflow?: boolean
   showTransparentInflow?: boolean
   showTransparentOutflow?: boolean
+  assets?: RegistryAsset[]
+  maspAggregates?: AggregatesResponse
 }
 
 export default function Chart({
@@ -56,14 +20,54 @@ export default function Chart({
   showShieldedInflow = true,
   showShieldedOutflow = true,
   showTransparentInflow = true,
-  showTransparentOutflow = true
+  showTransparentOutflow = true,
+  assets = [],
+  maspAggregates = []
 }: ChartProps) {
   const filteredData = useMemo(() => {
-    if (selectedAsset === 'All') return placeholderData
-    return placeholderData.filter(d => d.symbol === selectedAsset)
-  }, [selectedAsset])
+    // Get the time window based on selected timeframe
+    const timeWindow = selectedTimeframe === '24hr' ? 'oneDay' 
+      : selectedTimeframe === '7d' ? 'sevenDays' 
+      : 'thirtyDays'
 
-  const option = {
+    // Filter aggregates for the selected time window
+    const timeWindowData = maspAggregates.filter(a => a.timeWindow === timeWindow)
+
+    // If "All" is selected, return data for all assets
+    if (selectedAsset === 'All') {
+      return assets.map(asset => {
+        const assetData = timeWindowData.filter(a => a.tokenAddress === asset.address)
+        const inflow = assetData.find(a => a.kind === 'inflows')?.totalAmount || '0'
+        const outflow = assetData.find(a => a.kind === 'outflows')?.totalAmount || '0'
+        
+        return {
+          symbol: asset.symbol,
+          shieldedInflow: parseFloat(inflow),
+          shieldedOutflow: parseFloat(outflow),
+          transparentInflow: 0, // TODO: Add transparent flow data when available
+          transparentOutflow: 0
+        }
+      })
+    }
+
+    // Return data for selected asset only
+    const asset = assets.find(a => a.symbol === selectedAsset)
+    if (!asset) return []
+
+    const assetData = timeWindowData.filter(a => a.tokenAddress === asset.address)
+    const inflow = assetData.find(a => a.kind === 'inflows')?.totalAmount || '0'
+    const outflow = assetData.find(a => a.kind === 'outflows')?.totalAmount || '0'
+
+    return [{
+      symbol: asset.symbol,
+      shieldedInflow: parseFloat(inflow),
+      shieldedOutflow: parseFloat(outflow),
+      transparentInflow: 0, // TODO: Add transparent flow data when available
+      transparentOutflow: 0
+    }]
+  }, [selectedAsset, selectedTimeframe, assets, maspAggregates])
+
+  const option = useMemo(() => ({
     grid: {
       left: '3%',
       right: '4%',
@@ -88,7 +92,7 @@ export default function Chart({
     },
     yAxis: {
       type: 'value',
-      name: '2m',
+      name: 'Amount',
       axisLine: {
         lineStyle: {
           color: '#666'
@@ -103,52 +107,52 @@ export default function Chart({
       }
     },
     series: [
-      showShieldedInflow && {
+      {
         name: 'Shielded Inflow',
         type: 'bar',
-        data: filteredData.map(d => d.shieldedInflow),
+        data: showShieldedInflow ? filteredData.map(d => d.shieldedInflow) : [],
         itemStyle: {
           color: '#FFFF00'
-        }
+        },
       },
-      showShieldedOutflow && {
+      {
         name: 'Shielded Outflow',
         type: 'bar',
-        data: filteredData.map(d => d.shieldedOutflow),
+        data: showShieldedOutflow ? filteredData.map(d => d.shieldedOutflow) : [],
         itemStyle: {
           color: '#666666'
-        }
+        },
       },
-      showTransparentInflow && {
+      {
         name: 'Transparent Inflow',
         type: 'bar',
-        data: filteredData.map(d => d.transparentInflow),
+        data: showTransparentInflow ? filteredData.map(d => d.transparentInflow) : [],
         itemStyle: {
           color: 'transparent',
           borderColor: '#FFFF00',
           borderWidth: 2,
           borderType: 'solid'
-        }
+        },
       },
-      showTransparentOutflow && {
+      {
         name: 'Transparent Outflow',
         type: 'bar',
-        data: filteredData.map(d => d.transparentOutflow),
+        data: showTransparentOutflow ? filteredData.map(d => d.transparentOutflow) : [],
         itemStyle: {
           color: 'transparent',
           borderColor: '#666666',
           borderWidth: 2,
           borderType: 'solid'
-        }
+        },
       }
-    ].filter(Boolean),
+    ],
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow'
       }
     }
-  }
+  }), [filteredData, showShieldedInflow, showShieldedOutflow, showTransparentInflow, showTransparentOutflow])
 
   return (
     <div className="w-full h-[440px] bg-[#191919] rounded-lg p-4">

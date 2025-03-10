@@ -1,5 +1,5 @@
 import apiClient from './apiClient'
-import { TokenDisplayRow, TokensResponse, NativeToken, IbcToken, AccountResponse, AggregatesResponse, CgPriceResponse } from '../types/token'
+import { Token, TokenDisplayRow, TokensResponse, AccountResponse, AggregatesResponse, CgPriceResponse } from '../types/token'
 import { AbciQueryResponse } from '../types/abci'
 import { decode_amount, decode_epoch, decode_reward_tokens } from 'masp_dashboard_wasm'
 import { MaspInfo, RewardToken } from '../types/masp'
@@ -127,141 +127,141 @@ interface TokenData {
   }
 }
 
-async function fetchTokenData(
-  token: NativeToken | IbcToken,
-  rewardTokens: RewardToken[],
-  registeredAssets: RegistryAsset[],
-  maspBalances: AccountResponse,
-  maspAggregates: AggregatesResponse
-): Promise<TokenDisplayRow | null> {
-  try {
-    const matchingRewardToken = rewardTokens.find(rewardToken => rewardToken.address === token.address)
-    const matchingRegistryAsset = registeredAssets.find(asset => asset.address === token.address)
+// async function fetchTokenData(
+//   token: Token,
+//   rewardTokens: RewardToken[],
+//   registeredAssets: RegistryAsset[],
+//   maspBalances: AccountResponse,
+//   maspAggregates: AggregatesResponse
+// ): Promise<TokenDisplayRow | null> {
+//   try {
+//     const matchingRewardToken = rewardTokens.find(rewardToken => rewardToken.address === token.address)
+//     const matchingRegistryAsset = registeredAssets.find(asset => asset.address === token.address)
 
-    if (!matchingRegistryAsset) {
-      return null
-    }
+//     if (!matchingRegistryAsset) {
+//       return null
+//     }
 
-    let maspAmount = 0
-    if ('trace' in token) {
-      const inflows = maspAggregates.find(
-        item =>
-          item.kind === "inflows" &&
-          item.timeWindow === "allTime" &&
-          item.tokenAddress === token.address
-      )?.totalAmount
-      const outflows = maspAggregates.find(
-        item =>
-          item.kind === "outflows" &&
-          item.timeWindow === "allTime" &&
-          item.tokenAddress === token.address
-      )?.totalAmount
-      maspAmount = (parseInt(inflows ?? "0") - parseInt(outflows ?? "0"))
-    } else {
-      const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
-      maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
-    }
+//     let maspAmount = 0
+//     if (token.type === 'ibc') {
+//       const inflows = maspAggregates.find(
+//         item =>
+//           item.kind === "inflows" &&
+//           item.timeWindow === "allTime" &&
+//           item.tokenAddress === token.address
+//       )?.totalAmount
+//       const outflows = maspAggregates.find(
+//         item =>
+//           item.kind === "outflows" &&
+//           item.timeWindow === "allTime" &&
+//           item.tokenAddress === token.address
+//       )?.totalAmount
+//       maspAmount = (parseInt(inflows ?? "0") - parseInt(outflows ?? "0"))
+//     } else {
+//       const balance = maspBalances.find(balance => balance.tokenAddress === token.address)
+//       maspAmount = balance ? parseInt(balance.minDenomAmount) : 0
+//     }
 
-    const exponent = matchingRegistryAsset.denom_units?.find(
-      unit => unit.denom === matchingRegistryAsset.display
-    )?.exponent ?? 6
-    const divisor = 10 ** exponent
+//     const exponent = matchingRegistryAsset.denom_units?.find(
+//       unit => unit.denom === matchingRegistryAsset.display
+//     )?.exponent ?? 6
+//     const divisor = 10 ** exponent
 
-    const [
-      depositAmtQuery,
-      withdrawAmtQuery,
-      totalAmtQuery,
-      lastInflationQuery,
-      lastLockedQuery,
-      usdPriceResult
-    ] = await Promise.all([
-      fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/deposit/${token.address}`),
-      fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/withdraw/${token.address}`),
-      fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/balance/minted`),
-      matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_inflation`) : Promise.resolve(null),
-      matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_locked_amount`) : Promise.resolve(null),
-      matchingRegistryAsset.coingecko_id ? fetchCgPrice(matchingRegistryAsset.coingecko_id) : Promise.resolve(null)
-    ])
+//     const [
+//       depositAmtQuery,
+//       withdrawAmtQuery,
+//       totalAmtQuery,
+//       lastInflationQuery,
+//       lastLockedQuery,
+//       usdPriceResult
+//     ] = await Promise.all([
+//       fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/deposit/${token.address}`),
+//       fetchAbciQuery(`/shell/value/#tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4/withdraw/${token.address}`),
+//       fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/balance/minted`),
+//       matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_inflation`) : Promise.resolve(null),
+//       matchingRewardToken ? fetchAbciQuery(`/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${token.address}/parameters/last_locked_amount`) : Promise.resolve(null),
+//       matchingRegistryAsset.coingecko_id ? fetchCgPrice(matchingRegistryAsset.coingecko_id) : Promise.resolve(null)
+//     ])
 
-    const depositAmt = decodeBorshAmt(depositAmtQuery)
-    const withdrawAmt = decodeBorshAmt(withdrawAmtQuery)
-    const totalAmt = decodeBorshAmt(totalAmtQuery)
-    const usdPrice = 4 // Temporary hardcoded value
-    const maspMarketCap = usdPrice ? (maspAmount / divisor * usdPrice) : null
+//     const depositAmt = decodeBorshAmt(depositAmtQuery)
+//     const withdrawAmt = decodeBorshAmt(withdrawAmtQuery)
+//     const totalAmt = decodeBorshAmt(totalAmtQuery)
+//     const usdPrice = 4 // Temporary hardcoded value
+//     const maspMarketCap = usdPrice ? (maspAmount / divisor * usdPrice) : null
 
-    const baseData = {
-      ssrEligible: matchingRewardToken?.max_reward_rate !== undefined && matchingRewardToken.max_reward_rate > 0,
-      logo: matchingRegistryAsset.logo_URIs?.svg ?? "",
-      name: matchingRegistryAsset.symbol ?? "",
-      address: token.address,
-      trace: 'trace' in token ? token.trace : "Native",
-      exponent,
-      volume: (depositAmt - withdrawAmt) / divisor,
-      totalAmount: totalAmt / divisor,
-      maspAmount: maspAmount / divisor,
-      usdPrice,
-      maspMarketCap,
-      aggregates: maspAggregates.filter(item => item.tokenAddress === token.address)
-    }
+//     const baseData = {
+//       ssrEligible: matchingRewardToken?.max_reward_rate !== undefined && matchingRewardToken.max_reward_rate > 0,
+//       logo: matchingRegistryAsset.logo_URIs?.svg ?? "",
+//       name: matchingRegistryAsset.symbol ?? "",
+//       address: token.address,
+//       trace: 'trace' in token ? token.trace : "Native",
+//       exponent,
+//       volume: (depositAmt - withdrawAmt) / divisor,
+//       totalAmount: totalAmt / divisor,
+//       maspAmount: maspAmount / divisor,
+//       usdPrice,
+//       maspMarketCap,
+//       aggregates: maspAggregates.filter(item => item.tokenAddress === token.address)
+//     }
 
-    const tokenDisplayRow: TokenDisplayRow = {
-      symbol: matchingRegistryAsset.symbol ?? "",
-      address: token.address,
-      name: matchingRegistryAsset.symbol ?? "",
-      logoUrl: matchingRegistryAsset.logo_URIs?.svg,
-      decimals: exponent,
-      totalShielded: (maspAmount / divisor).toString(),
-      currentShielded: (maspAmount / divisor).toString(),
-      rewardsParam: "0",
-      usdPrice,
-      percentageChanges: {
-        '24h': 0,
-        '7d': 0,
-        '30d': 0
-      }
-    }
+//     const tokenDisplayRow: TokenDisplayRow = {
+//       symbol: matchingRegistryAsset.symbol ?? "",
+//       address: token.address,
+//       name: matchingRegistryAsset.symbol ?? "",
+//       logoUrl: matchingRegistryAsset.logo_URIs?.svg,
+//       decimals: exponent,
+//       totalShielded: (maspAmount / divisor).toString(),
+//       currentShielded: (maspAmount / divisor).toString(),
+//       rewardsParam: "0",
+//       usdPrice,
+//       percentageChanges: {
+//         '24h': 0,
+//         '7d': 0,
+//         '30d': 0
+//       }
+//     }
 
-    if (baseData.ssrEligible && matchingRewardToken) {
-      const lastInflation = decodeBorshAmt(lastInflationQuery)
-      const lastLocked = decodeBorshAmt(lastLockedQuery)
-      const estRateCur = maspAmount !== 0 ? lastInflation / maspAmount : matchingRewardToken.max_reward_rate
-      tokenDisplayRow.rewardsParam = estRateCur.toString()
-    }
+//     if (baseData.ssrEligible && matchingRewardToken) {
+//       const lastInflation = decodeBorshAmt(lastInflationQuery)
+//       const lastLocked = decodeBorshAmt(lastLockedQuery)
+//       const estRateCur = maspAmount !== 0 ? lastInflation / maspAmount : matchingRewardToken.max_reward_rate
+//       tokenDisplayRow.rewardsParam = estRateCur.toString()
+//     }
 
-    return tokenDisplayRow
-  } catch (error) {
-    console.error('Error fetching token data:', error instanceof Error ? error.message : 'Unknown error')
-    return null
-  }
-}
+//     return tokenDisplayRow
+//   } catch (error) {
+//     console.error('Error fetching token data:', error instanceof Error ? error.message : 'Unknown error')
+//     return null
+//   }
+// }
 
-export async function fetchTokens(
-  rewardTokens: RewardToken[],
-  registeredAssets: RegistryAsset[]
-): Promise<TokenDisplayRow[]> {
-  try {
-    const [tokenList, maspBalances, maspAggregates] = await Promise.all([
-      fetchTokenList(),
-      fetchMaspBalances(),
-      fetchMaspAggregates(),
-    ])
+// export async function fetchTokens(
+//   rewardTokens: RewardToken[],
+//   registeredAssets: RegistryAsset[]
+// ): Promise<TokenDisplayRow[]> {
+//   try {
+//     const [tokenList, maspBalances, maspAggregates] = await Promise.all([
+//       fetchTokenList(),
+//       fetchMaspBalances(),
+//       fetchMaspAggregates(),
+//     ])
 
-    const filteredTokenList = tokenList.filter((token: NativeToken | IbcToken) => 
-      registeredAssets.find(asset => token.address === asset.address)
-    )
+//     const filteredTokenList = tokenList.filter((token: Token) => 
+//       registeredAssets.find(asset => token.address === asset.address)
+//     )
 
-    const tokenDataResults = await Promise.all(
-      filteredTokenList.map(token => 
-        fetchTokenData(token, rewardTokens, registeredAssets, maspBalances, maspAggregates)
-      )
-    )
+//     const tokenDataResults = await Promise.all(
+//       filteredTokenList.map(token => 
+//         fetchTokenData(token, rewardTokens, registeredAssets, maspBalances, maspAggregates)
+//       )
+//     )
 
-    return tokenDataResults.filter((result): result is TokenDisplayRow => result !== null)
-  } catch (error) {
-    console.error('Error fetching tokens:', error instanceof Error ? error.message : 'Unknown error')
-    return []
-  }
-}
+//     return tokenDataResults.filter((result): result is TokenDisplayRow => result !== null)
+//   } catch (error) {
+//     console.error('Error fetching tokens:', error instanceof Error ? error.message : 'Unknown error')
+//     return []
+//   }
+// }
 
 export async function fetchMaspInfo(): Promise<MaspInfo | null> {
   try {

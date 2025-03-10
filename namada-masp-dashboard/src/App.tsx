@@ -14,8 +14,10 @@ import { fetchMaspInfo } from './api/tokens'
 import { IbcChannel } from './components/ibcChannels/IbcChannelCard'
 import { QueryClient, QueryClientProvider, DefaultOptions } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import TokenTable from './components/TokenTable'
 import { AxiosError } from 'axios'
+import { useMetricsData } from './hooks/useMetricsData'
+import { useChainInfo } from './hooks/useChainInfo'
+import { denomAmount, formatNumber, formatMagnitude, formatPercentage } from './utils/numbers'
 
 // Create a client
 const defaultOptions: DefaultOptions = {
@@ -47,19 +49,20 @@ function App() {
   const defaultTheme = savedTheme ? savedTheme : 'dark';
   const [darkMode, setDarkMode] = useState(defaultTheme === 'dark');
 
-  // Fetch registry data
-  const { data: registryData, isLoading: isLoadingRegistry, error: registryError } = useQuery({
-    queryKey: ['registryData'],
-    queryFn: () => fetchChainMetadata("namada", true)
-  });
+  const { registryData, tokens, assets, isLoading, error } = useMetricsData()
+  const { metrics: chainMetrics, isLoading: isLoadingChain } = useChainInfo()
 
-  // Fetch MASP info
-  // const { data: maspInfo, isLoading: isLoadingMasp, error: maspError } = useQuery({
-  //   queryKey: ['maspInfo'],
-  //   queryFn: fetchMaspInfo,
-  //   refetchInterval: 30000,
-  //   staleTime: 300000,
-  // });
+  // Calculate staked percentage safely
+  const calculateStakedPercentage = () => {
+    const totalStaked = parseFloat(chainMetrics.totalStaked) // already denominated in NAM
+    const totalSupply = denomAmount(chainMetrics.totalSupply)
+    
+    if (!totalSupply || isNaN(totalStaked) || totalSupply === 0) {
+      return null
+    }
+    
+    return (totalStaked / totalSupply) * 100
+  }
 
   // Transform ibcMetadata into IbcChannel format
   const channels: IbcChannel[] = registryData?.ibcMetadata?.map((conn, index) => {
@@ -126,30 +129,79 @@ function App() {
   }, [])
 
   const infoCards = [
-    { topText: "Total Shielded Assets", topTextColor: "text-[#3A3A3A]", bottomText: "$1,004,092,196.26", bottomTextColor: "text-black", bgColor: "bg-[#FFFF00]", size: 'large' as const },
-    { topText: "Total NAM rewards minted", topTextColor: "text-[#3A3A3A]", bottomText: "$1,004,092,196.26", bottomTextColor: "text-black", bgColor: "bg-[#FFFF00]", size: 'large' as const },
-    { topText: "NAM rewards minted per EPOCH", topTextColor: "text-[#3A3A3A]", bottomText: "$1,004,092,196.26", bottomTextColor: "text-black", bgColor: "bg-[#FFFF00]", size: 'large' as const },
-    { topText: "Block Time", topTextColor: "text-black dark:text-white", bottomText: "6.91 sec", bottomTextColor: "text-black dark:text-[#FFFF00]", bgColor: "bg-[#F5F5F5] dark:bg-[#191919]", size: 'small' as const },
-    { topText: "Block Height", topTextColor: "text-black dark:text-white", bottomText: "536,341", bottomTextColor: "text-black dark:text-[#FFFF00]", bgColor: "bg-[#F5F5F5] dark:bg-[#191919]", size: 'small' as const },
-    { topText: "POS Inflation", topTextColor: "text-black dark:text-white", bottomText: "5.00%", bottomTextColor: "text-black dark:text-[#FFFF00]", bgColor: "bg-[#F5F5F5] dark:bg-[#191919]", size: 'small' as const },
-    { topText: "Staking APR", topTextColor: "text-black dark:text-white", bottomText: "12.40%", bottomTextColor: "text-black dark:text-[#FFFF00]", bgColor: "bg-[#F5F5F5] dark:bg-[#191919]", size: 'small' as const },
-    { topText: "Total native supply", topTextColor: "text-black dark:text-white", bottomText: "1,004,092,196.26 NAM (1.00B)", bottomTextColor: "text-black dark:text-[#FFFF00]", bgColor: "bg-[#F5F5F5] dark:bg-[#191919]", size: 'small' as const },
-    { topText: "Total staked", topTextColor: "text-black dark:text-white", bottomText: "404,775,222.6639 (40.31%)", bottomTextColor: "text-black dark:text-[#FFFF00]", bgColor: "bg-[#F5F5F5] dark:bg-[#191919]", size: 'small' as const },
+    { 
+      topText: "Total Shielded Assets", 
+      bottomText: `$${formatNumber(denomAmount(chainMetrics.totalShieldedAssets))}`, 
+      size: 'large' as const,
+      variant: 'primary' as const
+    },
+    { 
+      topText: "Total NAM rewards minted", 
+      bottomText: `${formatNumber(denomAmount(chainMetrics.totalRewardsMinted))} NAM`, 
+      size: 'large' as const,
+      variant: 'primary' as const
+    },
+    { 
+      topText: "NAM rewards minted per EPOCH", 
+      bottomText: `$${formatNumber(denomAmount(chainMetrics.rewardsPerEpoch))}`, 
+      size: 'large' as const,
+      variant: 'primary' as const
+    },
+    { 
+      topText: "Block Time", 
+      bottomText: chainMetrics.blockTime ? `${formatNumber(chainMetrics.blockTime, 2)} sec` : '--', 
+      size: 'small' as const,
+      variant: 'secondary' as const
+    },
+    { 
+      topText: "Block Height", 
+      bottomText: chainMetrics.blockHeight !== null ? formatNumber(chainMetrics.blockHeight, 0) : '--', 
+      size: 'small' as const,
+      variant: 'secondary' as const
+    },
+    { 
+      topText: "Epoch", 
+      bottomText: `${chainMetrics.epoch}`, 
+      size: 'small' as const,
+      variant: 'secondary' as const
+    },
+    { 
+      topText: "Staking APR", 
+      bottomText: chainMetrics.stakingApr !== null ? `${formatNumber(chainMetrics.stakingApr * 100)}%` : '--', 
+      size: 'small' as const,
+      variant: 'secondary' as const
+    },
+    { 
+      topText: "Total native supply", 
+      bottomText: chainMetrics.totalSupply && chainMetrics.totalSupply !== "0" 
+        ? `${formatNumber(denomAmount(chainMetrics.totalSupply))} NAM ${formatMagnitude(denomAmount(chainMetrics.totalSupply))}` 
+        : '--', 
+      size: 'small' as const,
+      variant: 'secondary' as const
+    },
+    { 
+      topText: "Total staked", 
+      bottomText: chainMetrics.totalStaked === "0" 
+        ? '--' 
+        : `${formatNumber(chainMetrics.totalStaked)} (${formatPercentage(calculateStakedPercentage())})`, 
+      size: 'small' as const,
+      variant: 'secondary' as const
+    },
   ]
 
   // Early return for loading state
-  if (isLoadingRegistry) {
+  if (isLoading || isLoadingChain) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
           <header className="flex justify-between items-center">
             <Header />
-            <button
+            {/* <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
             >
               {darkMode ? '☀️' : '🌙'}
-            </button>
+            </button> */}
           </header>
           <main className="flex-1">
             <div className="animate-pulse space-y-4">
@@ -164,23 +216,23 @@ function App() {
   }
 
   // Early return for error state
-  if (registryError) {
+  if (error) {
     return (
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
           <header className="flex justify-between items-center">
             <Header />
-            <button
+            {/* <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
             >
               {darkMode ? '☀️' : '🌙'}
-            </button>
+            </button> */}
           </header>
           <main className="flex-1">
             <div className="rounded-lg bg-red-500/10 border border-red-500 p-4 text-red-500">
               <h2 className="text-lg font-semibold mb-2">Error Loading Data</h2>
-              <p>{registryError instanceof Error ? registryError.message : 'Failed to load registry data'}</p>
+              <p>{error instanceof Error ? error.message : 'Failed to load registry data'}</p>
               <button 
                 onClick={() => queryClient.invalidateQueries({ queryKey: ['registryData'] })}
                 className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
@@ -199,18 +251,21 @@ function App() {
       <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
         <header className="flex justify-between items-center">
           <Header />
-          <button
+          {/* <button
             onClick={() => setDarkMode(!darkMode)}
             className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
           >
             {darkMode ? '☀️' : '🌙'}
-          </button>
+          </button> */}
         </header>
 
         <main className="flex-1">
           <InfoGrid cards={infoCards} />
           <ChartContainer />
-          <TokenTable chainData={registryData} />
+          <AssetTableContainer 
+            tokens={tokens}
+            isLoading={isLoading}
+          />
           <IbcChannelsContainer channels={channels} />
         </main>
       </div>

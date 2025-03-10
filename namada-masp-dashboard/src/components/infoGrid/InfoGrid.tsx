@@ -1,12 +1,11 @@
-import InfoCard, { InfoCardProps } from "./InfoCard"
+import InfoCardPrimary from "./InfoCardPrimary"
+import InfoCardSecondary from "./InfoCardSecondary"
 
 interface InfoCard {
     topText: string
-    topTextColor: string
     bottomText: string
-    bottomTextColor: string
-    bgColor: string
     size: 'small' | 'large'
+    variant: 'primary' | 'secondary'
 }
 
 interface InfoGridProps {
@@ -47,10 +46,19 @@ function InfoGrid({ cards, isLoading = false, error = null }: InfoGridProps) {
         <div className="grid grid-cols-3 gap-4 mt-4 px-4">
             {cards.map((card, index) => (
                 <div key={index} className={`col-span-1 ${card.size === 'large' ? 'row-span-2' : ''}`}>
-                    <div className={`${card.bgColor} rounded-lg p-4 h-full`}>
-                        <div className={`${card.topTextColor} text-sm mb-2`}>{card.topText}</div>
-                        <div className={`${card.bottomTextColor} text-2xl font-medium`}>{card.bottomText}</div>
-                    </div>
+                    {card.variant === 'primary' ? (
+                        <InfoCardPrimary
+                            topText={card.topText}
+                            bottomText={card.bottomText}
+                            size={card.size}
+                        />
+                    ) : (
+                        <InfoCardSecondary
+                            topText={card.topText}
+                            bottomText={card.bottomText}
+                            size={card.size}
+                        />
+                    )}
                 </div>
             ))}
         </div>

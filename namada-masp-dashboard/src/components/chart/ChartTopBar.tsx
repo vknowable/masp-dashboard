@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction } from 'react'
+import { RegistryAsset } from '../../types/chainRegistry'
 
 interface ChartTopBarProps {
   selectedAsset: string
@@ -13,6 +14,7 @@ interface ChartTopBarProps {
   onTransparentInflowToggle: Dispatch<SetStateAction<boolean>>
   showTransparentOutflow: boolean
   onTransparentOutflowToggle: Dispatch<SetStateAction<boolean>>
+  assets?: RegistryAsset[]
 }
 
 export default function ChartTopBar({
@@ -27,7 +29,8 @@ export default function ChartTopBar({
   showTransparentInflow,
   onTransparentInflowToggle,
   showTransparentOutflow,
-  onTransparentOutflowToggle
+  onTransparentOutflowToggle,
+  assets = []
 }: ChartTopBarProps) {
   return (
     <div className="min-w-full min-h-[36px] flex justify-between items-center mb-4">
@@ -39,10 +42,11 @@ export default function ChartTopBar({
           className="bg-[#2A2A2A] text-white px-4 py-1 rounded-md border border-gray-700 focus:outline-none focus:border-yellow-400"
         >
           <option value="All">All</option>
-          <option value="ATOM">ATOM</option>
-          <option value="OSMO">OSMO</option>
-          <option value="TIA">TIA</option>
-          <option value="INJ">INJ</option>
+          {assets.map(asset => (
+            <option key={asset.symbol} value={asset.symbol}>
+              {asset.symbol}
+            </option>
+          ))}
         </select>
 
         {/* Time Select */}
