@@ -1,5 +1,4 @@
 // import './App.css'
-// import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 // import init, { Query } from "masp_dashboard_wasm"
 import { useState, useEffect } from "react"
@@ -8,14 +7,9 @@ import InfoGrid from './components/infoGrid/InfoGrid'
 import ChartContainer from './components/chart/ChartContainer'
 import AssetTableContainer from './components/assetTable/AssetTableContainer'
 import IbcChannelsContainer from './components/ibcChannels/IbcChannelsContainer'
-import { useQuery } from '@tanstack/react-query'
-import { fetchChainMetadata } from './api/chainRegistry'
-import { fetchMaspInfo } from './api/tokens'
-import { IbcChannel } from './components/ibcChannels/IbcChannelCard'
 import { QueryClient, QueryClientProvider, DefaultOptions } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { AxiosError } from 'axios'
-import { useMetricsData } from './hooks/useMetricsData'
 import { useChainInfo } from './hooks/useChainInfo'
 import { denomAmount, formatNumber, formatMagnitude, formatPercentage } from './utils/numbers'
 
@@ -49,7 +43,7 @@ function App() {
   const defaultTheme = savedTheme ? savedTheme : 'dark';
   const [darkMode, setDarkMode] = useState(defaultTheme === 'dark');
 
-  const { registryData, tokens, assets, isLoading, error } = useMetricsData()
+  // TODO: refactor useChainInfo
   const { metrics: chainMetrics, isLoading: isLoadingChain } = useChainInfo()
 
   // Calculate staked percentage safely
@@ -63,52 +57,6 @@ function App() {
     
     return (totalStaked / totalSupply) * 100
   }
-
-  // Transform ibcMetadata into IbcChannel format
-  const channels: IbcChannel[] = registryData?.ibcMetadata?.map((conn, index) => {
-    // Helper function to get chain details from registry data
-    const getChainDetails = (chainName: string) => {
-      if (registryData.chain.chain_name === chainName) {
-        return {
-          chainId: registryData.chain.chain_id,
-          prettyName: registryData.chain.pretty_name,
-          logoUri: "https://raw.githubusercontent.com/anoma/namada-chain-registry/main/namada/images/namada.svg"
-        };
-      }
-      const counterparty = registryData.counterParties.find(cp => cp.chain.chain_name === chainName);
-      return {
-        chainId: counterparty?.chain.chain_id || 'unknown',
-        prettyName: counterparty?.chain.pretty_name || chainName,
-        logoUri: counterparty?.chain.logo_URIs?.svg || "https://raw.githubusercontent.com/anoma/namada-chain-registry/main/namada/images/namada.svg"
-      };
-    };
-
-    const chain1Details = getChainDetails(conn.chain_1.chain_name);
-    const chain2Details = getChainDetails(conn.chain_2.chain_name);
-
-    return {
-      id: index.toString(),
-      status: 'active',
-      chainA: {
-        name: chain1Details.prettyName,
-        chainId: chain1Details.chainId,
-        connectionId: conn.chain_1.connection_id,
-        clientId: conn.chain_1.client_id,
-        portId: conn.channels[0]?.chain_1.port_id || 'transfer',
-        channelId: conn.channels[0]?.chain_1.channel_id || '',
-        logoUri: chain1Details.logoUri
-      },
-      chainB: {
-        name: chain2Details.prettyName,
-        chainId: chain2Details.chainId,
-        connectionId: conn.chain_2.connection_id,
-        clientId: conn.chain_2.client_id,
-        portId: conn.channels[0]?.chain_2.port_id || 'transfer',
-        channelId: conn.channels[0]?.chain_2.channel_id || '',
-        logoUri: chain2Details.logoUri
-      }
-    };
-  }) || [];
 
   // Update the theme
   useEffect(() => {
@@ -128,6 +76,7 @@ function App() {
     })()
   }, [])
 
+  // TODO: refactor infoGrid
   const infoCards = [
     { 
       topText: "Total Shielded Assets", 
@@ -189,62 +138,63 @@ function App() {
     },
   ]
 
-  // Early return for loading state
-  if (isLoading || isLoadingChain) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
-          <header className="flex justify-between items-center">
-            <Header />
-            {/* <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button> */}
-          </header>
-          <main className="flex-1">
-            <div className="animate-pulse space-y-4">
-              <div className="h-48 bg-gray-700/20 rounded" />
-              <div className="h-96 bg-gray-700/20 rounded" />
-              <div className="h-96 bg-gray-700/20 rounded" />
-            </div>
-          </main>
-        </div>
-      </QueryClientProvider>
-    );
-  }
+  // TODO: where to handle loading/erros states?
+  // // Early return for loading state
+  // if (isLoading || isLoadingChain) {
+  //   return (
+  //     <QueryClientProvider client={queryClient}>
+  //       <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
+  //         <header className="flex justify-between items-center">
+  //           <Header />
+  //           {/* <button
+  //             onClick={() => setDarkMode(!darkMode)}
+  //             className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+  //           >
+  //             {darkMode ? '☀️' : '🌙'}
+  //           </button> */}
+  //         </header>
+  //         <main className="flex-1">
+  //           <div className="animate-pulse space-y-4">
+  //             <div className="h-48 bg-gray-700/20 rounded" />
+  //             <div className="h-96 bg-gray-700/20 rounded" />
+  //             <div className="h-96 bg-gray-700/20 rounded" />
+  //           </div>
+  //         </main>
+  //       </div>
+  //     </QueryClientProvider>
+  //   );
+  // }
 
-  // Early return for error state
-  if (error) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
-          <header className="flex justify-between items-center">
-            <Header />
-            {/* <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button> */}
-          </header>
-          <main className="flex-1">
-            <div className="rounded-lg bg-red-500/10 border border-red-500 p-4 text-red-500">
-              <h2 className="text-lg font-semibold mb-2">Error Loading Data</h2>
-              <p>{error instanceof Error ? error.message : 'Failed to load registry data'}</p>
-              <button 
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['registryData'] })}
-                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          </main>
-        </div>
-      </QueryClientProvider>
-    );
-  }
+  // // Early return for error state
+  // if (error) {
+  //   return (
+  //     <QueryClientProvider client={queryClient}>
+  //       <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
+  //         <header className="flex justify-between items-center">
+  //           <Header />
+  //           {/* <button
+  //             onClick={() => setDarkMode(!darkMode)}
+  //             className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+  //           >
+  //             {darkMode ? '☀️' : '🌙'}
+  //           </button> */}
+  //         </header>
+  //         <main className="flex-1">
+  //           <div className="rounded-lg bg-red-500/10 border border-red-500 p-4 text-red-500">
+  //             <h2 className="text-lg font-semibold mb-2">Error Loading Data</h2>
+  //             <p>{error instanceof Error ? error.message : 'Failed to load registry data'}</p>
+  //             <button 
+  //               onClick={() => queryClient.invalidateQueries({ queryKey: ['registryData'] })}
+  //               className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+  //             >
+  //               Retry
+  //             </button>
+  //           </div>
+  //         </main>
+  //       </div>
+  //     </QueryClientProvider>
+  //   );
+  // }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -260,13 +210,13 @@ function App() {
         </header>
 
         <main className="flex-1">
+          <div className="rounded-lg bg-yellow-500/10 border border-yellow-500 p-4 text-yellow-500 mb-12">
+            <p className="font-semibold text-xl text-center py-8">WIP: Data on this page likely to be inaccurate</p>
+          </div>
           <InfoGrid cards={infoCards} />
           <ChartContainer />
-          <AssetTableContainer 
-            tokens={tokens}
-            isLoading={isLoading}
-          />
-          <IbcChannelsContainer channels={channels} />
+          <AssetTableContainer />
+          <IbcChannelsContainer />
         </main>
       </div>
       <ReactQueryDevtools initialIsOpen={false} />

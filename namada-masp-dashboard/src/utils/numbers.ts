@@ -92,6 +92,12 @@ export const getNetChangeColor = (value: number | string | null) => {
   return "text-gray-400"
 }
 
+/**
+ * Format a net change value with magnitude indicators (B, M, k)
+ * @param value The net change value
+ * @param decimals The number of decimal places to display
+ * @returns Formatted net change string (e.g., "+1.23 B")
+ */
 export function formatNetChange(value: string | null, decimals: number = 6): string {
   if (value === null || value === "--") return "--"
   

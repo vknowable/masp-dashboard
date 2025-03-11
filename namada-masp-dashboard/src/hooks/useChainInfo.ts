@@ -1,20 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { useRegistryData } from './useRegistryData'
-import { fetchChainParameters, fetchTokenSupply, fetchLatestBlock, fetchBlockchainInfo, fetchVotingPower, fetchLatestEpoch } from '../api/chain'
-import apiClient from '../api/apiClient'
+import { fetchChainParameters, fetchTokenSupply, fetchLatestBlock, fetchBlockchainInfo, fetchVotingPower, fetchLatestEpoch, fetchTotalRewardsMinted } from '../api/chain'
 import { AbciQueryResponse } from '../types/abci'
-import { decode_amount } from 'masp_dashboard_wasm'
 import { parseNumeric } from '../utils/numbers'
-const rpcUrl = import.meta.env.VITE_RPC_URL
-
-interface BlockHeight {
-  block: string
-}
+import { decodeBorshAmt } from '../utils/borsh'
+import { BlockHeight } from '../api/chain'
 
 export interface ChainMetrics {
   blockTime: number | null
   blockHeight: number | null
-  posInflation: number | null
   stakingApr: number | null
   totalSupply: string
   totalStaked: string
@@ -24,34 +17,19 @@ export interface ChainMetrics {
   epoch: number | null
 }
 
-// Helper function to decode Borsh-encoded amounts
-function decodeBorshAmt(response: AbciQueryResponse | null): number {
-  const base64 = response?.result?.response?.value
-  if (!base64) {
-    return 0
-  }
-
-  try {
-    return decode_amount(base64)
-  } catch (error) {
-    console.error("Error decoding abci borsh amount:", error instanceof Error ? error.message : 'Unknown error')
-    return 0
-  }
-}
-
 // Calculate average time between blocks in seconds
 function calculateAverageBlockTime(blocks: { header: { time: string } }[]): number | null {
   if (blocks.length < 2) return null
 
   // Sort blocks by timestamp to ensure correct order
-  const sortedBlocks = [...blocks].sort((a, b) => 
+  const sortedBlocks = [...blocks].sort((a, b) =>
     new Date(a.header.time).getTime() - new Date(b.header.time).getTime()
   )
 
   let totalDiff = 0
   for (let i = 1; i < sortedBlocks.length; i++) {
     const curr = new Date(sortedBlocks[i].header.time).getTime()
-    const prev = new Date(sortedBlocks[i-1].header.time).getTime()
+    const prev = new Date(sortedBlocks[i - 1].header.time).getTime()
     totalDiff += curr - prev
   }
 
@@ -60,7 +38,8 @@ function calculateAverageBlockTime(blocks: { header: { time: string } }[]): numb
 }
 
 export function useChainInfo() {
-  const { chain, isLoading: isLoadingRegistry } = useRegistryData()
+  // TODO: not sure if will be needed in the future
+  // const { chain, isLoading: isLoadingRegistry } = useRegistryData()
 
   // Get chain parameters (includes APR and native token address)
   const {
@@ -132,12 +111,7 @@ export function useChainInfo() {
     isLoading: isLoadingRewards
   } = useQuery<AbciQueryResponse>({
     queryKey: ['totalRewardsMinted'],
-    queryFn: async () => {
-      const { data } = await apiClient.get(
-        `${rpcUrl}/abci_query?path="/shell/value/%23tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah/max_total_rewards"`
-      )
-      return data
-    },
+    queryFn: fetchTotalRewardsMinted,
     staleTime: 60000, // Consider fresh for 1 minute
   })
 
@@ -152,7 +126,7 @@ export function useChainInfo() {
   })
 
   // Calculate block time from the last 5 blocks
-  const blockTime = blockchainInfo?.result.block_metas 
+  const blockTime = blockchainInfo?.result.block_metas
     ? calculateAverageBlockTime(blockchainInfo.result.block_metas)
     : null
 
@@ -172,7 +146,7 @@ export function useChainInfo() {
       rewardsPerEpoch: "", // We'll need another endpoint for this
       epoch: epochInfo ? epochInfo.epoch : null
     },
-    isLoading: isLoadingRegistry || isLoadingParams || isLoadingSupply || isLoadingBlock || isLoadingBlockchain || isLoadingRewards || isLoadingVotingPower || isLoadingEpoch,
+    isLoading: isLoadingParams || isLoadingSupply || isLoadingBlock || isLoadingBlockchain || isLoadingRewards || isLoadingVotingPower || isLoadingEpoch,
     error: paramsError // You might want to handle other errors as well
   }
 } 

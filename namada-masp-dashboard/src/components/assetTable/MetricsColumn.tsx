@@ -1,26 +1,22 @@
-import { TokenDisplayRow } from '../../types/token'
+import { useRegistryData } from '../../hooks/useRegistryData'
+import { useTokenPrices } from '../../hooks/useTokenPrices'
+import { useTokenSupplies } from '../../hooks/useTokenSupplies'
+import { ViewMode } from './AssetTableContainer'
 import MetricsRow from './MetricsRow'
 import ViewToggle from './ViewToggle'
-
-type ViewMode = 'shielded' | 'transparent'
 
 interface MetricsColumnProps {
     viewMode: ViewMode
     onViewChange: (view: ViewMode) => void
-    tokens: TokenDisplayRow[]
-    metrics?: Record<string, {
-        symbol: string
-        totalShielded: string
-        currentShielded: string
-        totalTransparent: string
-        currentTransparent: string
-        rewardsParam?: string
-    }>
-    isLoading?: boolean
 }
 
-function MetricsColumn({ viewMode, onViewChange, tokens = [], metrics = {}, isLoading = false }: MetricsColumnProps) {
-    if (isLoading) {
+function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
+    const { assets, isLoading: isLoadingRegistry } = useRegistryData()
+    const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
+    const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies()
+    // const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances()
+    
+    if (isLoadingRegistry || !assets) {
         return (
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
@@ -42,13 +38,13 @@ function MetricsColumn({ viewMode, onViewChange, tokens = [], metrics = {}, isLo
                     <div className="flex text-xs text-gray-400 w-full">
                         {viewMode === 'shielded' ? (
                             <>
-                                <div className="flex-1">Total Value Shielded</div>
+                                {/* <div className="flex-1">Total Value Shielded</div> */}
                                 <div className="flex-1">Current Value Shielded</div>
                                 <div className="w-[150px]">Rewards Param</div>
                             </>
                         ) : (
                             <>
-                                <div className="flex-1">Total Value Transparent</div>
+                                {/* <div className="flex-1">Total Value Transparent</div> */}
                                 <div className="flex-1">Current Value Transparent</div>
                             </>
                         )}
@@ -56,11 +52,14 @@ function MetricsColumn({ viewMode, onViewChange, tokens = [], metrics = {}, isLo
                 </div>
             </div>
             <div className="divide-y divide-gray-800">
-                {tokens.map((token) => (
+                {assets.map((token) => (
                     <MetricsRow
                         key={token.address}
-                        metrics={metrics[token.address]}
                         viewMode={viewMode}
+                        token={token}
+                        tokenPrice={tokenPrices?.price.find(entry => entry.id === token.coingecko_id)?.usd ?? null}
+                        tokenSupplies={tokenSupplies?.supplies.find(entry => entry.address === token.address) ?? null}
+                        isLoading={isLoadingSupplies}
                     />
                 ))}
             </div>

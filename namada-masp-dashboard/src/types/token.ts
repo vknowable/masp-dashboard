@@ -1,38 +1,29 @@
-// Base token interface that can be extended
-interface BaseToken {
+// Base token types
+export type NativeToken = {
   address: string
-}
-
-// Extend base token for specific token types
-interface NativeToken extends BaseToken {
   type: 'native'
 }
 
-interface IbcToken extends BaseToken {
+export type IbcToken = {
+  address: string
   type: 'ibc'
   trace: string
 }
 
-// Use type for union of possible tokens
 export type Token = NativeToken | IbcToken
 
-// Use type for response arrays and unions
+// API Response types
 export type TokensResponse = Token[]
+export type AccountResponse = Balance[]
+export type AggregatesResponse = MaspAggregate[]
 
-/**
- * Balance information for a token
- */
+// Balance information
 export interface Balance {
   tokenAddress: string
   minDenomAmount: string
 }
 
-/**
- * Response type for account balance queries
- */
-export type AccountResponse = Balance[]
-
-// Use interface for extensible aggregate data
+// MASP aggregate data
 export interface MaspAggregate {
   tokenAddress: string
   timeWindow: string
@@ -40,34 +31,5 @@ export interface MaspAggregate {
   totalAmount: string
 }
 
-export type AggregatesResponse = MaspAggregate[]
-
-// Use type for strict object shape with literal types
+// Time window type
 export type TimeWindow = '24h' | '7d' | '30d'
-
-// Use interface for display data that might need extension
-export interface TokenDisplayRow {
-  symbol: string
-  address: string
-  name: string
-  logoUrl: string
-  decimals: number
-  totalSupply: {
-    currentSupply: string
-    '1d': string | null
-    '7d': string | null
-    '30d': string | null
-  }
-  totalShielded: string
-  totalTransparent: string
-  currentShielded: string
-  currentTransparent: string
-  rewardsParam: string
-  usdPrice: number
-}
-
-// Use type for API response with dynamic keys
-export type CgPriceResponse = {
-  [key: string]: { usd: number } | string | undefined
-  attribution?: string
-} 

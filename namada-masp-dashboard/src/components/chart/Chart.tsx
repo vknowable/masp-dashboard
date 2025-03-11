@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { RegistryAsset } from '../../types/chainRegistry'
 import { AggregatesResponse } from '../../types/token'
 

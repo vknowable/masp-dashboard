@@ -1,13 +1,14 @@
-import { TokenDisplayRow } from '../../types/token'
 import AssetRow from './AssetRow'
+import { useRegistryData } from '../../hooks/useRegistryData'
+import { useTokenSupplies } from '../../hooks/useTokenSupplies'
+import { useTokenPrices } from '../../hooks/useTokenPrices'
 
-interface AssetInfoColumnProps {
-    tokens: TokenDisplayRow[]
-    isLoading?: boolean
-}
+function AssetInfoColumn() {
+    const { assets, isLoading: isLoadingRegistry } = useRegistryData()
+    const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
+    const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies()
 
-function AssetInfoColumn({ tokens = [], isLoading = false }: AssetInfoColumnProps) {
-    if (isLoading) {
+    if (isLoadingRegistry || !assets) {
         return (
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
@@ -41,10 +42,13 @@ function AssetInfoColumn({ tokens = [], isLoading = false }: AssetInfoColumnProp
 
             {/* Asset rows */}
             <div className="divide-y divide-gray-800">
-                {tokens.map((token) => (
+                {assets.map((token) => (
                     <AssetRow 
                         key={token.address} 
                         token={token}
+                        tokenPrice={tokenPrices?.price.find(entry => entry.id === token.coingecko_id)?.usd ?? null}
+                        tokenSupplies={tokenSupplies?.supplies.find(entry => entry.address === token.address) ?? null}
+                        isLoading={isLoadingSupplies}
                     />
                 ))}
             </div>

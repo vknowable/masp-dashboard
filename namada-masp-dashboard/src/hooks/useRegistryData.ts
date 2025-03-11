@@ -12,21 +12,6 @@ export function useRegistryData() {
     queryFn: () => fetchChainMetadata("namada", true)
   })
 
-  // Example of additional registry-related query:
-  /*
-  const {
-    data: chainParameters,
-    isLoading: isLoadingParams,
-    error: paramsError
-  } = useQuery({
-    queryKey: ['chainParameters'],
-    queryFn: () => fetchChainParameters(),
-    enabled: !!registryData, // Only run if registry data is available
-    staleTime: 60000, // Consider data fresh for 1 minute
-    gcTime: 300000,   // Keep in cache for 5 minutes
-  })
-  */
-
   return {
     registryData,
     assets: registryData?.assetList?.assets,

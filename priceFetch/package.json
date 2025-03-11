@@ -2,10 +2,11 @@
   "name": "pricefetch",
   "version": "1.0.0",
   "description": "A (very basic) backend for fetching the asset prices from Coingecko and serving them to the frontend app at `{base url}/api/v1/{asset}/price`.",
-  "main": "priceFetch.mjs",
   "type": "module",
+  "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/app.js",
+    "dev": "NODE_ENV=development nodemon src/app.js"
   },
   "keywords": [],
   "author": "",
