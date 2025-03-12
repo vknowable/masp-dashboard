@@ -1,9 +1,9 @@
 import ReactECharts from 'echarts-for-react'
 import { useMemo } from 'react'
-import { RegistryAsset } from '../../types/chainRegistry'
-import { AggregatesResponse } from '../../types/token'
+import { RegistryAsset } from '../../../types/chainRegistry'
+import { AggregatesResponse } from '../../../types/token'
 
-interface ChartProps {
+interface IbcFlowsChartProps {
   selectedAsset?: string
   selectedTimeframe?: '24hr' | '7d' | '30d'
   showShieldedInflow?: boolean
@@ -14,7 +14,7 @@ interface ChartProps {
   maspAggregates?: AggregatesResponse
 }
 
-export default function Chart({
+export default function IbcFlowsChart({
   selectedAsset = 'All',
   selectedTimeframe = '24hr',
   showShieldedInflow = true,
@@ -23,7 +23,7 @@ export default function Chart({
   showTransparentOutflow = true,
   assets = [],
   maspAggregates = []
-}: ChartProps) {
+}: IbcFlowsChartProps) {
   const filteredData = useMemo(() => {
     // Get the time window based on selected timeframe
     const timeWindow = selectedTimeframe === '24hr' ? 'oneDay' 

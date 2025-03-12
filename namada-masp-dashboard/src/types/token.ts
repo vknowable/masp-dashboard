@@ -31,5 +31,3 @@ export interface MaspAggregate {
   totalAmount: string
 }
 
-// Time window type
-export type TimeWindow = '24h' | '7d' | '30d'

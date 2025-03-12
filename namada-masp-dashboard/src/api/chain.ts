@@ -1,10 +1,12 @@
 import apiClient from './apiClient'
 import { AbciQueryResponse } from '../types/abci'
+import { Token, Balance, AggregatesResponse } from '../types/token'
 
 const indexerUrl = import.meta.env.VITE_INDEXER_URL
 const indexerUrlLastTag = "https://indexer.namada.tududes.com"
 const rpcUrl = import.meta.env.VITE_RPC_URL
 const apiUrl = import.meta.env.VITE_API_URL
+export const MASP_ADDRESS = 'tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah'
 
 interface Parameters {
   apr: string
@@ -92,12 +94,33 @@ export interface TransformedTokenSupply {
   }
 }
 
+export interface MaspBalances {
+  balances: Balance[]
+}
+
+export interface TransformedMaspBalances {
+  balances: Array<TransformedMaspBalance>
+}
+
+export interface TransformedMaspBalance {
+  tokenAddress: string
+  balances: {
+    current: number | null;
+    changes: {
+      '24h': number | null;
+      '7d': number | null;
+      '30d': number | null;
+      'allTime': number | null;
+    }
+  }
+}
 
 export async function fetchChainParameters(): Promise<Parameters> {
   const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/parameters`)
   return data
 }
 
+// TODO: refactor; we can get this value from token supplies hook
 export async function fetchTokenSupply(address: string, epoch?: number): Promise<TokenSupply> {
   const epochParam = epoch !== undefined ? `&epoch=${epoch}` : ''
   const { data } = await apiClient.get(`${indexerUrlLastTag}/api/v1/chain/token-supply?address=${address}${epochParam}`)
@@ -139,4 +162,19 @@ export async function fetchTokenPrices(): Promise<TokenPricesResponse> {
 export async function fetchTokenSupplies(): Promise<TokenSupplies> {
   const { data } = await apiClient.get<TokenSupplies>(`${apiUrl}/api/v1/token/supplies`);
   return data;
+}
+
+export async function fetchTokenList(): Promise<Token[]> {
+  const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/token`)
+  return data
+}
+
+export async function fetchMaspBalances(): Promise<MaspBalances> {
+  const { data } = await apiClient.get(`${indexerUrl}/api/v1/account/${MASP_ADDRESS}`)
+  return { balances: data }
+}
+
+export async function fetchMaspAggregates(): Promise<AggregatesResponse> {
+  const { data } = await apiClient.get(`${indexerUrl}/api/v1/masp/aggregates`)
+  return data
 } 

@@ -4,7 +4,7 @@ import Header from './components/Header'
 import { useState, useEffect } from "react"
 import init from "masp_dashboard_wasm"
 import InfoGrid from './components/infoGrid/InfoGrid'
-import ChartContainer from './components/chart/ChartContainer'
+import MaspAggregatesChartContainer from './components/chart/maspAggregates/MaspAggregatesChartContainer'
 import AssetTableContainer from './components/assetTable/AssetTableContainer'
 import IbcChannelsContainer from './components/ibcChannels/IbcChannelsContainer'
 import { QueryClient, QueryClientProvider, DefaultOptions } from '@tanstack/react-query'
@@ -214,7 +214,7 @@ function App() {
             <p className="font-semibold text-xl text-center py-8">WIP: Data on this page likely to be inaccurate</p>
           </div>
           <InfoGrid cards={infoCards} />
-          <ChartContainer />
+          <MaspAggregatesChartContainer />
           <AssetTableContainer />
           <IbcChannelsContainer />
         </main>

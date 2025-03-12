@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../api/apiClient'
 import type { Token } from '../types/token'
 import { AxiosError } from 'axios'
-
-const indexerUrl = import.meta.env.VITE_INDEXER_URL
+import { fetchTokenList } from '../api/chain'
 
 /**
  * Hook to fetch list of all tokens (native and IBC)
@@ -12,10 +10,7 @@ const indexerUrl = import.meta.env.VITE_INDEXER_URL
 export function useTokenList() {
   return useQuery<Token[], AxiosError>({
     queryKey: ['tokenList'],
-    queryFn: async () => {
-      const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/token`)
-      return data
-    },
+    queryFn: fetchTokenList,
     staleTime: 300000, // Consider fresh for 5 minutes
     retry: (failureCount, error) => {
       // Only retry on 5xx errors or network/timeout issues

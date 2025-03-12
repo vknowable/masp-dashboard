@@ -3,7 +3,7 @@ import { useRegistryData } from '../../hooks/useRegistryData'
 import { useTokenSupplies } from '../../hooks/useTokenSupplies'
 import { useTokenPrices } from '../../hooks/useTokenPrices'
 
-function AssetInfoColumn() {
+function AssetColumn() {
     const { assets, isLoading: isLoadingRegistry } = useRegistryData()
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
     const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies()
@@ -56,4 +56,4 @@ function AssetInfoColumn() {
     )
 }
 
-export default AssetInfoColumn 
+export default AssetColumn 

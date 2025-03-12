@@ -1,3 +1,4 @@
+import { useMaspBalances } from '../../hooks/useMaspBalances'
 import { useRegistryData } from '../../hooks/useRegistryData'
 import { useTokenPrices } from '../../hooks/useTokenPrices'
 import { useTokenSupplies } from '../../hooks/useTokenSupplies'
@@ -14,7 +15,7 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
     const { assets, isLoading: isLoadingRegistry } = useRegistryData()
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
     const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies()
-    // const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances()
+    const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances()
     
     if (isLoadingRegistry || !assets) {
         return (
@@ -59,6 +60,7 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
                         token={token}
                         tokenPrice={tokenPrices?.price.find(entry => entry.id === token.coingecko_id)?.usd ?? null}
                         tokenSupplies={tokenSupplies?.supplies.find(entry => entry.address === token.address) ?? null}
+                        maspBalances={maspBalances?.balances.find(entry => entry.tokenAddress === token.address) ?? null}
                         isLoading={isLoadingSupplies}
                     />
                 ))}

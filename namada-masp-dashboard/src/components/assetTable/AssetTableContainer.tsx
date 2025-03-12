@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import AssetInfoColumn from './AssetInfoColumn'
+import AssetColumn from './AssetColumn'
 import MetricsColumn from './MetricsColumn'
 
 export type ViewMode = 'shielded' | 'transparent'
@@ -13,7 +13,7 @@ function AssetTableContainer() {
                 <div className="flex h-full">
                     {/* Left column - Asset Info */}
                     <div className="flex-1">
-                        <AssetInfoColumn />
+                        <AssetColumn />
                     </div>
 
                     {/* Right column - Metrics */}

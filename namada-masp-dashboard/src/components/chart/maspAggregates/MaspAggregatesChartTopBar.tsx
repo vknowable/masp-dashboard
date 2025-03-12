@@ -1,23 +1,20 @@
 import { Dispatch, SetStateAction } from 'react'
-import { RegistryAsset } from '../../types/chainRegistry'
+import { RegistryAsset } from '../../../types/chainRegistry'
+import { MaspAggregatesWindow } from './MaspAggregatesChartContainer'
 
-interface ChartTopBarProps {
+interface MaspAggregatesChartTopBarProps {
   selectedAsset: string
   onAssetSelect: Dispatch<SetStateAction<string>>
-  selectedTimeframe: '24hr' | '7d' | '30d'
-  onTimeframeSelect: Dispatch<SetStateAction<'24hr' | '7d' | '30d'>>
+  selectedTimeframe: MaspAggregatesWindow
+  onTimeframeSelect: Dispatch<SetStateAction<MaspAggregatesWindow>>
   showShieldedInflow: boolean
   onShieldedInflowToggle: Dispatch<SetStateAction<boolean>>
   showShieldedOutflow: boolean
   onShieldedOutflowToggle: Dispatch<SetStateAction<boolean>>
-  showTransparentInflow: boolean
-  onTransparentInflowToggle: Dispatch<SetStateAction<boolean>>
-  showTransparentOutflow: boolean
-  onTransparentOutflowToggle: Dispatch<SetStateAction<boolean>>
   assets?: RegistryAsset[]
 }
 
-export default function ChartTopBar({
+export default function MaspAggregatesChartTopBar({
   selectedAsset,
   onAssetSelect,
   selectedTimeframe,
@@ -26,12 +23,8 @@ export default function ChartTopBar({
   onShieldedInflowToggle,
   showShieldedOutflow,
   onShieldedOutflowToggle,
-  showTransparentInflow,
-  onTransparentInflowToggle,
-  showTransparentOutflow,
-  onTransparentOutflowToggle,
   assets = []
-}: ChartTopBarProps) {
+}: MaspAggregatesChartTopBarProps) {
   return (
     <div className="min-w-full min-h-[36px] flex justify-between items-center mb-4">
       <div className="flex items-center gap-4">
@@ -51,7 +44,7 @@ export default function ChartTopBar({
 
         {/* Time Select */}
         <div className="flex gap-2">
-          {(['24hr', '7d', '30d'] as const).map((time) => (
+          {(['24hr', '7d', '30d', 'Alltime'] as const).map((time) => (
             <button
               key={time}
               onClick={() => onTimeframeSelect(time)}
@@ -79,7 +72,7 @@ export default function ChartTopBar({
           />
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 bg-yellow-400"></span>
-            Shielded Inflow
+            MASP Inflow
           </span>
         </label>
 
@@ -92,35 +85,10 @@ export default function ChartTopBar({
           />
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 bg-gray-600"></span>
-            Shielded Outflow
+            MASP Outflow
           </span>
         </label>
 
-        <label className="flex items-center gap-2 text-white">
-          <input
-            type="checkbox"
-            checked={showTransparentInflow}
-            onChange={(e) => onTransparentInflowToggle(e.target.checked)}
-            className="form-checkbox h-4 w-4 text-yellow-400 rounded border-gray-700 focus:ring-yellow-400"
-          />
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 border-2 border-yellow-400"></span>
-            Transparent Inflow
-          </span>
-        </label>
-
-        <label className="flex items-center gap-2 text-white">
-          <input
-            type="checkbox"
-            checked={showTransparentOutflow}
-            onChange={(e) => onTransparentOutflowToggle(e.target.checked)}
-            className="form-checkbox h-4 w-4 text-gray-600 rounded border-gray-700 focus:ring-gray-600"
-          />
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 border-2 border-gray-600"></span>
-            Transparent Outflow
-          </span>
-        </label>
       </div>
     </div>
   )

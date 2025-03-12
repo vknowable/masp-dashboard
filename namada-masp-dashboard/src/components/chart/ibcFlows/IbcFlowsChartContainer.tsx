@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import Chart from './Chart'
-import ChartTopBar from './ChartTopBar'
-import { useRegistryData } from '../../hooks/useRegistryData'
-import { useMaspAggregates } from '../../hooks/useMaspAggregates'
+import IbcFlowsChart from './IbcFlowsChart'
+import IbcFlowsChartTopBar from './IbcFlowsChartTopBar'
+import { useRegistryData } from '../../../hooks/useRegistryData'
+import { useMaspAggregates } from '../../../hooks/useMaspAggregates'
 
-interface ChartContainerProps {
+interface IbcFlowsChartContainerProps {
     isLoading?: boolean;
     error?: Error | null;
 }
 
-export default function ChartContainer({ isLoading = false, error = null }: ChartContainerProps) {
+export default function IbcFlowsChartContainer({ isLoading = false, error = null }: IbcFlowsChartContainerProps) {
     const [selectedAsset, setSelectedAsset] = useState<string>('All')
     const [selectedTimeframe, setSelectedTimeframe] = useState<'24hr' | '7d' | '30d'>('24hr')
     const [showShieldedInflow, setShowShieldedInflow] = useState(true)
@@ -46,7 +46,7 @@ export default function ChartContainer({ isLoading = false, error = null }: Char
     return (
         <div className="px-4 py-4">
             <div className="rounded-[5px] bg-[#F5F5F5] dark:bg-[#191919] min-w-full min-h-[508px] pt-2 px-2">
-                <ChartTopBar 
+                <IbcFlowsChartTopBar 
                     selectedAsset={selectedAsset}
                     onAssetSelect={setSelectedAsset}
                     selectedTimeframe={selectedTimeframe}
@@ -61,7 +61,7 @@ export default function ChartContainer({ isLoading = false, error = null }: Char
                     onTransparentOutflowToggle={setShowTransparentOutflow}
                     assets={assets}
                 />
-                <Chart 
+                <IbcFlowsChart 
                     selectedAsset={selectedAsset}
                     selectedTimeframe={selectedTimeframe}
                     showShieldedInflow={showShieldedInflow}
