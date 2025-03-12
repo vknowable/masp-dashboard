@@ -1,45 +1,103 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchChainParameters, fetchTokenSupply, fetchLatestBlock, fetchBlockchainInfo, fetchVotingPower, fetchLatestEpoch, fetchTotalRewardsMinted } from '../api/chain'
+import { fetchChainParameters, fetchLatestBlock, fetchBlockchainInfo, fetchVotingPower, fetchLatestEpoch, fetchTotalRewardsMinted, TransformedMaspBalances, TokenPricesResponse } from '../api/chain'
 import { AbciQueryResponse } from '../types/abci'
-import { parseNumeric } from '../utils/numbers'
-import { decodeBorshAmt } from '../utils/borsh'
+import { denomAmount, parseNumeric } from '../utils/numbers'
+import { decodeBorshAmtStr } from '../utils/borsh'
 import { BlockHeight } from '../api/chain'
+import { retryPolicy, retryDelay } from '../api/apiClient'
+import { useRegistryData } from './useRegistryData'
+import { useTokenSupplies } from './useTokenSupplies'
+import { useTokenPrices } from './useTokenPrices'
+import { useMaspBalances } from './useMaspBalances'
+import { RegistryAsset } from '../types/chainRegistry'
 
 export interface ChainMetrics {
   blockTime: number | null
   blockHeight: number | null
   stakingApr: number | null
-  totalSupply: string
-  totalStaked: string
-  totalShieldedAssets: string
-  totalRewardsMinted: string
-  rewardsPerEpoch: string
-  epoch: number | null
+  totalSupply: number | null
+  totalStaked: string | null
+  percentStaked: number | null
+  totalShieldedAssets: number | null
+  totalRewardsMinted: number | null
+  rewardsPerEpoch: number | null
+  epoch: string | null
+}
+
+export interface ChainInfo {
+  metrics: ChainMetrics
+  isLoading: boolean
+  isError: boolean
 }
 
 // Calculate average time between blocks in seconds
 function calculateAverageBlockTime(blocks: { header: { time: string } }[]): number | null {
   if (blocks.length < 2) return null
-
   // Sort blocks by timestamp to ensure correct order
   const sortedBlocks = [...blocks].sort((a, b) =>
     new Date(a.header.time).getTime() - new Date(b.header.time).getTime()
   )
-
   let totalDiff = 0
   for (let i = 1; i < sortedBlocks.length; i++) {
     const curr = new Date(sortedBlocks[i].header.time).getTime()
     const prev = new Date(sortedBlocks[i - 1].header.time).getTime()
     totalDiff += curr - prev
   }
-
   // Convert from milliseconds to seconds and return average
   return totalDiff / (1000 * (sortedBlocks.length - 1))
 }
 
-export function useChainInfo() {
-  // TODO: not sure if will be needed in the future
-  // const { chain, isLoading: isLoadingRegistry } = useRegistryData()
+// Calculate staked percentage safely
+const calculateStakedPercentage = (totalStaked: string | null, totalSupply: number | null): number | null => {
+  if (!totalStaked || !totalSupply) return null
+  const parsedStaked = parseFloat(totalStaked) // already denominated in NAM
+  const parsedTotal = denomAmount(totalSupply)
+  if (!parsedTotal || isNaN(parsedTotal) || parsedTotal === 0) {
+    return null
+  }
+  return (parsedStaked / parsedTotal) * 100
+}
+
+// Tally up the total shielded assets in USD
+const calculateTotalShieldedAssets = (
+  maspBalances: TransformedMaspBalances,
+  tokenPrices: TokenPricesResponse,
+  assetMetadata: RegistryAsset[],
+): number | null => {
+  if (!maspBalances?.balances || !tokenPrices?.price || !assetMetadata) {
+    return null;
+  }
+
+  return maspBalances.balances.reduce((total, balance) => {
+    // Find the asset metadata for this token
+    const metadata = assetMetadata.find(asset => asset.address === balance.tokenAddress);
+    const exponent = metadata?.denom_units?.find(unit => unit.denom === metadata.display)?.exponent ?? null
+    if (!metadata?.coingecko_id || !exponent) {
+      return total; // Skip if we don't have required metadata
+    }
+
+    // Find the price for this token
+    const price = tokenPrices.price.find(p => p.id === metadata.coingecko_id)?.usd;
+    if (!price) {
+      return total; // Skip if we don't have a price
+    }
+
+    // Calculate USD value: denominated balance * price
+    const denomBalance = denomAmount(balance.balances.current, exponent);
+    if (!denomBalance) {
+      return total; // Skip if balance is invalid
+    }
+    
+    return total + (denomBalance * price);
+  }, 0);
+}
+
+export function useChainInfo(): ChainInfo {
+
+  const { assets, isLoading: isLoadingRegistry } = useRegistryData()
+  const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
+  const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies()
+  const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances()
 
   // Get chain parameters (includes APR and native token address)
   const {
@@ -50,22 +108,6 @@ export function useChainInfo() {
     queryKey: ['chainParameters'],
     queryFn: fetchChainParameters,
     staleTime: 300000, // Consider fresh for 5 minutes
-  })
-
-  // Get native token supply
-  const {
-    data: tokenSupply,
-    isLoading: isLoadingSupply
-  } = useQuery({
-    queryKey: ['tokenSupply', parameters?.nativeTokenAddress],
-    queryFn: () => {
-      if (!parameters?.nativeTokenAddress) {
-        throw new Error('Native token address not available')
-      }
-      return fetchTokenSupply(parameters.nativeTokenAddress)
-    },
-    enabled: !!parameters?.nativeTokenAddress,
-    staleTime: 60000, // Consider fresh for 1 minute
   })
 
   // Get latest block height
@@ -102,6 +144,8 @@ export function useChainInfo() {
   } = useQuery({
     queryKey: ['votingPower'],
     queryFn: fetchVotingPower,
+    retry: retryPolicy,
+    retryDelay: retryDelay,
     staleTime: 60000, // Consider fresh for 1 minute
   })
 
@@ -112,6 +156,8 @@ export function useChainInfo() {
   } = useQuery<AbciQueryResponse>({
     queryKey: ['totalRewardsMinted'],
     queryFn: fetchTotalRewardsMinted,
+    retry: retryPolicy,
+    retryDelay: retryDelay,
     staleTime: 60000, // Consider fresh for 1 minute
   })
 
@@ -122,6 +168,8 @@ export function useChainInfo() {
   } = useQuery({
     queryKey: ['latestEpoch'],
     queryFn: fetchLatestEpoch,
+    retry: retryPolicy,
+    retryDelay: retryDelay,
     staleTime: 60000, // Consider fresh for 1 minute
   })
 
@@ -131,22 +179,26 @@ export function useChainInfo() {
     : null
 
   // TODO: This value is in uNAM but UI shows it as $ value
-  const totalRewardsMinted = decodeBorshAmt(totalRewardsResponse || null).toString()
-
+  // const totalRewardsMinted = decodeBorshAmt(totalRewardsResponse || null).toString()
+  const totalRewardsMinted = decodeBorshAmtStr(totalRewardsResponse?.result?.response?.value || null)
+  const totalSupply = tokenSupplies?.supplies.find(supply => supply.address === parameters?.nativeTokenAddress)?.supplies.current || null
+  const percentStaked = calculateStakedPercentage(votingPower?.totalVotingPower ?? null, totalSupply)
+  const totalShieldedAssets = calculateTotalShieldedAssets(maspBalances ?? { balances: [] }, tokenPrices ?? { price: [] }, assets ?? [])
+  
   return {
     metrics: {
       blockTime,
-      blockHeight: blockInfo ? parseNumeric(blockInfo.block) : null,
-      posInflation: null, // We'll need another endpoint for this
-      stakingApr: parameters?.apr ? parseNumeric(parameters.apr) : null,
-      totalSupply: tokenSupply?.totalSupply || "",
-      totalStaked: votingPower?.totalVotingPower || "",
-      totalShieldedAssets: "", // We'll need another endpoint for this
+      blockHeight: parseNumeric(blockInfo?.block),
+      stakingApr: parseNumeric(parameters?.apr),
+      totalSupply,
+      totalStaked: votingPower?.totalVotingPower ?? null,
+      percentStaked,
+      totalShieldedAssets,
       totalRewardsMinted,
-      rewardsPerEpoch: "", // We'll need another endpoint for this
-      epoch: epochInfo ? epochInfo.epoch : null
+      rewardsPerEpoch: null,
+      epoch: epochInfo?.epoch ?? null,
     },
-    isLoading: isLoadingParams || isLoadingSupply || isLoadingBlock || isLoadingBlockchain || isLoadingRewards || isLoadingVotingPower || isLoadingEpoch,
-    error: paramsError // You might want to handle other errors as well
+    isLoading: isLoadingParams,
+    isError: paramsError !== null
   }
 } 

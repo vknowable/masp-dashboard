@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { RegistryAsset } from '../../../types/chainRegistry'
 import { AggregatesResponse } from '../../../types/token'
 import { MaspAggregatesWindow } from './MaspAggregatesChartContainer'
+import { denomAmount } from '../../../utils/numbers'
 
 interface MaspAggregatesChartProps {
   selectedAsset?: string
@@ -40,10 +41,8 @@ export default function MaspAggregatesChart({
         
         return {
           symbol: asset.symbol,
-          shieldedInflow: parseFloat(inflow),
-          shieldedOutflow: parseFloat(outflow),
-          transparentInflow: 0, // TODO: Add transparent flow data when available
-          transparentOutflow: 0
+          shieldedInflow: denomAmount(parseFloat(inflow)),
+          shieldedOutflow: denomAmount(parseFloat(outflow)),
         }
       })
     }
@@ -66,6 +65,7 @@ export default function MaspAggregatesChart({
   }, [selectedAsset, selectedTimeframe, assets, maspAggregates])
 
   const option = useMemo(() => ({
+    backgroundColor: 'transparent',
     grid: {
       left: '3%',
       right: '4%',
@@ -80,6 +80,14 @@ export default function MaspAggregatesChart({
           color: '#666'
         }
       },
+      axisLabel: {
+        rotate: 90,  // Rotate labels 90 degrees (vertical facing up)
+        interval: 0, // Force all labels to show
+        align: 'right', // Align text to left side
+        padding: [0, 12, 0, 0], // Add some padding to prevent overlap
+        color: '#CCC', // Match text color with theme
+        fontSize: 15,
+      },
       splitLine: {
         show: true,
         lineStyle: {
@@ -90,14 +98,13 @@ export default function MaspAggregatesChart({
     },
     yAxis: {
       type: 'value',
-      name: 'Amount',
       axisLine: {
         lineStyle: {
           color: '#666'
         }
       },
       splitLine: {
-        show: true,
+        show: false,
         lineStyle: {
           type: 'dashed',
           color: '#666'
@@ -112,6 +119,8 @@ export default function MaspAggregatesChart({
         itemStyle: {
           color: '#FFFF00'
         },
+        barGap: '0%',
+        barCategoryGap: '0%'
       },
       {
         name: 'Shielded Outflow',
@@ -120,12 +129,19 @@ export default function MaspAggregatesChart({
         itemStyle: {
           color: '#666666'
         },
+        barGap: '0%',
+        barCategoryGap: '0%'
       },
     ],
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow'
+      },
+      backgroundColor: '#2A2A2A',
+      borderColor: '#707070',
+      textStyle: {
+        color: '#FFFFFF'
       }
     }
   }), [filteredData, showShieldedInflow, showShieldedOutflow])

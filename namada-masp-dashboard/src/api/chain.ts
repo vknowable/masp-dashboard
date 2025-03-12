@@ -3,7 +3,6 @@ import { AbciQueryResponse } from '../types/abci'
 import { Token, Balance, AggregatesResponse } from '../types/token'
 
 const indexerUrl = import.meta.env.VITE_INDEXER_URL
-const indexerUrlLastTag = "https://indexer.namada.tududes.com"
 const rpcUrl = import.meta.env.VITE_RPC_URL
 const apiUrl = import.meta.env.VITE_API_URL
 export const MASP_ADDRESS = 'tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah'
@@ -12,12 +11,6 @@ interface Parameters {
   apr: string
   nativeTokenAddress: string
   // ... other parameters exist but we don't need them now
-}
-
-// TODO: still needed?
-interface TokenSupply {
-  address: string
-  totalSupply: string
 }
 
 export interface BlockHeight {
@@ -57,7 +50,7 @@ export interface TokenPriceResponse {
 }
 
 export interface TokenPricesResponse {
-  attribution: string
+  attribution?: string
   price: TokenPrice[]
 }
 
@@ -117,13 +110,6 @@ export interface TransformedMaspBalance {
 
 export async function fetchChainParameters(): Promise<Parameters> {
   const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/parameters`)
-  return data
-}
-
-// TODO: refactor; we can get this value from token supplies hook
-export async function fetchTokenSupply(address: string, epoch?: number): Promise<TokenSupply> {
-  const epochParam = epoch !== undefined ? `&epoch=${epoch}` : ''
-  const { data } = await apiClient.get(`${indexerUrlLastTag}/api/v1/chain/token-supply?address=${address}${epochParam}`)
   return data
 }
 

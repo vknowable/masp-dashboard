@@ -1,7 +1,8 @@
 import { TransformedMaspBalance, TransformedTokenSupply } from "../../api/chain"
 import { RegistryAsset } from "../../types/chainRegistry"
-import { denomAmount, formatNetChange, formatNumber, getNetChangeColor } from "../../utils/numbers"
+import { denomAmount, formatNumber } from "../../utils/numbers"
 import { ViewMode } from './AssetTableContainer'
+import NetChangeSpans from './NetChangeSpans'
 
 interface MetricsRowProps {
     viewMode: ViewMode
@@ -18,8 +19,8 @@ function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, 
         return (
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-gray-700 rounded" />
+                    {[...Array(1)].map((_, i) => (
+                        <div key={i} className="h-[96px] bg-gray-700 rounded" />
                     ))}
                 </div>
             </div>
@@ -32,7 +33,7 @@ function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, 
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-gray-700 rounded" />
+                        <div key={i} className="h-[96px] bg-gray-700 rounded" />
                     ))}
                 </div>
             </div>
@@ -47,50 +48,38 @@ function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, 
 
     const rawCurrentTransparent = rawCurrentSupply && rawCurrentMasp ? rawCurrentSupply - rawCurrentMasp : null
     const denomCurrentTransparent = denomAmount(rawCurrentTransparent, 6)
-
+    
     const calcNetChangeTransparent = (totalNet: number | null, maspNet: number | null) => {
-        if (totalNet && maspNet) {
-            return totalNet - maspNet
-        }
-        return null
+        // if (totalNet && maspNet) {
+        //     return totalNet - maspNet
+        // }
+        return 0 // until fixed
+    }
+
+    // Calculate transparent changes
+    const transparentChanges = {
+        '24h': calcNetChangeTransparent(tokenSupplies.supplies.changes['24h'], maspBalances.balances.changes['24h']),
+        '7d': calcNetChangeTransparent(tokenSupplies.supplies.changes['7d'], maspBalances.balances.changes['7d']),
+        '30d': calcNetChangeTransparent(tokenSupplies.supplies.changes['30d'], maspBalances.balances.changes['30d'])
     }
 
     return (
-        <div className="h-[88px] p-4 flex items-center">
+        <div className="h-[94px] p-4 flex items-center bg-[#010101] rounded-tr-[5px] rounded-br-[5px]">
 
             {/* Total Value Column */}
-            <div className="flex-1">
-                <div className="text-sm text-white">
+            <div className="flex-1 pl-8">
+                <div className="asset-amt-text">
                     {formatNumber(viewMode === 'shielded' ? denomCurrentMasp : denomCurrentTransparent, 6)} {token.symbol}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="asset-amt-usd-text">
                     ${viewMode === 'shielded' ?
                         (tokenPrice && denomCurrentMasp) ? formatNumber(denomCurrentMasp * tokenPrice, 6) : "--" :
                         (tokenPrice && denomCurrentTransparent) ? formatNumber(denomCurrentTransparent * tokenPrice, 6) : "--"
                     }
                 </div>
-                <div className="flex gap-2 mt-1 text-xs">
-                    <span className={getNetChangeColor(calcNetChangeTransparent(tokenSupplies.supplies.changes['24h'], maspBalances.balances.changes['24h']))}>
-                        {viewMode === 'shielded' ?
-                            formatNetChange(maspBalances.balances.changes['24h']?.toString() ?? null) :
-                            formatNetChange(calcNetChangeTransparent(tokenSupplies.supplies.changes['24h'], maspBalances.balances.changes['24h'])?.toString() ?? null)
-                        } (24h)
-                    </span>
-                    <span className="text-gray-500">/</span>
-                    <span className={getNetChangeColor(calcNetChangeTransparent(tokenSupplies.supplies.changes['7d'], maspBalances.balances.changes['7d']))}>
-                        {viewMode === 'shielded' ?
-                            formatNetChange(maspBalances.balances.changes['7d']?.toString() ?? null) :
-                            formatNetChange(calcNetChangeTransparent(tokenSupplies.supplies.changes['7d'], maspBalances.balances.changes['7d'])?.toString() ?? null)
-                        } (7d)
-                    </span>
-                    <span className="text-gray-500">/</span>
-                    <span className={getNetChangeColor(calcNetChangeTransparent(tokenSupplies.supplies.changes['30d'], maspBalances.balances.changes['30d']))}>
-                        {viewMode === 'shielded' ?
-                            formatNetChange(maspBalances.balances.changes['30d']?.toString() ?? null) :
-                            formatNetChange(calcNetChangeTransparent(tokenSupplies.supplies.changes['30d'], maspBalances.balances.changes['30d'])?.toString() ?? null)
-                        } (30d)
-                    </span>
-                </div>
+                <NetChangeSpans 
+                    changes={viewMode === 'shielded' ? maspBalances.balances.changes : transparentChanges} 
+                />
             </div>
         </div>
     )

@@ -3,33 +3,21 @@ import Header from './components/Header'
 // import init, { Query } from "masp_dashboard_wasm"
 import { useState, useEffect } from "react"
 import init from "masp_dashboard_wasm"
-import InfoGrid from './components/infoGrid/InfoGrid'
-import MaspAggregatesChartContainer from './components/chart/maspAggregates/MaspAggregatesChartContainer'
+import InfoGridContainer from './components/infoGrid/InfoGridContainer'
 import AssetTableContainer from './components/assetTable/AssetTableContainer'
 import IbcChannelsContainer from './components/ibcChannels/IbcChannelsContainer'
 import { QueryClient, QueryClientProvider, DefaultOptions } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { AxiosError } from 'axios'
-import { useChainInfo } from './hooks/useChainInfo'
-import { denomAmount, formatNumber, formatMagnitude, formatPercentage } from './utils/numbers'
+import { retryPolicy, retryDelay } from './api/apiClient'
+import ChartContainer from './components/chart/ChartContainer'
+import ErrorBoundary from './components/common/ErrorBoundary'
 
 // Create a client
 const defaultOptions: DefaultOptions = {
   queries: {
     refetchOnWindowFocus: false,
-    retry: (failureCount: number, error: Error) => {
-      // Only retry on 5xx errors or network/timeout issues
-      if (error instanceof AxiosError) {
-        const status = error.response?.status
-        return (
-          failureCount < 3 && // Maximum 3 retries
-          (status === undefined || // Network/timeout error
-           status >= 500) // Server error
-        )
-      }
-      return false // Don't retry other types of errors
-    },
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff capped at 30 seconds
+    retry: retryPolicy,
+    retryDelay: retryDelay,
     staleTime: 1000 * 60, // Consider data fresh for 1 minute
     gcTime: 1000 * 60 * 5, // Keep unused data in cache for 5 minutes
   }
@@ -42,21 +30,6 @@ function App() {
   const savedTheme = localStorage.getItem('theme');
   const defaultTheme = savedTheme ? savedTheme : 'dark';
   const [darkMode, setDarkMode] = useState(defaultTheme === 'dark');
-
-  // TODO: refactor useChainInfo
-  const { metrics: chainMetrics, isLoading: isLoadingChain } = useChainInfo()
-
-  // Calculate staked percentage safely
-  const calculateStakedPercentage = () => {
-    const totalStaked = parseFloat(chainMetrics.totalStaked) // already denominated in NAM
-    const totalSupply = denomAmount(chainMetrics.totalSupply)
-    
-    if (!totalSupply || isNaN(totalStaked) || totalSupply === 0) {
-      return null
-    }
-    
-    return (totalStaked / totalSupply) * 100
-  }
 
   // Update the theme
   useEffect(() => {
@@ -76,69 +49,7 @@ function App() {
     })()
   }, [])
 
-  // TODO: refactor infoGrid
-  const infoCards = [
-    { 
-      topText: "Total Shielded Assets", 
-      bottomText: `$${formatNumber(denomAmount(chainMetrics.totalShieldedAssets))}`, 
-      size: 'large' as const,
-      variant: 'primary' as const
-    },
-    { 
-      topText: "Total NAM rewards minted", 
-      bottomText: `${formatNumber(denomAmount(chainMetrics.totalRewardsMinted))} NAM`, 
-      size: 'large' as const,
-      variant: 'primary' as const
-    },
-    { 
-      topText: "NAM rewards minted per EPOCH", 
-      bottomText: `$${formatNumber(denomAmount(chainMetrics.rewardsPerEpoch))}`, 
-      size: 'large' as const,
-      variant: 'primary' as const
-    },
-    { 
-      topText: "Block Time", 
-      bottomText: chainMetrics.blockTime ? `${formatNumber(chainMetrics.blockTime, 2)} sec` : '--', 
-      size: 'small' as const,
-      variant: 'secondary' as const
-    },
-    { 
-      topText: "Block Height", 
-      bottomText: chainMetrics.blockHeight !== null ? formatNumber(chainMetrics.blockHeight, 0) : '--', 
-      size: 'small' as const,
-      variant: 'secondary' as const
-    },
-    { 
-      topText: "Epoch", 
-      bottomText: `${chainMetrics.epoch}`, 
-      size: 'small' as const,
-      variant: 'secondary' as const
-    },
-    { 
-      topText: "Staking APR", 
-      bottomText: chainMetrics.stakingApr !== null ? `${formatNumber(chainMetrics.stakingApr * 100)}%` : '--', 
-      size: 'small' as const,
-      variant: 'secondary' as const
-    },
-    { 
-      topText: "Total native supply", 
-      bottomText: chainMetrics.totalSupply && chainMetrics.totalSupply !== "0" 
-        ? `${formatNumber(denomAmount(chainMetrics.totalSupply))} NAM ${formatMagnitude(denomAmount(chainMetrics.totalSupply))}` 
-        : '--', 
-      size: 'small' as const,
-      variant: 'secondary' as const
-    },
-    { 
-      topText: "Total staked", 
-      bottomText: chainMetrics.totalStaked === "0" 
-        ? '--' 
-        : `${formatNumber(chainMetrics.totalStaked)} (${formatPercentage(calculateStakedPercentage())})`, 
-      size: 'small' as const,
-      variant: 'secondary' as const
-    },
-  ]
-
-  // TODO: where to handle loading/erros states?
+  // TODO: where to handle loading/error states?
   // // Early return for loading state
   // if (isLoading || isLoadingChain) {
   //   return (
@@ -198,28 +109,54 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
-        <header className="flex justify-between items-center">
-          <Header />
-          {/* <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button> */}
-        </header>
-
-        <main className="flex-1">
-          <div className="rounded-lg bg-yellow-500/10 border border-yellow-500 p-4 text-yellow-500 mb-12">
-            <p className="font-semibold text-xl text-center py-8">WIP: Data on this page likely to be inaccurate</p>
+      <ErrorBoundary
+        fallback={
+          <div className="min-h-screen bg-[#121212] text-white p-8">
+            <div className="max-w-7xl mx-auto">
+              <Header />
+              <div className="mt-12">
+                <div className="text-2xl font-medium mb-4">Something went wrong</div>
+                <div className="text-red-400 bg-red-900/20 rounded-lg p-6">
+                  <p className="mb-6">
+                    The application encountered an error. You can try to recover by clicking the button below,
+                    or refresh the page if the problem persists.
+                  </p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 
+                             rounded-md transition-colors border border-red-500/30"
+                  >
+                    Reload Application
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <InfoGrid cards={infoCards} />
-          <MaspAggregatesChartContainer />
-          <AssetTableContainer />
-          <IbcChannelsContainer />
-        </main>
-      </div>
-      <ReactQueryDevtools initialIsOpen={false} />
+        }
+      >
+        <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
+          <header className="flex justify-between items-center">
+            <Header />
+            {/* <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button> */}
+          </header>
+
+          <main className="flex-1 pb-16">
+            <div className="rounded-lg bg-yellow-500/10 border border-yellow-500 p-4 text-yellow-500 mb-12">
+              <p className="font-semibold text-xl text-center py-8">WIP: Data on this page likely to be inaccurate</p>
+            </div>
+            <InfoGridContainer />
+            <ChartContainer />
+            <AssetTableContainer />
+            <IbcChannelsContainer />
+          </main>
+        </div>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </ErrorBoundary>
     </QueryClientProvider>
   )
 }

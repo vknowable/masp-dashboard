@@ -87,7 +87,7 @@ export const formatPercentage = (value: number | null) => {
 export const getNetChangeColor = (value: number | string | null) => {
   let parsedValue = typeof value === 'string' ? parseFloat(value) : value
   if (parsedValue === null) return "text-gray-400"
-  if (parsedValue > 0) return "text-green-400"
+  if (parsedValue > 0) return "text-[#00FF33]"
   if (parsedValue < 0) return "text-red-400"
   return "text-gray-400"
 }
@@ -120,5 +120,5 @@ export function formatNetChange(value: string | null, decimals: number = 6): str
   }
   
   const sign = num > 0 ? "+" : "-"
-  return `${sign} ${formattedNum.toFixed(1)} ${suffix}`
+  return `${sign}${formattedNum.toFixed(1)} ${suffix}`
 }

@@ -45,7 +45,7 @@ export default function MaspAggregatesChartContainer({ isLoading = false, error 
 
     return (
         <div className="px-4 py-4">
-            <div className="rounded-[5px] bg-[#F5F5F5] dark:bg-[#191919] min-w-full min-h-[508px] pt-2 px-2">
+            <div className="min-w-full min-h-[508px]">
                 <MaspAggregatesChartTopBar 
                     selectedAsset={selectedAsset}
                     onAssetSelect={setSelectedAsset}

@@ -7,13 +7,13 @@ interface ViewToggleProps {
 
 function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
     return (
-        <div className="h-full flex">
+        <div className="h-[60px] flex">
             <button
                 className={`
-                    flex-1 px-6 flex items-center justify-center text-sm font-medium transition-colors
+                    flex-1 px-6 flex items-center justify-center text-[18px] font-regular tracking-[0.4px] transition-colors
                     ${currentView === 'shielded'
-                        ? 'bg-[#1E1E1E] text-yellow-400'
-                        : 'bg-[#2A2A2A] text-gray-400 hover:text-gray-300'
+                        ? 'bg-[#010101] text-[#FFFF00]'
+                        : 'bg-[#191919] text-[#AAAA00] hover:text-[#DDDD00]'
                     }
                 `}
                 onClick={() => onViewChange('shielded')}
@@ -22,10 +22,10 @@ function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
             </button>
             <button
                 className={`
-                    flex-1 px-6 flex items-center justify-center text-sm font-medium transition-colors
+                    flex-1 px-6 flex items-center justify-center text-[18px] font-regular tracking-[0.4px] transition-colors
                     ${currentView === 'transparent'
-                        ? 'bg-[#1E1E1E] text-white'
-                        : 'bg-[#2A2A2A] text-gray-400 hover:text-gray-300'
+                        ? 'bg-[#010101] text-white'
+                        : 'bg-[#191919] text-gray-400 hover:text-gray-300'
                     }
                 `}
                 onClick={() => onViewChange('transparent')}

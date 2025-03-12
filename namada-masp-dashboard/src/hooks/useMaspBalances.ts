@@ -3,13 +3,14 @@ import type { Balance } from '../types/token'
 import { AxiosError } from 'axios'
 import { fetchMaspBalances, TransformedMaspBalances, MaspBalances } from '../api/chain'
 import { useMaspAggregates } from './useMaspAggregates'
+import { retryPolicy, retryDelay } from '../api/apiClient'
 
 /**
  * Calculate net change between inflows and outflows
  */
 function calculateNetChange(inflows: string | undefined, outflows: string | undefined): number | null {
-  if (!inflows || !outflows) return null;
-  return Number(inflows) - Number(outflows);
+  if (!inflows && !outflows) return null
+  return Number(inflows ?? 0) - Number(outflows ?? 0)
 }
 
 /**
@@ -61,16 +62,8 @@ export function useMaspBalances() {
     },
     staleTime: 60000, // Consider fresh for 1 minute
     refetchInterval: 30000, // Refetch every 30 seconds
-    retry: (failureCount, error) => {
-      // Only retry on 5xx errors or network/timeout issues
-      const status = error.response?.status
-      return (
-        failureCount < 3 && // Maximum 3 retries
-        (status === undefined || // Network/timeout error
-         status >= 500) // Server error
-      )
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff capped at 30 seconds
+    retry: retryPolicy,
+    retryDelay: retryDelay,
     enabled: !!aggregates // Only run query when we have aggregates data
   })
 } 

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchChainMetadata } from '../api/chainRegistry'
+import { retryPolicy, retryDelay } from '../api/apiClient'
 
 export function useRegistryData() {
   // Base registry data query - provides chain info, assets, and IBC data
@@ -9,7 +10,9 @@ export function useRegistryData() {
     error
   } = useQuery({
     queryKey: ['registryData'],
-    queryFn: () => fetchChainMetadata("namada", true)
+    queryFn: () => fetchChainMetadata("namada", true),
+    retry: retryPolicy,
+    retryDelay: retryDelay,
   })
 
   return {

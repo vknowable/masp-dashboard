@@ -5,6 +5,7 @@ import { useTokenSupplies } from '../../hooks/useTokenSupplies'
 import { ViewMode } from './AssetTableContainer'
 import MetricsRow from './MetricsRow'
 import ViewToggle from './ViewToggle'
+import '../../styles/shared.css';
 
 interface MetricsColumnProps {
     viewMode: ViewMode
@@ -20,23 +21,23 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
     if (isLoadingRegistry || !assets) {
         return (
             <div className="p-4">
-                <div className="animate-pulse space-y-4">
+                {/* <div className="animate-pulse space-y-4">
                     {[...Array(5)].map((_, i) => (
                         <div key={i} className="h-16 bg-gray-700 rounded" />
                     ))}
-                </div>
+                </div> */}
             </div>
         )
     }
-
+    
     return (
         <div className="h-full">
-            <div className="h-[120px] bg-[#1E1E1E] flex flex-col">
+            <div className="column-heading-container bg-[#010101]">
                 <div className="flex-1">
                     <ViewToggle currentView={viewMode} onViewChange={onViewChange} />
                 </div>
                 <div className="h-[40px] px-4 flex items-center">
-                    <div className="flex text-xs text-gray-400 w-full">
+                    <div className="flex column-heading-text w-full pl-8">
                         {viewMode === 'shielded' ? (
                             <>
                                 {/* <div className="flex-1">Total Value Shielded</div> */}
@@ -52,7 +53,7 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
                     </div>
                 </div>
             </div>
-            <div className="divide-y divide-gray-800">
+            <div className="flex flex-col gap-2">
                 {assets.map((token) => (
                     <MetricsRow
                         key={token.address}
