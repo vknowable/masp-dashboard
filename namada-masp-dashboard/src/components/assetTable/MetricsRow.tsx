@@ -5,7 +5,7 @@ import { ViewMode } from './AssetTableContainer'
 import NetChangeSpans from './NetChangeSpans'
 
 interface MetricsRowProps {
-    viewMode: ViewMode
+    // viewMode: ViewMode // was used for toggling between 'tabs'
     token: RegistryAsset
     tokenPrice: number | null
     maspBalances: TransformedTokenAmount | null
@@ -13,7 +13,7 @@ interface MetricsRowProps {
     isLoading?: boolean
 }
 
-function MetricsRow({ viewMode, token, tokenPrice, maspBalances, transparentBalances, isLoading }: MetricsRowProps) {
+function MetricsRow({ token, tokenPrice, maspBalances, transparentBalances, isLoading }: MetricsRowProps) {
 
     if (isLoading) {
         return (
@@ -32,7 +32,7 @@ function MetricsRow({ viewMode, token, tokenPrice, maspBalances, transparentBala
         return (
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(1)].map((_, i) => (
                         <div key={i} className="h-[96px] bg-gray-700 rounded" />
                     ))}
                 </div>
@@ -49,20 +49,39 @@ function MetricsRow({ viewMode, token, tokenPrice, maspBalances, transparentBala
     return (
         <div className="h-[94px] p-4 flex items-center bg-[#010101] rounded-tr-[5px] rounded-br-[5px]">
 
-            {/* Total Value Column */}
+            {/* Shielded Value Column */}
             <div className="flex-1 pl-8">
                 <div className="asset-amt-text">
-                    {formatNumber(viewMode === 'shielded' ? denomCurrentMasp : denomCurrentTransparent, 6)} {token.symbol}
+                    {formatNumber(denomCurrentMasp, 6)} {token.symbol}
                 </div>
                 <div className="asset-amt-usd-text">
-                    ${viewMode === 'shielded' ?
-                        (tokenPrice && denomCurrentMasp) ? formatNumber(denomCurrentMasp * tokenPrice, 2) : "--" :
+                    ${
+                        (tokenPrice && denomCurrentMasp) ? formatNumber(denomCurrentMasp * tokenPrice, 2) : "--"
+                    }
+                </div>
+                <NetChangeSpans 
+                    changes={maspBalances.balances.changes} 
+                />
+            </div>
+
+            {/* Transparent Value Column */}
+            <div className="flex-1">
+                <div className="asset-amt-text">
+                    {formatNumber(denomCurrentTransparent, 6)} {token.symbol}
+                </div>
+                <div className="asset-amt-usd-text">
+                    ${
                         (tokenPrice && denomCurrentTransparent) ? formatNumber(denomCurrentTransparent * tokenPrice, 2) : "--"
                     }
                 </div>
                 <NetChangeSpans 
-                    changes={viewMode === 'shielded' ? maspBalances.balances.changes : transparentBalances.balances.changes} 
+                    changes={transparentBalances.balances.changes} 
                 />
+            </div>
+
+            {/* Rewards Param Column */}
+            <div className="w-[150px] text-[#FFFF00] flex items-center justify-center">
+                xxxxxxxx
             </div>
         </div>
     )

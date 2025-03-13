@@ -4,7 +4,7 @@ import { useRegistryData } from '../../hooks/useRegistryData'
 import { useTokenPrices } from '../../hooks/useTokenPrices'
 import { ViewMode } from './AssetTableContainer'
 import MetricsRow from './MetricsRow'
-import ViewToggle from './ViewToggle'
+// import ViewToggle from './ViewToggle'
 import '../../styles/shared.css';
 
 interface MetricsColumnProps {
@@ -12,7 +12,7 @@ interface MetricsColumnProps {
     onViewChange: (view: ViewMode) => void
 }
 
-function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
+function MetricsColumn({ viewMode: _viewMode, onViewChange: _onViewChange }: MetricsColumnProps) {
     const { assets, isLoading: isLoadingRegistry } = useRegistryData()
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
     const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances()
@@ -32,24 +32,23 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
     
     return (
         <div className="h-full">
-            <div className="column-heading-container bg-[#010101]">
-                <div className="flex-1">
+            <div className="column-heading-container bg-[#010101] justify-end rounded-tr-[5px]">
+                {/* <div className="flex-1">
                     <ViewToggle currentView={viewMode} onViewChange={onViewChange} />
-                </div>
+                </div> */}
                 <div className="h-[40px] px-4 flex items-center">
                     <div className="flex column-heading-text w-full pl-8">
-                        {viewMode === 'shielded' ? (
+                        {/* {viewMode === 'shielded' ? ( */}
                             <>
-                                {/* <div className="flex-1">Total Value Shielded</div> */}
                                 <div className="flex-1">Current Value Shielded</div>
-                                <div className="w-[150px]">Rewards Param</div>
+                                <div className="flex-1">Current Value Transparent</div>
+                                <div className="w-[150px] flex justify-center">Rewards Param</div>
                             </>
-                        ) : (
+                        {/* ) : (
                             <>
-                                {/* <div className="flex-1">Total Value Transparent</div> */}
                                 <div className="flex-1">Current Value Transparent</div>
                             </>
-                        )}
+                        )} */}
                     </div>
                 </div>
             </div>
@@ -57,7 +56,7 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
                 {assets.map((token) => (
                     <MetricsRow
                         key={token.address}
-                        viewMode={viewMode}
+                        // viewMode={viewMode}
                         token={token}
                         tokenPrice={tokenPrices?.price.find(entry => entry.id === token.coingecko_id)?.usd ?? null}
                         maspBalances={maspBalances?.balances.find(entry => entry.tokenAddress === token.address) ?? null}

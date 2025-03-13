@@ -30,7 +30,7 @@ function AssetRow({ token, tokenPrice, tokenSupplies, isLoading }: AssetRowProps
         return (
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(1)].map((_, i) => (
                         <div key={i} className="h-[96px] bg-gray-700 rounded" />
                     ))}
                 </div>

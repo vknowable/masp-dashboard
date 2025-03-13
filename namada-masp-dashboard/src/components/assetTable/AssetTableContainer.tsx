@@ -10,7 +10,7 @@ function AssetTableContainer() {
     const [viewMode, setViewMode] = useState<ViewMode>('shielded')
 
     return (
-        <div className="container-surface overflow-hidden pb-8 pt-0 mt-8">
+        <div className="container-surface overflow-hidden pb-8 pt-2 mt-8">
             <div className="flex h-full">
                 {/* Left column - Asset Info */}
                 <ErrorBoundary>
