@@ -43,9 +43,9 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
                         <img 
                             src={channel.chainB.logoUri} 
                             alt={`${channel.chainB.name} logo`}
-                            className="w-8 h-8"
+                            className="w-12 h-12"
                         />
-                        <h3 className="text-lg font-light text-white">{toTitleCase(channel.chainB.name)}</h3>
+                        <h3 className="text-lg font-normal text-white">{toTitleCase(channel.chainB.name)}</h3>
                     </div>
                     <div className="px-3 py-1 rounded-[5px] bg-[#00FF33]/15 text-[#00FF33] text-sm">
                         Active
@@ -86,8 +86,8 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
                         {tableRows.map(row => (
                             <div key={row.label} className="grid grid-cols-3 gap-4">
                                 <div className="text-[#B9B9B9]">{row.label}</div>
-                                <div className="text-white font-medium tracking-[0.2px]">{row.valueA}</div>
-                                <div className="text-white font-medium tracking-[0.2px]">{row.valueB}</div>
+                                <div className="text-white font-normal tracking-[0.2px]">{row.valueA}</div>
+                                <div className="text-white font-normal tracking-[0.2px]">{row.valueB}</div>
                             </div>
                         ))}
                     </div>

@@ -13,7 +13,7 @@ function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
                     flex-1 px-6 flex items-center justify-center text-[18px] font-regular tracking-[0.4px] transition-colors
                     ${currentView === 'shielded'
                         ? 'bg-[#010101] text-[#FFFF00]'
-                        : 'bg-[#191919] text-[#AAAA00] hover:text-[#DDDD00]'
+                        : 'bg-[#191919] text-[#FFFF00]/50 hover:text-[#DDDD00]'
                     }
                 `}
                 onClick={() => onViewChange('shielded')}

@@ -5,7 +5,7 @@
 @layer components {
   /* Typography */
   .section-heading {
-    @apply text-[20px] tracking-[0.2px] font-light text-white mb-4;
+    @apply text-[20px] tracking-[0.2px] font-normal text-white mb-4;
   }
 
   /* Layout containers */
@@ -14,7 +14,7 @@
   }
 
   .column-heading-container {
-    @apply h-[140px] bg-[#1E1E1E] flex flex-col;
+    @apply h-[140px] bg-[#191919] flex flex-col;
   }
 
   .column-heading-text {

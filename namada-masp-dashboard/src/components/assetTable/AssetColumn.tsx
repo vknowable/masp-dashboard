@@ -28,7 +28,7 @@ function AssetColumn() {
                 <div className="flex-1 p-4">
                     <h2 className="section-heading">Assets in Namada</h2>
                     <div className="flex items-center mt-2">
-                        <span className="px-2 py-0.5 text-[13px] tracking-[0.2px] font-light rounded-md border-2 border-yellow-400/50">
+                        <span className="px-2 py-0.5 text-[13px] tracking-[0.2px] font-light rounded-md border-2 border-[#FFFF00]/50">
                             = Shielded Incentives
                         </span>
                     </div>

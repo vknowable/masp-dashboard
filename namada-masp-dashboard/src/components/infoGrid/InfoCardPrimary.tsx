@@ -11,7 +11,7 @@ function InfoCardPrimary({ topText, bottomText, bgColor, size }: InfoCardPrimary
 
     return (
         <div className={`rounded-[5px] flex flex-col justify-between items-start p-4 pb-6 ${bg} ${height}`}>
-            <div className="font-light text-[16px] leading-[1.5rem] text-[#3A3A3A] tracking-[0.2px]">{topText}</div>
+            <div className="font-normal text-[16px] leading-[1.5rem] text-[#3A3A3A] tracking-[0.2px]">{topText}</div>
             <div className="font-medium text-[20px] leading-[1.5rem] text-black tracking-[0.2px]">{bottomText}</div>
         </div>
     )

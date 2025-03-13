@@ -70,7 +70,7 @@ function AssetRow({ token, tokenPrice, tokenSupplies, isLoading }: AssetRowProps
                     {formatNumber(denomCurrentSupply, 6)} {token.symbol}
                 </div>
                 <div className="asset-amt-usd-text">
-                    ${(tokenPrice && denomCurrentSupply) ? formatNumber(denomCurrentSupply * tokenPrice, 6) : "--"}
+                    ${(tokenPrice && denomCurrentSupply) ? formatNumber(denomCurrentSupply * tokenPrice, 2) : "--"}
                 </div>
                 <NetChangeSpans changes={tokenSupplies.supplies.changes} />
             </div>

@@ -1,7 +1,7 @@
 import { useMaspBalances } from '../../hooks/useMaspBalances'
+import { useTransparentBalances } from '../../hooks/useTransparentBalances'
 import { useRegistryData } from '../../hooks/useRegistryData'
 import { useTokenPrices } from '../../hooks/useTokenPrices'
-import { useTokenSupplies } from '../../hooks/useTokenSupplies'
 import { ViewMode } from './AssetTableContainer'
 import MetricsRow from './MetricsRow'
 import ViewToggle from './ViewToggle'
@@ -15,9 +15,9 @@ interface MetricsColumnProps {
 function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
     const { assets, isLoading: isLoadingRegistry } = useRegistryData()
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices()
-    const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies()
     const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances()
-    
+    const { data: transparentBalances, isLoading: isLoadingTransparentBalances } = useTransparentBalances()
+
     if (isLoadingRegistry || !assets) {
         return (
             <div className="p-4">
@@ -60,9 +60,9 @@ function MetricsColumn({ viewMode, onViewChange }: MetricsColumnProps) {
                         viewMode={viewMode}
                         token={token}
                         tokenPrice={tokenPrices?.price.find(entry => entry.id === token.coingecko_id)?.usd ?? null}
-                        tokenSupplies={tokenSupplies?.supplies.find(entry => entry.address === token.address) ?? null}
                         maspBalances={maspBalances?.balances.find(entry => entry.tokenAddress === token.address) ?? null}
-                        isLoading={isLoadingSupplies}
+                        transparentBalances={transparentBalances?.balances.find(entry => entry.tokenAddress === token.address) ?? null}
+                        isLoading={isLoadingMaspBalances || isLoadingTransparentBalances}
                     />
                 ))}
             </div>

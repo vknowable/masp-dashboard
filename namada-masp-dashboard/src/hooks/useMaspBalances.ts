@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import type { Balance } from '../types/token'
 import { AxiosError } from 'axios'
-import { fetchMaspBalances, TransformedMaspBalances, MaspBalances } from '../api/chain'
+import { fetchMaspBalances, TransformedTokenAmounts, MaspBalances } from '../api/chain'
 import { useMaspAggregates } from './useMaspAggregates'
 import { retryPolicy, retryDelay } from '../api/apiClient'
 
@@ -20,7 +19,7 @@ function calculateNetChange(inflows: string | undefined, outflows: string | unde
 export function useMaspBalances() {
   const { data: aggregates } = useMaspAggregates();
 
-  return useQuery<TransformedMaspBalances, AxiosError>({
+  return useQuery<TransformedTokenAmounts, AxiosError>({
     queryKey: ['maspBalances'],
     queryFn: async () => {
       const data = await fetchMaspBalances();
@@ -50,10 +49,15 @@ export function useMaspBalances() {
             )
           };
 
+          const currentBalance = Number(balance.minDenomAmount);
+
           return {
             tokenAddress: balance.tokenAddress,
             balances: {
-              current: Number(balance.minDenomAmount),
+              current: currentBalance,
+              '1dAgo': changes['24h'] !== null ? currentBalance - changes['24h'] : null,
+              '7dAgo': changes['7d'] !== null ? currentBalance - changes['7d'] : null,
+              '30dAgo': changes['30d'] !== null ? currentBalance - changes['30d'] : null,
               changes
             }
           };

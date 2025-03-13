@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchChainParameters, fetchLatestBlock, fetchBlockchainInfo, fetchVotingPower, fetchLatestEpoch, fetchTotalRewardsMinted, TransformedMaspBalances, TokenPricesResponse } from '../api/chain'
+import { fetchChainParameters, fetchLatestBlock, fetchBlockchainInfo, fetchVotingPower, fetchLatestEpoch, fetchTotalRewardsMinted, TransformedTokenAmounts, TokenPricesResponse } from '../api/chain'
 import { AbciQueryResponse } from '../types/abci'
 import { denomAmount, parseNumeric } from '../utils/numbers'
 import { decodeBorshAmtStr } from '../utils/borsh'
@@ -60,7 +60,7 @@ const calculateStakedPercentage = (totalStaked: string | null, totalSupply: numb
 
 // Tally up the total shielded assets in USD
 const calculateTotalShieldedAssets = (
-  maspBalances: TransformedMaspBalances,
+  maspBalances: TransformedTokenAmounts,
   tokenPrices: TokenPricesResponse,
   assetMetadata: RegistryAsset[],
 ): number | null => {

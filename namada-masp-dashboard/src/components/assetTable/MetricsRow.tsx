@@ -1,4 +1,4 @@
-import { TransformedMaspBalance, TransformedTokenSupply } from "../../api/chain"
+import { TransformedTokenAmount, TransformedTokenSupply } from "../../api/chain"
 import { RegistryAsset } from "../../types/chainRegistry"
 import { denomAmount, formatNumber } from "../../utils/numbers"
 import { ViewMode } from './AssetTableContainer'
@@ -8,12 +8,12 @@ interface MetricsRowProps {
     viewMode: ViewMode
     token: RegistryAsset
     tokenPrice: number | null
-    tokenSupplies: TransformedTokenSupply | null
-    maspBalances: TransformedMaspBalance | null
+    maspBalances: TransformedTokenAmount | null
+    transparentBalances: TransformedTokenAmount | null
     isLoading?: boolean
 }
 
-function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, isLoading }: MetricsRowProps) {
+function MetricsRow({ viewMode, token, tokenPrice, maspBalances, transparentBalances, isLoading }: MetricsRowProps) {
 
     if (isLoading) {
         return (
@@ -28,7 +28,7 @@ function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, 
     }
 
     // TODO: Add loading state for token supplies, so we can still show the token symbol and icon
-    if (!tokenSupplies || !maspBalances) {
+    if (!maspBalances || !transparentBalances) {
         return (
             <div className="p-4">
                 <div className="animate-pulse space-y-4">
@@ -40,28 +40,11 @@ function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, 
         )
     }
 
-    const rawCurrentSupply = tokenSupplies.supplies.current
-    const denomCurrentSupply = denomAmount(rawCurrentSupply, 6)
-
     const rawCurrentMasp = maspBalances.balances.current
     const denomCurrentMasp = denomAmount(rawCurrentMasp, 6)
 
-    const rawCurrentTransparent = rawCurrentSupply && rawCurrentMasp ? rawCurrentSupply - rawCurrentMasp : null
+    const rawCurrentTransparent = transparentBalances.balances.current
     const denomCurrentTransparent = denomAmount(rawCurrentTransparent, 6)
-    
-    const calcNetChangeTransparent = (totalNet: number | null, maspNet: number | null) => {
-        // if (totalNet && maspNet) {
-        //     return totalNet - maspNet
-        // }
-        return 0 // until fixed
-    }
-
-    // Calculate transparent changes
-    const transparentChanges = {
-        '24h': calcNetChangeTransparent(tokenSupplies.supplies.changes['24h'], maspBalances.balances.changes['24h']),
-        '7d': calcNetChangeTransparent(tokenSupplies.supplies.changes['7d'], maspBalances.balances.changes['7d']),
-        '30d': calcNetChangeTransparent(tokenSupplies.supplies.changes['30d'], maspBalances.balances.changes['30d'])
-    }
 
     return (
         <div className="h-[94px] p-4 flex items-center bg-[#010101] rounded-tr-[5px] rounded-br-[5px]">
@@ -73,12 +56,12 @@ function MetricsRow({ viewMode, token, tokenPrice, tokenSupplies, maspBalances, 
                 </div>
                 <div className="asset-amt-usd-text">
                     ${viewMode === 'shielded' ?
-                        (tokenPrice && denomCurrentMasp) ? formatNumber(denomCurrentMasp * tokenPrice, 6) : "--" :
-                        (tokenPrice && denomCurrentTransparent) ? formatNumber(denomCurrentTransparent * tokenPrice, 6) : "--"
+                        (tokenPrice && denomCurrentMasp) ? formatNumber(denomCurrentMasp * tokenPrice, 2) : "--" :
+                        (tokenPrice && denomCurrentTransparent) ? formatNumber(denomCurrentTransparent * tokenPrice, 2) : "--"
                     }
                 </div>
                 <NetChangeSpans 
-                    changes={viewMode === 'shielded' ? maspBalances.balances.changes : transparentChanges} 
+                    changes={viewMode === 'shielded' ? maspBalances.balances.changes : transparentBalances.balances.changes} 
                 />
             </div>
         </div>

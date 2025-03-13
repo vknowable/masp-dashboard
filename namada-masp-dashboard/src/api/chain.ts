@@ -54,6 +54,10 @@ export interface TokenPricesResponse {
   price: TokenPrice[]
 }
 
+export type BalanceInterval = 'current' | '1dAgo' | '7dAgo' | '30dAgo'
+
+export type ChangeInterval = '24h' | '7d' | '30d' | 'allTime'
+
 export interface TokenSupplies {
   timestamp: string;
   supplies: Array<{
@@ -91,14 +95,17 @@ export interface MaspBalances {
   balances: Balance[]
 }
 
-export interface TransformedMaspBalances {
-  balances: Array<TransformedMaspBalance>
+export interface TransformedTokenAmounts {
+  balances: Array<TransformedTokenAmount>
 }
 
-export interface TransformedMaspBalance {
+export interface TransformedTokenAmount {
   tokenAddress: string
   balances: {
     current: number | null;
+    '1dAgo': number | null;
+    '7dAgo': number | null;
+    '30dAgo': number | null;
     changes: {
       '24h': number | null;
       '7d': number | null;

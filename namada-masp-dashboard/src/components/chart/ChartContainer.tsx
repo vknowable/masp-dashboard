@@ -15,8 +15,8 @@ interface ChartVisibility {
 function ChartContainer() {
     const [visibility, setVisibility] = useState<ChartVisibility>({
         maspAggregates: true,
-        anotherChart: true,
-        anotherChart2: true,
+        anotherChart: false,
+        anotherChart2: false,
         // tokenPrices: true,
         // stakingMetrics: true
     })
