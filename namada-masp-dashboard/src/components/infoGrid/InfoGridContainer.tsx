@@ -89,6 +89,8 @@ function InfoGridContainer() {
   );
 }
 function createInfoCards(chainMetrics: ChainMetrics): InfoCard[] {
+  const totalShieldedAssets = chainMetrics.totalShieldedAssets;
+  const { current, changes } = totalShieldedAssets ?? {};
   return [
     {
       topText: "Total Shielded Assets",
@@ -99,15 +101,15 @@ function createInfoCards(chainMetrics: ChainMetrics): InfoCard[] {
           </div>
           <div className="flex flex-row mt-2">
             <div className="text-sm text-gray-500 mr-3">
-              ${formatNumber(chainMetrics.totalShieldedAssets?.changes["24h"])}{" "}
+              {formatNumber(((changes?.["24h"] ?? 0) / (current ?? 0)) * 100)}%{" "}
               (24h)
             </div>
             <div className="text-sm text-gray-500 mr-3">
-              ${formatNumber(chainMetrics.totalShieldedAssets?.changes["7d"])}{" "}
+              {formatNumber(((changes?.["7d"] ?? 0) / (current ?? 0)) * 100)}%{" "}
               (7d)
             </div>
             <div className="text-sm text-gray-500 mr-3">
-              ${formatNumber(chainMetrics.totalShieldedAssets?.changes["30d"])}{" "}
+              {formatNumber(((changes?.["30d"] ?? 0) / (current ?? 0)) * 100)}%{" "}
               (30d)
             </div>
           </div>
