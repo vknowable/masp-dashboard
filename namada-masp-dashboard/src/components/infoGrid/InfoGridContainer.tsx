@@ -24,6 +24,7 @@ function InfoGridContainer() {
     isLoading: isLoadingChain,
     isError: isErrorChain,
   } = useChainInfo();
+  console.log(chainMetrics, "CHAIN METRICS");
   const cards = useMemo(
     () => (chainMetrics ? createInfoCards(chainMetrics) : []),
     [chainMetrics]
@@ -87,12 +88,31 @@ function InfoGridContainer() {
     </ErrorBoundary>
   );
 }
-
 function createInfoCards(chainMetrics: ChainMetrics): InfoCard[] {
   return [
     {
       topText: "Total Shielded Assets",
-      bottomText: `$${formatNumber(chainMetrics.totalShieldedAssets)}`,
+      bottomText: (
+        <div className="flex flex-col">
+          <div className="text-lg font-bold">
+            ${formatNumber(chainMetrics.totalShieldedAssets?.current)}
+          </div>
+          <div className="flex flex-row mt-2">
+            <div className="text-sm text-gray-500 mr-3">
+              ${formatNumber(chainMetrics.totalShieldedAssets?.changes["24h"])}{" "}
+              (24h)
+            </div>
+            <div className="text-sm text-gray-500 mr-3">
+              ${formatNumber(chainMetrics.totalShieldedAssets?.changes["7d"])}{" "}
+              (7d)
+            </div>
+            <div className="text-sm text-gray-500 mr-3">
+              ${formatNumber(chainMetrics.totalShieldedAssets?.changes["30d"])}{" "}
+              (30d)
+            </div>
+          </div>
+        </div>
+      ),
       size: "large" as const,
       variant: "primary" as const,
     },
