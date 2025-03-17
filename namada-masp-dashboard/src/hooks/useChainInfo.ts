@@ -164,6 +164,7 @@ export function useChainInfo(): ChainInfo {
     staleTime: 300000, // Consider fresh for 5 minutes
   });
 
+  console.log(parameters, "PARAMETERS of CHAIN");
   // Get latest block height
   const { data: blockInfo, isLoading: isLoadingBlock } = useQuery<BlockHeight>({
     queryKey: ["latestBlock"],
