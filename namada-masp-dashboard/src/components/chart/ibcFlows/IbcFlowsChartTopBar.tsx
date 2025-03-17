@@ -1,20 +1,20 @@
-import { Dispatch, SetStateAction } from 'react'
-import { RegistryAsset } from '../../../types/chainRegistry'
+import { Dispatch, SetStateAction } from "react";
+import { RegistryAsset } from "../../../types/chainRegistry";
 
 interface IbcFlowsChartTopBarProps {
-  selectedAsset: string
-  onAssetSelect: Dispatch<SetStateAction<string>>
-  selectedTimeframe: '24hr' | '7d' | '30d'
-  onTimeframeSelect: Dispatch<SetStateAction<'24hr' | '7d' | '30d'>>
-  showShieldedInflow: boolean
-  onShieldedInflowToggle: Dispatch<SetStateAction<boolean>>
-  showShieldedOutflow: boolean
-  onShieldedOutflowToggle: Dispatch<SetStateAction<boolean>>
-  showTransparentInflow: boolean
-  onTransparentInflowToggle: Dispatch<SetStateAction<boolean>>
-  showTransparentOutflow: boolean
-  onTransparentOutflowToggle: Dispatch<SetStateAction<boolean>>
-  assets?: RegistryAsset[]
+  selectedAsset: string;
+  onAssetSelect: Dispatch<SetStateAction<string>>;
+  selectedTimeframe: "24hr" | "7d" | "30d";
+  onTimeframeSelect: Dispatch<SetStateAction<"24hr" | "7d" | "30d">>;
+  showShieldedInflow: boolean;
+  onShieldedInflowToggle: Dispatch<SetStateAction<boolean>>;
+  showShieldedOutflow: boolean;
+  onShieldedOutflowToggle: Dispatch<SetStateAction<boolean>>;
+  showTransparentInflow: boolean;
+  onTransparentInflowToggle: Dispatch<SetStateAction<boolean>>;
+  showTransparentOutflow: boolean;
+  onTransparentOutflowToggle: Dispatch<SetStateAction<boolean>>;
+  assets?: RegistryAsset[];
 }
 
 export default function IbcFlowsChartTopBar({
@@ -30,19 +30,19 @@ export default function IbcFlowsChartTopBar({
   onTransparentInflowToggle,
   showTransparentOutflow,
   onTransparentOutflowToggle,
-  assets = []
+  assets = [],
 }: IbcFlowsChartTopBarProps) {
   return (
     <div className="min-w-full min-h-[36px] flex justify-between items-center mb-4">
       <div className="flex items-center gap-4">
         {/* Asset Select */}
-        <select 
+        <select
           value={selectedAsset}
           onChange={(e) => onAssetSelect(e.target.value)}
           className="bg-[#2A2A2A] text-white px-4 py-1 rounded-md border border-gray-700 focus:outline-none focus:border-yellow-400"
         >
           <option value="All">All</option>
-          {assets.map(asset => (
+          {assets.map((asset) => (
             <option key={asset.symbol} value={asset.symbol}>
               {asset.symbol}
             </option>
@@ -51,15 +51,17 @@ export default function IbcFlowsChartTopBar({
 
         {/* Time Select */}
         <div className="flex gap-2">
-          {(['24hr', '7d', '30d'] as const).map((time) => (
+          {(["24hr", "7d", "30d"] as const).map((time) => (
             <button
               key={time}
               onClick={() => onTimeframeSelect(time)}
               className={`
                 px-4 py-1 rounded-md transition-colors
-                ${selectedTimeframe === time 
-                  ? 'bg-yellow-400 text-black' 
-                  : 'bg-[#2A2A2A] text-white hover:bg-gray-700'}
+                ${
+                  selectedTimeframe === time
+                    ? "bg-yellow-400 text-black"
+                    : "bg-[#2A2A2A] text-white hover:bg-gray-700"
+                }
               `}
             >
               {time}
@@ -123,5 +125,5 @@ export default function IbcFlowsChartTopBar({
         </label>
       </div>
     </div>
-  )
+  );
 }

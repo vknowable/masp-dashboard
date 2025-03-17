@@ -19,8 +19,8 @@ function CustomCheckbox({
     checkColor === "yellow"
       ? "#CCCC00"
       : checkColor === "grey"
-      ? "#A0A0A0"
-      : "#DFDFDF";
+        ? "#A0A0A0"
+        : "#DFDFDF";
 
   return (
     <label className="flex items-center gap-2 cursor-pointer select-none">

@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import type { Token } from '../types/token'
-import { AxiosError } from 'axios'
-import { fetchTokenList } from '../api/chain'
-import { retryPolicy, retryDelay } from '../api/apiClient'
+import { useQuery } from "@tanstack/react-query";
+import type { Token } from "../types/token";
+import { AxiosError } from "axios";
+import { fetchTokenList } from "../api/chain";
+import { retryPolicy, retryDelay } from "../api/apiClient";
 
 /**
  * Hook to fetch list of all tokens (native and IBC)
@@ -10,10 +10,10 @@ import { retryPolicy, retryDelay } from '../api/apiClient'
  */
 export function useTokenList() {
   return useQuery<Token[], AxiosError>({
-    queryKey: ['tokenList'],
+    queryKey: ["tokenList"],
     queryFn: fetchTokenList,
     staleTime: 300000, // Consider fresh for 5 minutes
     retry: retryPolicy,
     retryDelay: retryDelay,
-  })
-} 
+  });
+}

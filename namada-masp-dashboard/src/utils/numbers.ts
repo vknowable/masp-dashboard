@@ -6,7 +6,7 @@
  */
 export const denomAmount = (
   raw: string | number | undefined | null,
-  exponent: number = 6
+  exponent: number = 6,
 ): number | null => {
   if (raw === undefined || raw === null || raw === "") {
     return null;
@@ -22,7 +22,7 @@ export const denomAmount = (
 
 // Parse numeric values, returning null for invalid/missing data
 export const parseNumeric = (
-  value: string | undefined | null
+  value: string | undefined | null,
 ): number | null => {
   if (!value) return null;
   const parsed = parseFloat(value);
@@ -39,7 +39,7 @@ export const parseNumeric = (
 export const formatNumber = (
   num: string | number | undefined | null,
   decimals: number = 2,
-  withPlaceholder = true
+  withPlaceholder = true,
 ) => {
   // Return placeholder if value is undefined, null, or empty string
   if (num === undefined || num === null || num === "") {
@@ -109,7 +109,7 @@ export const getNetChangeColor = (value: number | string | null) => {
  */
 export function formatNetChange(
   value: string | null,
-  decimals: number = 6
+  decimals: number = 6,
 ): string {
   if (value === null || value === "--") return "--";
 

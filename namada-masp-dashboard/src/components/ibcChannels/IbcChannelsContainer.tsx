@@ -9,7 +9,7 @@ function IbcChannelsContainer() {
   const { registryData, isLoading: isLoadingRegistry } = useRegistryData();
   const channels = useMemo(
     () => (registryData ? parseIbcConnections(registryData) : []),
-    [registryData]
+    [registryData],
   );
 
   // Split channels into left and right columns, also memoized since they depend on channels
@@ -18,7 +18,7 @@ function IbcChannelsContainer() {
       leftColumnChannels: channels.filter((_, index) => index % 2 === 0),
       rightColumnChannels: channels.filter((_, index) => index % 2 === 1),
     }),
-    [channels]
+    [channels],
   );
 
   if (isLoadingRegistry || !registryData) {
@@ -81,7 +81,7 @@ function parseIbcConnections(registryData: ChainMetadata): IbcChannel[] {
           };
         }
         const counterparty = registryData.counterParties.find(
-          (cp) => cp.chain.chain_name === chainName
+          (cp) => cp.chain.chain_name === chainName,
         );
         return {
           chainId: counterparty?.chain.chain_id || "unknown",

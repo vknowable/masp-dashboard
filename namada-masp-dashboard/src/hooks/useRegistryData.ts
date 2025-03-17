@@ -1,19 +1,19 @@
-import { useQuery } from '@tanstack/react-query'
-import { fetchChainMetadata } from '../api/chainRegistry'
-import { retryPolicy, retryDelay } from '../api/apiClient'
+import { useQuery } from "@tanstack/react-query";
+import { fetchChainMetadata } from "../api/chainRegistry";
+import { retryPolicy, retryDelay } from "../api/apiClient";
 
 export function useRegistryData() {
   // Base registry data query - provides chain info, assets, and IBC data
-  const { 
+  const {
     data: registryData,
     isLoading,
-    error
+    error,
   } = useQuery({
-    queryKey: ['registryData'],
+    queryKey: ["registryData"],
     queryFn: () => fetchChainMetadata("namada", true),
     retry: retryPolicy,
     retryDelay: retryDelay,
-  })
+  });
 
   return {
     registryData,
@@ -22,6 +22,6 @@ export function useRegistryData() {
     counterParties: registryData?.counterParties,
     ibcMetadata: registryData?.ibcMetadata,
     isLoading,
-    error
-  }
-} 
+    error,
+  };
+}
