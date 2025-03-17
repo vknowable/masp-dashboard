@@ -3,11 +3,15 @@ import { config } from "../config.js";
 import { wasmService } from "./wasmService.js";
 
 const pgfAddress = "tnam1pgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkhgajr"
+const MASP_ADDRESS = "tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah";
 
 class NamadaService {
     constructor() {
         this.tokenSupplies = [];
         this.rewardTokens = null;
+        this.totalRewards = null;
+        this.maspEpoch = null;
+        this.maspInflation = [];
         this.startUpdates();
         // Initialize WASM module
         wasmService.init().catch(console.error);
@@ -197,12 +201,128 @@ class NamadaService {
         });
     }
 
+    async fetchTotalRewards() {
+        console.log("Fetching total rewards");
+        return this.queryWithRetry(async () => {
+            try {
+                const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                    params: {
+                        path: `"/shell/value/#${MASP_ADDRESS}/max_total_rewards"`
+                    }
+                });
+
+                if (!response.data?.result?.response?.value) {
+                    console.log('No total rewards data available');
+                    return null;
+                }
+
+                // Decode the ABCI value using WASM
+                const decodedRewards = wasmService.decodeAbciAmount(response.data.result.response.value);
+                this.totalRewards = decodedRewards;
+                return decodedRewards;
+            } catch (error) {
+                console.log(`Total rewards query failed: ${error.message}`);
+                return null;
+            }
+        });
+    }
+
+    async fetchMaspEpoch() {
+        console.log("Fetching MASP epoch");
+        return this.queryWithRetry(async () => {
+            try {
+                const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                    params: {
+                        path: '"/shell/masp_epoch"'
+                    }
+                });
+
+                if (!response.data?.result?.response?.value) {
+                    console.log('No MASP epoch data available');
+                    return null;
+                }
+
+                // Decode the ABCI value using WASM
+                const decodedEpoch = wasmService.decodeAbciMaspEpoch(response.data.result.response.value);
+                this.maspEpoch = decodedEpoch;
+                return decodedEpoch;
+            } catch (error) {
+                console.log(`MASP epoch query failed: ${error.message}`);
+                return null;
+            }
+        });
+    }
+
+    async fetchMaspInflation() {
+        console.log("Fetching MASP inflation data");
+        try {
+            // Get list of registered assets
+            const assetList = await this.fetchAssetList();
+            if (!assetList || assetList.length === 0) {
+                throw new Error("Failed to fetch asset list");
+            }
+
+            // Fetch inflation data for each token
+            const inflationData = await Promise.all(
+                assetList.map(async (asset) => {
+                    try {
+                        // Query last inflation
+                        const inflationResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                            params: {
+                                path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_inflation"`
+                            }
+                        });
+
+                        // Query last locked amount
+                        const lockedResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                            params: {
+                                path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_locked_amount"`
+                            }
+                        });
+
+                        if (!inflationResponse.data?.result?.response?.value ||
+                            !lockedResponse.data?.result?.response?.value) {
+                            console.log(`No inflation data for token ${asset.address}`);
+                            return null;
+                        }
+
+                        // Decode both values using WASM
+                        const lastInflation = wasmService.decodeAbciAmount(inflationResponse.data.result.response.value);
+                        const lastLocked = wasmService.decodeAbciAmount(lockedResponse.data.result.response.value);
+
+                        return {
+                            address: asset.address,
+                            last_locked: lastLocked,
+                            last_inflation: lastInflation
+                        };
+                    } catch (error) {
+                        console.log(`Inflation query failed for ${asset.address}: ${error.message}`);
+                        return null;
+                    }
+                })
+            );
+
+            // Filter out null values and update the stored data
+            this.maspInflation = inflationData.filter(data => data !== null);
+            return this.maspInflation;
+        } catch (error) {
+            console.error("Error fetching MASP inflation:", error);
+            return [];
+        }
+    }
+
     startUpdates() {
         const refreshMillis = 60000; // 60 seconds
         setInterval(() => this.fetchAllTokenSupplies(), refreshMillis);
         setInterval(() => this.fetchRewardTokens(), refreshMillis);
+        setInterval(() => this.fetchTotalRewards(), refreshMillis);
+        setInterval(() => this.fetchMaspEpoch(), refreshMillis);
+        setInterval(() => this.fetchMaspInflation(), refreshMillis);
         this.fetchAllTokenSupplies(); // Initial fetch
         this.fetchRewardTokens(); // Initial fetch
+        this.fetchTotalRewards(); // Initial fetch
+        this.fetchMaspEpoch(); // Initial fetch
+        this.fetchMaspInflation(); // Initial fetch
     }
 
     getTokenSupplies() {
@@ -211,6 +331,18 @@ class NamadaService {
 
     getRewardTokens() {
         return this.rewardTokens;
+    }
+
+    getTotalRewards() {
+        return this.totalRewards;
+    }
+
+    getMaspEpoch() {
+        return this.maspEpoch;
+    }
+
+    getMaspInflation() {
+        return this.maspInflation;
     }
 }
 

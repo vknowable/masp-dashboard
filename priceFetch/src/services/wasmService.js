@@ -43,6 +43,19 @@ class WasmService {
             return null;
         }
     }
+
+    decodeAbciMaspEpoch(value) {
+        if (!this.initialized) {
+            throw new Error('WASM module not initialized');
+        }
+
+        try {
+            return this.wasmModule.decode_epoch(value);
+        } catch (error) {
+            console.error('Failed to decode ABCI value:', error);
+            return null;
+        }
+    }
 }
 
 export const wasmService = new WasmService(); 
