@@ -80,8 +80,29 @@ class NamadaService {
                 }
 
                 // Decode the ABCI value using WASM
-                const decodedValue = wasmService.decodeAbciValue(response.data.result.response.value);
-                return decodedValue;
+                const decodedSupply = wasmService.decodeAbciValue(response.data.result.response.value);
+
+                // For NAM, we need to subtract the PGF balance from the total supply to get the effective supply
+                if (tokenAddress === config.namTokenAddress) {
+                    const balancePath = `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${config.namTokenAddress}/balance/#${pgfAddress}"`;
+                    const balanceResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                        params: {
+                            path: balancePath,
+                            height: height.toString()
+                        }
+                    });
+
+                    if (!balanceResponse.data?.result?.response?.value) {
+                        console.log(`No PGF balance data at height ${height}`);
+                        return null;
+                    }
+
+                    // Decode the ABCI value using WASM
+                    const decodedBalance = wasmService.decodeAbciValue(balanceResponse.data.result.response.value);
+                    return decodedSupply - decodedBalance;
+                }
+
+                return decodedSupply;
             } catch (error) {
                 console.log(`Token supply query failed for ${tokenAddress} at height ${height}: ${error.message}`);
                 return null;
