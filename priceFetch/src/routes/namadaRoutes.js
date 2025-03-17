@@ -5,25 +5,31 @@ const router = express.Router();
 
 // Get token supplies data
 router.get('/token/supplies', async (req, res) => {
-  try {
-    const supplies = namadaService.getTokenSupplies();
-    
-    if (!supplies || supplies.length === 0) {
-      return res.status(503).json({
-        error: "Token supply data temporarily unavailable"
-      });
-    }
+    try {
+        const supplies = namadaService.getTokenSupplies();
 
-    res.json({
-      timestamp: new Date().toISOString(),
-      supplies: supplies
-    });
-  } catch (error) {
-    console.error("Error fetching token supplies:", error);
-    res.status(500).json({
-      error: "Internal server error while fetching token supplies"
-    });
-  }
+        if (!supplies || supplies.length === 0) {
+            return res.status(503).json({
+                error: "Token supply data temporarily unavailable"
+            });
+        }
+
+        res.json({
+            timestamp: new Date().toISOString(),
+            supplies: supplies
+        });
+    } catch (error) {
+        console.error("Error fetching token supplies:", error);
+        res.status(500).json({
+            error: "Internal server error while fetching token supplies"
+        });
+    }
+});
+
+// Get reward tokens
+router.get('/rewardtokens', (req, res) => {
+    const rewardTokens = namadaService.getRewardTokens();
+    res.json({ rewardTokens });
 });
 
 // Example routes (commented out until implemented)

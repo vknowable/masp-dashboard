@@ -7,6 +7,7 @@ const pgfAddress = "tnam1pgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkhgajr"
 class NamadaService {
     constructor() {
         this.tokenSupplies = [];
+        this.rewardTokens = null;
         this.startUpdates();
         // Initialize WASM module
         wasmService.init().catch(console.error);
@@ -80,7 +81,7 @@ class NamadaService {
                 }
 
                 // Decode the ABCI value using WASM
-                const decodedSupply = wasmService.decodeAbciValue(response.data.result.response.value);
+                const decodedSupply = wasmService.decodeAbciAmount(response.data.result.response.value);
 
                 // For NAM, we need to subtract the PGF balance from the total supply to get the effective supply
                 if (tokenAddress === config.namTokenAddress) {
@@ -98,7 +99,7 @@ class NamadaService {
                     }
 
                     // Decode the ABCI value using WASM
-                    const decodedBalance = wasmService.decodeAbciValue(balanceResponse.data.result.response.value);
+                    const decodedBalance = wasmService.decodeAbciAmount(balanceResponse.data.result.response.value);
                     return decodedSupply - decodedBalance;
                 }
 
@@ -170,14 +171,46 @@ class NamadaService {
         }
     }
 
+    async fetchRewardTokens() {
+        console.log("Fetching reward tokens");
+        return this.queryWithRetry(async () => {
+            try {
+                const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                    params: {
+                        path: '"/shell/masp_reward_tokens"'
+                    }
+                });
+
+                if (!response.data?.result?.response?.value) {
+                    console.log('No reward tokens data available');
+                    return null;
+                }
+
+                // Decode the ABCI value using WASM
+                const decodedTokens = wasmService.decodeAbciRewardTokens(response.data.result.response.value);
+                this.rewardTokens = decodedTokens
+                return decodedTokens;
+            } catch (error) {
+                console.log(`Reward tokens query failed: ${error.message}`);
+                return null;
+            }
+        });
+    }
+
     startUpdates() {
         const refreshMillis = 60000; // 60 seconds
         setInterval(() => this.fetchAllTokenSupplies(), refreshMillis);
+        setInterval(() => this.fetchRewardTokens(), refreshMillis);
         this.fetchAllTokenSupplies(); // Initial fetch
+        this.fetchRewardTokens(); // Initial fetch
     }
 
     getTokenSupplies() {
         return this.tokenSupplies;
+    }
+
+    getRewardTokens() {
+        return this.rewardTokens;
     }
 }
 

@@ -18,13 +18,26 @@ class WasmService {
         }
     }
 
-    decodeAbciValue(value) {
+    decodeAbciAmount(value) {
         if (!this.initialized) {
             throw new Error('WASM module not initialized');
         }
 
         try {
             return this.wasmModule.decode_amount(value);
+        } catch (error) {
+            console.error('Failed to decode ABCI value:', error);
+            return null;
+        }
+    }
+
+    decodeAbciRewardTokens(value) {
+        if (!this.initialized) {
+            throw new Error('WASM module not initialized');
+        }
+
+        try {
+            return this.wasmModule.decode_reward_tokens(value);
         } catch (error) {
             console.error('Failed to decode ABCI value:', error);
             return null;
