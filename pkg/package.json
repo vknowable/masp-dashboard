@@ -1,6 +1,5 @@
 {
   "name": "masp_dashboard_wasm",
-  "type": "module",
   "description": "wasm package for the `namada-masp-dashboard` proof of concept. modified from https://github.com/anoma/namada-interface/",
   "version": "0.1.0",
   "files": [
@@ -9,8 +8,5 @@
     "masp_dashboard_wasm.d.ts"
   ],
   "main": "masp_dashboard_wasm.js",
-  "types": "masp_dashboard_wasm.d.ts",
-  "sideEffects": [
-    "./snippets/*"
-  ]
+  "types": "masp_dashboard_wasm.d.ts"
 }
