@@ -18,7 +18,7 @@ import { useTokenSupplies } from "./useTokenSupplies";
 import { useTokenPrices } from "./useTokenPrices";
 import { useMaspBalances } from "./useMaspBalances";
 import { RegistryAsset } from "../types/chainRegistry";
-
+import { useTotalRewards } from "./useMaspData";
 interface ShieldedAssetsMetrics {
     current: number | null;
     changes: {
@@ -151,6 +151,8 @@ export function useChainInfo(): ChainInfo {
         useTokenSupplies();
     const { data: maspBalances, isLoading: isLoadingMaspBalances } =
         useMaspBalances();
+    const { data: totalRewards, isLoading: isLoadingTotalRewards } =
+        useTotalRewards();
 
     // Get chain parameters (includes APR and native token address)
     const {
@@ -219,12 +221,7 @@ export function useChainInfo(): ChainInfo {
         : null;
 
     // TODO: This value is in uNAM but UI shows it as $ value
-    // TODO: We now need to fetch this value from the backend
-    // const totalRewardsMinted = decodeBorshAmt(totalRewardsResponse || null).toString()
-    //   const totalRewardsMinted = decodeBorshAmtStr(
-    //     totalRewardsResponse?.result?.response?.value || null
-    //   );
-    const totalRewardsMinted = null;
+    const totalRewardsMinted = totalRewards?.totalRewards ?? null;
 
     const totalSupply =
         tokenSupplies?.supplies.find(
@@ -249,7 +246,7 @@ export function useChainInfo(): ChainInfo {
             totalStaked: votingPower?.totalVotingPower ?? null,
             percentStaked,
             totalShieldedAssets,
-            totalRewardsMinted,
+            totalRewardsMinted: totalRewardsMinted ? parseNumeric(totalRewardsMinted) : null,
             rewardsPerEpoch: null,
             epoch: epochInfo?.epoch ?? null,
         },
