@@ -80,7 +80,11 @@ function MetricsColumn({
                 (entry) => entry.tokenAddress === token.address
               ) ?? null
             }
-            isLoading={isLoadingMaspBalances || isLoadingTransparentBalances}
+            isLoading={
+              isLoadingMaspBalances ||
+              isLoadingTransparentBalances ||
+              isLoadingPrices
+            }
           />
         ))}
       </div>

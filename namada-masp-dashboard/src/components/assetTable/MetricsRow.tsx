@@ -1,11 +1,7 @@
-import {
-  TransformedTokenAmount,
-  TransformedTokenSupply,
-} from "../../api/chain";
+import { TransformedTokenAmount } from "../../api/chain";
 import { useRewardTokens } from "../../hooks/useMaspData";
 import { RegistryAsset } from "../../types/chainRegistry";
 import { denomAmount, formatNumber } from "../../utils/numbers";
-import { ViewMode } from "./AssetTableContainer";
 import NetChangeSpans from "./NetChangeSpans";
 
 interface MetricsRowProps {
