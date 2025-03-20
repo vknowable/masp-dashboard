@@ -2,6 +2,7 @@ import {
   TransformedTokenAmount,
   TransformedTokenSupply,
 } from "../../api/chain";
+import { useRewardTokens } from "../../hooks/useMaspData";
 import { RegistryAsset } from "../../types/chainRegistry";
 import { denomAmount, formatNumber } from "../../utils/numbers";
 import { ViewMode } from "./AssetTableContainer";
@@ -23,6 +24,8 @@ function MetricsRow({
   transparentBalances,
   isLoading,
 }: MetricsRowProps) {
+  const { data: rewardTokens } = useRewardTokens();
+
   if (isLoading) {
     return (
       <div className="p-4">
@@ -53,6 +56,10 @@ function MetricsRow({
 
   const rawCurrentTransparent = transparentBalances.balances.current;
   const denomCurrentTransparent = denomAmount(rawCurrentTransparent, 6);
+
+  const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
+    return rewardToken.address === token.address;
+  });
 
   return (
     <div className="h-[94px] p-4 flex items-center bg-[#010101] rounded-tr-[5px] rounded-br-[5px]">
@@ -86,7 +93,7 @@ function MetricsRow({
 
       {/* Rewards Param Column */}
       <div className="w-[150px] text-[#FFFF00] flex items-center justify-center">
-        xxxxxxxx
+        {tokenRewardRate?.max_reward_rate}%
       </div>
     </div>
   );

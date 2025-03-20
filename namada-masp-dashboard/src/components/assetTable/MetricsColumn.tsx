@@ -47,7 +47,9 @@ function MetricsColumn({
             <>
               <div className="flex-1">Current Value Shielded</div>
               <div className="flex-1">Current Value Transparent</div>
-              <div className="w-[150px] flex justify-center">Rewards Param</div>
+              <div className="w-[150px] flex justify-center">
+                Est. Rewards Rate
+              </div>
             </>
             {/* ) : (
                             <>
@@ -65,17 +67,17 @@ function MetricsColumn({
             token={token}
             tokenPrice={
               tokenPrices?.price.find(
-                (entry) => entry.id === token.coingecko_id,
+                (entry) => entry.id === token.coingecko_id
               )?.usd ?? null
             }
             maspBalances={
               maspBalances?.balances.find(
-                (entry) => entry.tokenAddress === token.address,
+                (entry) => entry.tokenAddress === token.address
               ) ?? null
             }
             transparentBalances={
               transparentBalances?.balances.find(
-                (entry) => entry.tokenAddress === token.address,
+                (entry) => entry.tokenAddress === token.address
               ) ?? null
             }
             isLoading={isLoadingMaspBalances || isLoadingTransparentBalances}
