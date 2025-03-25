@@ -104,7 +104,7 @@ function createInfoCards(
   const nativeInflationData = lastInflation?.data?.find(
     (item) => item.address === NATIVE_NAM_ADDRESS
   );
-  const totalNamRewardsMintedThisEpoch = lastInflation?.data.reduce(
+  const totalNamRewardsMintedLastEpoch = lastInflation?.data.reduce(
     (sum, item) => sum + Number(item.last_inflation),
     0
   );
@@ -146,9 +146,9 @@ function createInfoCards(
       variant: "primary" as const,
     },
     {
-      topText: "NAM rewards minted this EPOCH",
+      topText: "NAM rewards minted last EPOCH",
       bottomText: `${formatNumber(
-        denomAmount(totalNamRewardsMintedThisEpoch)
+        denomAmount(totalNamRewardsMintedLastEpoch)
       )} NAM`,
       size: "large" as const,
       bgColor: "white" as const,
