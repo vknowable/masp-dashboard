@@ -4,7 +4,9 @@ import { config } from "./config.js";
 import { rateLimiter } from "./middleware/rateLimiter.js";
 import priceRoutes from "./routes/priceRoutes.js";
 import namadaRoutes from "./routes/namadaRoutes.js";
+import maspRoutes from "./routes/maspRoutes.js";
 import { wasmService } from "./services/wasmService.js";
+import { dbService } from "./services/dbService.js";
 
 const app = express();
 
@@ -16,6 +18,7 @@ app.use(rateLimiter);
 // Routes
 app.use("/api/v1", priceRoutes);
 app.use("/api/v1", namadaRoutes);
+app.use("/api/v1/masp", maspRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -35,11 +38,12 @@ app.use((req, res) => {
 async function startServer() {
     try {
         await wasmService.init();
+        await dbService.init();
         app.listen(config.servePort, () => {
             console.log(`Server running on port ${config.servePort}`);
         });
     } catch (error) {
-        console.error('Failed to initialize WASM module:', error);
+        console.error('Failed to initialize services:', error);
         process.exit(1);
     }
 }
