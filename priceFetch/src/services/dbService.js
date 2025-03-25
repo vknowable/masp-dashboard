@@ -124,21 +124,19 @@ class DbService {
 
             const result = await this.query(query, [startTime, endTime, resolutionHours]);
 
-            // Transform the results into the desired format
-            const buckets = {};
-            for (let i = 0; i < numBuckets; i++) {
-                buckets[`${i * resolutionHours}hr`] = {
-                    in: [],
-                    out: []
-                };
-            }
+            // Transform the results into an array format
+            const buckets = Array.from({ length: numBuckets }, (_, i) => ({
+                bucket: i,
+                in: [],
+                out: []
+            }));
 
             result.rows.forEach(row => {
-                const bucketKey = `${row.bucket_index * resolutionHours}hr`;
+                const bucket = buckets[row.bucket_index];
                 if (row.direction === 'in') {
-                    buckets[bucketKey].in = row.transactions;
+                    bucket.in = row.transactions;
                 } else {
-                    buckets[bucketKey].out = row.transactions;
+                    bucket.out = row.transactions;
                 }
             });
 

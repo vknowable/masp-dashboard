@@ -1,4 +1,4 @@
-import MaspTxVolumeChart from "./MaspAggregatesChart";
+import MaspTxVolumeChart from "./MaspTxVolumeChart";
 import { useMaspAggregates } from "../../../hooks/useMaspAggregates";
 
 import { RegistryAsset } from "../../../types/chainRegistry";

@@ -100,7 +100,7 @@ export default function MaspAggregatesChart({
         () => ({
             backgroundColor: "transparent",
             grid: {
-                left: "3%",
+                left: "6%",
                 right: "4%",
                 bottom: "3%",
                 containLabel: true,
@@ -131,6 +131,9 @@ export default function MaspAggregatesChart({
             },
             yAxis: {
                 type: "value" as const,
+                name: "USD Value",
+                nameLocation: "middle" as const,
+                nameGap: 50,
                 axisLine: {
                     lineStyle: {
                         color: "#666",
