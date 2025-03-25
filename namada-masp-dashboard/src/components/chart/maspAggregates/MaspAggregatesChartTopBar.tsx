@@ -118,10 +118,10 @@ export default function MaspAggregatesChartTopBar({
       </div>
 
       {/* Time Select */}
-      <div className="flex flex-col gap-1">
-        <div className="text-[11px] font-light tracking-[0.4px] text-white/90 pl-2">
+      <div className="flex flex-col items-center gap-0 -mt-4">
+        <span className="text-[11px] font-light tracking-[0.4px] text-white/90 mb-1">
           Time
-        </div>
+        </span>
         <div className="flex text-[12px] h-[26px] font-light rounded-[5px] overflow-hidden border border-[#707070]">
           {(["24hr", "7d", "30d", "Alltime"] as const).map((time) => (
             <button
@@ -143,7 +143,7 @@ export default function MaspAggregatesChartTopBar({
       </div>
 
       {/* Flow Toggles */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 ml-2 mt-1">
         <CustomCheckbox
           checked={showShieldedInflow}
           onChange={onShieldedInflowToggle}
