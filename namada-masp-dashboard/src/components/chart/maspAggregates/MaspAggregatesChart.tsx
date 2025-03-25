@@ -134,7 +134,7 @@ export default function MaspAggregatesChart({
       },
       yAxis: {
         type: "value" as const,
-        name: "(in USD)",
+        name: "(USD)",
         nameLocation: "middle" as const,
         nameGap: 50,
         nameTextStyle: {
