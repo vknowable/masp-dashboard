@@ -4,7 +4,7 @@ import { RegistryAsset } from "../../../types/chainRegistry";
 import { AggregatesResponse } from "../../../types/token";
 import { MaspAggregatesWindow } from "./MaspAggregatesChartContainer";
 import { denomAmount } from "../../../utils/numbers";
-
+import { useTokenPrices } from "../../../hooks/useTokenPrices";
 interface MaspAggregatesChartProps {
   selectedAsset?: string;
   selectedTimeframe?: MaspAggregatesWindow;
@@ -22,27 +22,29 @@ export default function MaspAggregatesChart({
   assets = [],
   maspAggregates = [],
 }: MaspAggregatesChartProps) {
+  const { data: tokenPrices } = useTokenPrices();
+
   const filteredData = useMemo(() => {
     // Get the time window based on selected timeframe
     const timeWindow =
       selectedTimeframe === "24hr"
         ? "oneDay"
         : selectedTimeframe === "7d"
-          ? "sevenDays"
-          : selectedTimeframe === "30d"
-            ? "thirtyDays"
-            : "allTime";
+        ? "sevenDays"
+        : selectedTimeframe === "30d"
+        ? "thirtyDays"
+        : "allTime";
 
     // Filter aggregates for the selected time window
     const timeWindowData = maspAggregates.filter(
-      (a) => a.timeWindow === timeWindow,
+      (a) => a.timeWindow === timeWindow
     );
 
     // If "All" is selected, return data for all assets
     if (selectedAsset === "All") {
       return assets.map((asset) => {
         const assetData = timeWindowData.filter(
-          (a) => a.tokenAddress === asset.address,
+          (a) => a.tokenAddress === asset.address
         );
         const inflow =
           assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
@@ -53,10 +55,18 @@ export default function MaspAggregatesChart({
           asset.symbol.slice(0, 2) === "st"
             ? "st" + asset.symbol.slice(2).toUpperCase()
             : asset.symbol;
+        const price =
+          tokenPrices?.price?.find((p) => p.id === asset.coingecko_id)?.usd ??
+          0;
+
         return {
           symbol,
-          shieldedInflow: denomAmount(parseFloat(inflow)),
-          shieldedOutflow: denomAmount(parseFloat(outflow)),
+          shieldedInflow: Number(
+            ((denomAmount(parseFloat(inflow)) ?? 0) * price).toFixed(2)
+          ),
+          shieldedOutflow: Number(
+            ((denomAmount(parseFloat(outflow)) ?? 0) * price).toFixed(2)
+          ),
         };
       });
     }
@@ -66,13 +76,13 @@ export default function MaspAggregatesChart({
     if (!asset) return [];
 
     const assetData = timeWindowData.filter(
-      (a) => a.tokenAddress === asset.address,
+      (a) => a.tokenAddress === asset.address
     );
     const inflow =
       assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
     const outflow =
       assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
-
+    console.log(inflow, outflow, "in out");
     return [
       {
         symbol: asset.symbol,
@@ -168,9 +178,26 @@ export default function MaspAggregatesChart({
         textStyle: {
           color: "#FFFFFF",
         },
+        formatter: function (params: Record<string, string>[]) {
+          let result = params[0].axisValueLabel + "<br/>";
+
+          params.forEach((param: Record<string, string>) => {
+            // Display a color square followed by series name and formatted value
+            result +=
+              '<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:' +
+              param.color +
+              '"></span>' +
+              param.seriesName +
+              ": $ " +
+              param.value.toLocaleString() +
+              "<br/>";
+          });
+
+          return result;
+        },
       },
     }),
-    [filteredData, showShieldedInflow, showShieldedOutflow],
+    [filteredData, showShieldedInflow, showShieldedOutflow]
   );
 
   return (
