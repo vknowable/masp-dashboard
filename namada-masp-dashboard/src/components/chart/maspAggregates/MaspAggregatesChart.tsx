@@ -5,13 +5,10 @@ import { AggregatesResponse } from "../../../types/token";
 import { MaspAggregatesWindow } from "./MaspAggregatesChartContainer";
 import { denomAmount } from "../../../utils/numbers";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
-import {
-  TooltipFormatterCallback,
-  TopLevelFormatterParams,
-} from "echarts/types/dist/shared";
+import { TopLevelFormatterParams } from "echarts/types/dist/shared";
 
 interface MaspAggregatesChartProps {
-  selectedAsset?: string;
+  selectedAssets: string[];
   selectedTimeframe?: MaspAggregatesWindow;
   showShieldedInflow?: boolean;
   showShieldedOutflow?: boolean;
@@ -20,7 +17,7 @@ interface MaspAggregatesChartProps {
 }
 
 export default function MaspAggregatesChart({
-  selectedAsset = "All",
+  selectedAssets,
   selectedTimeframe = "24hr",
   showShieldedInflow = true,
   showShieldedOutflow = true,
@@ -46,7 +43,7 @@ export default function MaspAggregatesChart({
     );
 
     // If "All" is selected, return data for all assets
-    if (selectedAsset === "All") {
+    if (selectedAssets.includes("All")) {
       return assets.map((asset) => {
         const assetData = timeWindowData.filter(
           (a) => a.tokenAddress === asset.address
@@ -76,28 +73,32 @@ export default function MaspAggregatesChart({
       });
     }
 
-    // Return data for selected asset only
-    const asset = assets.find((a) => a.symbol === selectedAsset);
-    if (!asset) return [];
+    // Return data for selected assets only
+    return assets
+      .filter((asset) => selectedAssets.includes(asset.symbol))
+      .map((asset) => {
+        const assetData = timeWindowData.filter(
+          (a) => a.tokenAddress === asset.address
+        );
+        const inflow =
+          assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
+        const outflow =
+          assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
+        const price =
+          tokenPrices?.price?.find((p) => p.id === asset.coingecko_id)?.usd ??
+          0;
 
-    const assetData = timeWindowData.filter(
-      (a) => a.tokenAddress === asset.address
-    );
-    const inflow =
-      assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
-    const outflow =
-      assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
-    console.log(inflow, outflow, "in out");
-    return [
-      {
-        symbol: asset.symbol,
-        shieldedInflow: parseFloat(inflow),
-        shieldedOutflow: parseFloat(outflow),
-        transparentInflow: 0, // TODO: Add transparent flow data when available
-        transparentOutflow: 0,
-      },
-    ];
-  }, [selectedAsset, selectedTimeframe, assets, maspAggregates]);
+        return {
+          symbol: asset.symbol,
+          shieldedInflow: Number(
+            ((denomAmount(parseFloat(inflow)) ?? 0) * price).toFixed(2)
+          ),
+          shieldedOutflow: Number(
+            ((denomAmount(parseFloat(outflow)) ?? 0) * price).toFixed(2)
+          ),
+        };
+      });
+  }, [selectedAssets, selectedTimeframe, assets, maspAggregates, tokenPrices]);
 
   const option = useMemo(
     () => ({

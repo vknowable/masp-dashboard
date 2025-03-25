@@ -1,80 +1,144 @@
-import { Dispatch, SetStateAction } from "react";
+import { useState, useRef, useEffect } from "react";
+import CustomCheckbox from "../../common/CustomCheckbox";
 import { RegistryAsset } from "../../../types/chainRegistry";
 import { MaspAggregatesWindow } from "./MaspAggregatesChartContainer";
-import CustomCheckbox from "../../common/CustomCheckbox";
 
 interface MaspAggregatesChartTopBarProps {
-  selectedAsset: string;
-  onAssetSelect: Dispatch<SetStateAction<string>>;
+  selectedAssets: string[];
+  onAssetsSelect: (assets: string[]) => void;
   selectedTimeframe: MaspAggregatesWindow;
-  onTimeframeSelect: Dispatch<SetStateAction<MaspAggregatesWindow>>;
+  onTimeframeSelect: (timeframe: MaspAggregatesWindow) => void;
   showShieldedInflow: boolean;
-  onShieldedInflowToggle: Dispatch<SetStateAction<boolean>>;
+  onShieldedInflowToggle: (show: boolean) => void;
   showShieldedOutflow: boolean;
-  onShieldedOutflowToggle: Dispatch<SetStateAction<boolean>>;
-  assets?: RegistryAsset[];
+  onShieldedOutflowToggle: (show: boolean) => void;
+  assets: RegistryAsset[];
 }
 
 export default function MaspAggregatesChartTopBar({
-  selectedAsset,
-  onAssetSelect,
+  selectedAssets,
+  onAssetsSelect,
   selectedTimeframe,
   onTimeframeSelect,
   showShieldedInflow,
   onShieldedInflowToggle,
   showShieldedOutflow,
   onShieldedOutflowToggle,
-  assets = [],
+  assets,
 }: MaspAggregatesChartTopBarProps) {
-  return (
-    <div className="min-w-full min-h-[36px] flex flex-col sm:flex-row sm:justify-between gap-4 sm:items-end mb-4">
-      <div className="flex items-center gap-4">
-        {/* Asset Select */}
-        <div className="flex flex-col gap-1">
-          <div className="text-[11px] font-light tracking-[0.4px] text-white/90 pl-2">
-            Select asset
-          </div>
-          <select
-            value={selectedAsset}
-            onChange={(e) => onAssetSelect(e.target.value)}
-            className="bg-[#3A3A3A] text-white font-light text-[14px] min-w-[170px] h-[26px] text-center px-4 py-[2px] rounded-[5px] border border-[#707070] focus:outline-none focus:border-white"
-          >
-            <option value="All">All</option>
-            {assets.map((asset) => (
-              <option
-                key={asset.symbol}
-                value={asset.symbol}
-                className="text-[14px] font-light"
-              >
-                {asset.symbol}
-              </option>
-            ))}
-          </select>
-        </div>
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-        {/* Time Select */}
-        <div className="flex flex-col gap-1">
-          <div className="text-[11px] font-light tracking-[0.4px] text-white/90 pl-2">
-            Time
-          </div>
-          <div className="flex text-[12px] h-[26px] font-light rounded-[5px] overflow-hidden border border-[#707070]">
-            {(["24hr", "7d", "30d", "Alltime"] as const).map((time) => (
-              <button
-                key={time}
-                onClick={() => onTimeframeSelect(time)}
-                className={`
-                  px-4 py-[2px] transition-colors
-                  ${
-                    selectedTimeframe === time
-                      ? "bg-[#707070]"
-                      : "bg-[#2A2A2A] text-white hover:bg-[#3A3A3A]"
-                  }
-                `}
-              >
-                {time === "Alltime" ? "ALL" : time}
-              </button>
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleAssetToggle = (asset: string) => {
+    const newSelection =
+      asset === "All" ? ["All"] : selectedAssets.filter((a) => a !== "All");
+
+    if (selectedAssets.includes(asset)) {
+      // Remove asset if it exists
+      const filtered = newSelection.filter((a) => a !== asset);
+      // If removing the last asset, default to "All"
+      onAssetsSelect(filtered.length === 0 ? ["All"] : filtered);
+    } else {
+      // Add asset if it doesn't exist
+      onAssetsSelect([...newSelection, asset]);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-4 items-center mb-4">
+      {/* Asset Selection Dropdown */}
+      <div className="relative w-48" ref={dropdownRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-4 py-2 text-sm bg-[#2A2A2A] rounded-lg focus:outline-none"
+        >
+          <span className="block truncate">
+            {selectedAssets.includes("All")
+              ? "All Assets"
+              : `${selectedAssets.length} Selected`}
+          </span>
+          <svg
+            className={`w-4 h-4 ml-2 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        {/* Dropdown Menu */}
+        {isOpen && (
+          <div className="absolute z-10 w-full mt-1 bg-[#2A2A2A] rounded-md shadow-lg max-h-60 overflow-auto">
+            <div className="p-2">
+              <CustomCheckbox
+                checked={selectedAssets.includes("All")}
+                onChange={() => handleAssetToggle("All")}
+                label="All Assets"
+                borderColor="grey"
+                checkColor="white"
+              />
+            </div>
+            <div className="border-t border-gray-600" />
+            {assets.map((asset) => (
+              <div key={asset.symbol} className="p-2">
+                <CustomCheckbox
+                  checked={selectedAssets.includes(asset.symbol)}
+                  onChange={() => handleAssetToggle(asset.symbol)}
+                  label={asset.symbol}
+                  borderColor="grey"
+                  checkColor="white"
+                />
+              </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Time Select */}
+      <div className="flex flex-col gap-1">
+        <div className="text-[11px] font-light tracking-[0.4px] text-white/90 pl-2">
+          Time
+        </div>
+        <div className="flex text-[12px] h-[26px] font-light rounded-[5px] overflow-hidden border border-[#707070]">
+          {(["24hr", "7d", "30d", "Alltime"] as const).map((time) => (
+            <button
+              key={time}
+              onClick={() => onTimeframeSelect(time)}
+              className={`
+                px-4 py-[2px] transition-colors
+                ${
+                  selectedTimeframe === time
+                    ? "bg-[#707070]"
+                    : "bg-[#2A2A2A] text-white hover:bg-[#3A3A3A]"
+                }
+              `}
+            >
+              {time === "Alltime" ? "ALL" : time}
+            </button>
+          ))}
         </div>
       </div>
 
