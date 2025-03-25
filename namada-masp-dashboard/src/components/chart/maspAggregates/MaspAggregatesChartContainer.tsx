@@ -53,7 +53,7 @@ export default function MaspAggregatesChartContainer({
   return (
     <div className="px-4 py-4">
       <div className="section-heading text-center text-xl md:text-2xl">
-        MASP Total Inflow/Outflow
+        MASP Total Inflow/Outflow (in USD)
       </div>
       <div className="min-w-full min-h-[508px]">
         <MaspAggregatesChart
