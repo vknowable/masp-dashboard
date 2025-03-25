@@ -34,7 +34,7 @@ function InfoGridContainer() {
       chainMetrics && lastInflation
         ? createInfoCards(chainMetrics, lastInflation)
         : [],
-    [chainMetrics, lastInflation],
+    [chainMetrics, lastInflation]
   );
 
   if (isLoadingChain || isLoadingLastInflation) {
@@ -97,13 +97,18 @@ function InfoGridContainer() {
 }
 function createInfoCards(
   chainMetrics: ChainMetrics,
-  lastInflation: MaspInflationResponse,
+  lastInflation: MaspInflationResponse
 ): InfoCard[] {
   const totalShieldedAssets = chainMetrics.totalShieldedAssets;
   const { current, changes } = totalShieldedAssets ?? {};
   const nativeInflationData = lastInflation?.data?.find(
-    (item) => item.address === NATIVE_NAM_ADDRESS,
+    (item) => item.address === NATIVE_NAM_ADDRESS
   );
+  const totalNamRewardsMintedThisEpoch = lastInflation?.data.reduce(
+    (sum, item) => sum + Number(item.last_inflation),
+    0
+  );
+
   return [
     {
       topText: "Total Shielded Assets",
@@ -134,15 +139,17 @@ function createInfoCards(
     {
       topText: "Total NAM rewards minted",
       bottomText: `${formatNumber(
-        denomAmount(chainMetrics.totalRewardsMinted),
+        denomAmount(chainMetrics.totalRewardsMinted)
       )} NAM`,
       size: "large" as const,
       bgColor: "white" as const,
       variant: "primary" as const,
     },
     {
-      topText: "NAM rewards minted per EPOCH",
-      bottomText: `$${formatNumber(denomAmount(chainMetrics.rewardsPerEpoch))}`,
+      topText: "NAM rewards minted this EPOCH",
+      bottomText: `${formatNumber(
+        denomAmount(totalNamRewardsMintedThisEpoch)
+      )} NAM`,
       size: "large" as const,
       bgColor: "white" as const,
       variant: "primary" as const,
@@ -186,7 +193,7 @@ function createInfoCards(
       bottomText:
         chainMetrics.totalSupply && chainMetrics.totalSupply !== null
           ? `${formatNumber(
-              denomAmount(chainMetrics.totalSupply),
+              denomAmount(chainMetrics.totalSupply)
             )} NAM ${formatMagnitude(denomAmount(chainMetrics.totalSupply))}`
           : "--",
       size: "small" as const,
@@ -197,7 +204,7 @@ function createInfoCards(
       bottomText:
         chainMetrics.percentStaked !== null
           ? `${formatNumber(chainMetrics.totalStaked)} (${formatPercentage(
-              chainMetrics.percentStaked,
+              chainMetrics.percentStaked
             )})`
           : "--",
       size: "small" as const,
