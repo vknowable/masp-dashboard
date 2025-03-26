@@ -1,112 +1,25 @@
 import ReactECharts from "echarts-for-react";
 import { useMemo } from "react";
 import { RegistryAsset } from "../../../types/chainRegistry";
-import { AggregatesResponse } from "../../../types/token";
-import { MaspAggregatesWindow } from "./MaspTxVolumeChartContainer";
-import { denomAmount } from "../../../utils/numbers";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
 import { useMaspTxVolume } from "../../../hooks/useMaspTxVolume";
 import { TooltipFormatterCallback, TopLevelFormatterParams } from 'echarts/types/dist/shared';
 
 interface MaspTxVolumeChartProps {
-    selectedAsset?: string;
-    selectedTimeframe?: MaspAggregatesWindow;
-    showShieldedInflow?: boolean;
-    showShieldedOutflow?: boolean;
     assets?: RegistryAsset[];
-    maspAggregates?: AggregatesResponse;
-    showInflow?: boolean;
-    showOutflow?: boolean;
     startTime: string;
     endTime: string;
     resolution?: number;
 }
 
 export default function MaspTxVolumeChart({
-    selectedAsset = "All",
-    selectedTimeframe = "24hr",
-    showShieldedInflow = true,
-    showShieldedOutflow = true,
     assets = [],
-    maspAggregates = [],
-    showInflow = true,
-    showOutflow = true,
     startTime,
     endTime,
     resolution = 1,
 }: MaspTxVolumeChartProps) {
     const { data: tokenPrices } = useTokenPrices();
     const { data: txVolume } = useMaspTxVolume(startTime, endTime, resolution);
-
-    // const filteredData = useMemo(() => {
-    //     // Get the time window based on selected timeframe
-    //     const timeWindow =
-    //         selectedTimeframe === "24hr"
-    //             ? "oneDay"
-    //             : selectedTimeframe === "7d"
-    //                 ? "sevenDays"
-    //                 : selectedTimeframe === "30d"
-    //                     ? "thirtyDays"
-    //                     : "allTime";
-
-    //     // Filter aggregates for the selected time window
-    //     const timeWindowData = maspAggregates.filter(
-    //         (a) => a.timeWindow === timeWindow
-    //     );
-
-    //     // If "All" is selected, return data for all assets
-    //     if (selectedAsset === "All") {
-    //         return assets.map((asset) => {
-    //             const assetData = timeWindowData.filter(
-    //                 (a) => a.tokenAddress === asset.address
-    //             );
-    //             const inflow =
-    //                 assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
-    //             const outflow =
-    //                 assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
-    //             // Capitalize all st-based assets => stTIA, stOSMO, stATOM etc
-    //             const symbol =
-    //                 asset.symbol.slice(0, 2) === "st"
-    //                     ? "st" + asset.symbol.slice(2).toUpperCase()
-    //                     : asset.symbol;
-    //             const price =
-    //                 tokenPrices?.price?.find((p) => p.id === asset.coingecko_id)?.usd ??
-    //                 0;
-
-    //             return {
-    //                 symbol,
-    //                 shieldedInflow: Number(
-    //                     ((denomAmount(parseFloat(inflow)) ?? 0) * price).toFixed(2)
-    //                 ),
-    //                 shieldedOutflow: Number(
-    //                     ((denomAmount(parseFloat(outflow)) ?? 0) * price).toFixed(2)
-    //                 ),
-    //             };
-    //         });
-    //     }
-
-    //     // Return data for selected asset only
-    //     const asset = assets.find((a) => a.symbol === selectedAsset);
-    //     if (!asset) return [];
-
-    //     const assetData = timeWindowData.filter(
-    //         (a) => a.tokenAddress === asset.address
-    //     );
-    //     const inflow =
-    //         assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
-    //     const outflow =
-    //         assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
-    //     console.log(inflow, outflow, "in out");
-    //     return [
-    //         {
-    //             symbol: asset.symbol,
-    //             shieldedInflow: parseFloat(inflow),
-    //             shieldedOutflow: parseFloat(outflow),
-    //             transparentInflow: 0, // TODO: Add transparent flow data when available
-    //             transparentOutflow: 0,
-    //         },
-    //     ];
-    // }, [selectedAsset, selectedTimeframe, assets, maspAggregates]);
 
     const option = useMemo(
         () => {
@@ -258,9 +171,7 @@ export default function MaspTxVolumeChart({
                         name: "Inflow Transactions",
                         type: "line" as const,
                         yAxisIndex: 0,
-                        data: showInflow
-                            ? txVolume?.map(bucket => bucket.in.length) || []
-                            : [],
+                        data: txVolume?.map(bucket => bucket.in.length) || [],
                         itemStyle: {
                             color: "#FFFF00",
                         },
@@ -270,9 +181,7 @@ export default function MaspTxVolumeChart({
                         name: "Outflow Transactions",
                         type: "line" as const,
                         yAxisIndex: 0,
-                        data: showOutflow
-                            ? txVolume?.map(bucket => bucket.out.length) || []
-                            : [],
+                        data: txVolume?.map(bucket => bucket.out.length) || [],
                         itemStyle: {
                             color: "#AAA",
                         },
@@ -340,7 +249,7 @@ export default function MaspTxVolumeChart({
                 },
             };
         },
-        [txVolume, showInflow, showOutflow, tokenPrices]
+        [txVolume, tokenPrices]
     );
 
     return (

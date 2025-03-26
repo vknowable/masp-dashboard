@@ -7,31 +7,19 @@ import '@wojtekmaj/react-datetimerange-picker/dist/DateTimeRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import { customDateTimePickerStyles } from './DateTimePickerStyles';
 
-export type MaspAggregatesWindow = "24hr" | "7d" | "30d" | "all";
-
 interface MaspTxVolumeChartContainerProps {
-    selectedAsset?: string;
-    selectedTimeframe?: MaspAggregatesWindow;
-    showShieldedInflow?: boolean;
-    showShieldedOutflow?: boolean;
+    isLoading?: boolean;
+    error?: Error | null;
     assets?: RegistryAsset[];
-    maspAggregates?: AggregatesResponse;
-    showInflow?: boolean;
-    showOutflow?: boolean;
 }
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function MaspTxVolumeChartContainer({
-    selectedAsset = "All",
-    selectedTimeframe = "24hr",
-    showShieldedInflow = true,
-    showShieldedOutflow = true,
+    isLoading = false,
+    error = null,
     assets = [],
-    maspAggregates = [],
-    showInflow = true,
-    showOutflow = true,
 }: MaspTxVolumeChartContainerProps) {
     // Initialize with current time and 24 hours ago
     const [value, onChange] = useState<Value>(() => {
@@ -65,6 +53,29 @@ export default function MaspTxVolumeChartContainer({
         onChange(newValue);
     };
 
+    if (isLoading) {
+        return (
+            <div className="px-4 py-4">
+                <div className="rounded-[5px] bg-[#F5F5F5] dark:bg-[#191919] min-w-full min-h-[508px] pt-2 px-2">
+                    <div className="min-h-[36px] animate-pulse bg-[#2A2A2A] rounded-lg mb-4" />
+                    <div className="h-[440px] animate-pulse bg-[#2A2A2A] rounded-lg" />
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="px-4 py-4">
+                <div className="rounded-[5px] bg-[#F5F5F5] dark:bg-[#191919] min-w-full p-4">
+                    <div className="text-red-400 bg-red-900/20 rounded-lg p-4">
+                        Error loading chart data: {error.message}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-4">
             <div className="section-heading text-center text-xl md:text-2xl">
@@ -91,14 +102,7 @@ export default function MaspTxVolumeChartContainer({
                 </div>
             </div>
             <MaspTxVolumeChart
-                selectedAsset={selectedAsset}
-                selectedTimeframe={selectedTimeframe}
-                showShieldedInflow={showShieldedInflow}
-                showShieldedOutflow={showShieldedOutflow}
                 assets={assets}
-                maspAggregates={maspAggregates}
-                showInflow={showInflow}
-                showOutflow={showOutflow}
                 startTime={getUTCString(Array.isArray(value) ? value[0] : null)}
                 endTime={getUTCString(Array.isArray(value) ? value[1] : null)}
                 resolution={calculateResolution(Array.isArray(value) ? value[0] : null, Array.isArray(value) ? value[1] : null)}

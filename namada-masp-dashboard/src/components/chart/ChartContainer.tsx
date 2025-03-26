@@ -104,11 +104,7 @@ function ChartContainer() {
                 {visibility.maspTxVolume && (
                     <ErrorBoundary>
                         <MaspTxVolumeChartContainer
-                            isLoadingRegistry={isLoadingRegistry}
-                            selectedAsset={selectedAsset}
-                            selectedTimeframe={selectedTimeframe}
-                            showShieldedInflow={showShieldedInflow}
-                            showShieldedOutflow={showShieldedOutflow}
+                            isLoading={isLoadingRegistry}
                             assets={assets}
                         />
                     </ErrorBoundary>
