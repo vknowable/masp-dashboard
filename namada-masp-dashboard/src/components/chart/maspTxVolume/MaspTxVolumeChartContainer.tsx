@@ -91,7 +91,7 @@ export default function MaspTxVolumeChartContainer({
                     <DateTimeRangePicker
                         onChange={handleDateTimeChange}
                         value={value}
-                        className="mb-[-72px] bg-[#3A3A3A] text-white font-light text-[14px] min-w-[170px] h-[26px] text-center rounded-[5px] border border-[#707070] py-[2px] px-2"
+                        className="bg-[#3A3A3A] text-white font-light text-[14px] min-w-[170px] h-[26px] text-center rounded-[5px] border border-[#707070]"
                         format="yyyy-MM-dd HH:mm"
                         rangeDivider={<div className="px-2 text-white/70">⇒</div>}
                         disableClock={true}

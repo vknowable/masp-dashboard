@@ -253,7 +253,7 @@ export default function MaspTxVolumeChart({
     );
 
     return (
-        <div className="w-full h-[560px] bg-[#191919] rounded-lg p-4">
+        <div className="w-full h-[580px] bg-[#191919] rounded-lg p-4 mt-[-32px]">
             <ReactECharts
                 option={option}
                 style={{ height: "100%", width: "100%" }}

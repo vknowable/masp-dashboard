@@ -277,12 +277,13 @@ export const customDateTimePickerStyles = `
     }
 
     .react-calendar__tile--hasActive {
-    background: #76baff;
+    background: #ff0;
+    color: #000;
     }
 
     .react-calendar__tile--hasActive:enabled:hover,
     .react-calendar__tile--hasActive:enabled:focus {
-    background: #a9d4ff;
+    background: #dd0;
     }
 
     .react-calendar__tile--active {
