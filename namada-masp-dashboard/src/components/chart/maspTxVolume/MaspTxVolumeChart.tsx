@@ -17,6 +17,9 @@ interface MaspTxVolumeChartProps {
     maspAggregates?: AggregatesResponse;
     showInflow?: boolean;
     showOutflow?: boolean;
+    startTime: string;
+    endTime: string;
+    resolution?: number;
 }
 
 export default function MaspTxVolumeChart({
@@ -28,13 +31,11 @@ export default function MaspTxVolumeChart({
     maspAggregates = [],
     showInflow = true,
     showOutflow = true,
+    startTime,
+    endTime,
+    resolution = 1,
 }: MaspTxVolumeChartProps) {
     const { data: tokenPrices } = useTokenPrices();
-
-    const startTime = "2025-03-24T17:00:48Z";
-    const endTime = "2025-03-25T17:00:48Z";
-    const resolution = 1;
-
     const { data: txVolume } = useMaspTxVolume(startTime, endTime, resolution);
 
     // const filteredData = useMemo(() => {
@@ -177,6 +178,7 @@ export default function MaspTxVolumeChart({
                     left: "6%",
                     right: "6%",
                     bottom: "3%",
+                    top: "20%",
                     containLabel: true,
                 },
                 xAxis: {
@@ -284,11 +286,11 @@ export default function MaspTxVolumeChart({
                         itemStyle: {
                             color: (params: any) => {
                                 const value = params.data as number;
-                                return value >= 0 ? 'rgba(0, 255, 255, 0.35)' : 'rgba(255, 0, 0, 0.35)';
+                                return value >= 0 ? 'rgba(100, 255, 250, 0.25)' : 'rgba(255, 0, 0, 0.35)';
                             }
                         },
                         // Add color for legend
-                        color: 'rgba(0, 255, 255, 0.35)',
+                        color: 'rgba(100, 255, 250, 0.25)',
                     }
                 ],
                 tooltip: {
@@ -333,6 +335,8 @@ export default function MaspTxVolumeChart({
                     top: 0,
                     right: 0,
                     align: 'right' as const,
+                    orient: 'vertical' as const,
+                    itemGap: 10,
                 },
             };
         },
@@ -340,7 +344,7 @@ export default function MaspTxVolumeChart({
     );
 
     return (
-        <div className="w-full h-[440px] bg-[#191919] rounded-lg p-4">
+        <div className="w-full h-[560px] bg-[#191919] rounded-lg p-4">
             <ReactECharts
                 option={option}
                 style={{ height: "100%", width: "100%" }}
