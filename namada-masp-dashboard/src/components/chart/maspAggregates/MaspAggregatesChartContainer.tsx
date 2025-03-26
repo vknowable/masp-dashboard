@@ -7,7 +7,7 @@ interface MaspAggregatesChartContainerProps {
   isLoading?: boolean;
   error?: Error | null;
   isLoadingRegistry?: boolean;
-  selectedAsset: string;
+  selectedAssets: string[];
   selectedTimeframe: MaspAggregatesWindow;
   showShieldedInflow: boolean;
   showShieldedOutflow: boolean;
@@ -18,7 +18,7 @@ export default function MaspAggregatesChartContainer({
   isLoading = false,
   error = null,
   isLoadingRegistry = false,
-  selectedAsset,
+  selectedAssets,
   selectedTimeframe,
   showShieldedInflow,
   showShieldedOutflow,
@@ -57,7 +57,7 @@ export default function MaspAggregatesChartContainer({
       </div>
       <div className="min-w-full min-h-[508px]">
         <MaspAggregatesChart
-          selectedAsset={selectedAsset}
+          selectedAssets={selectedAssets}
           selectedTimeframe={selectedTimeframe}
           showShieldedInflow={showShieldedInflow}
           showShieldedOutflow={showShieldedOutflow}

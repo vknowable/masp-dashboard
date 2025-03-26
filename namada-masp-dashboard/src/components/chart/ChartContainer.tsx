@@ -32,7 +32,7 @@ function ChartContainer() {
     }));
   };
 
-  const [selectedAsset, setSelectedAsset] = useState<string>("All");
+  const [selectedAssets, setSelectedAssets] = useState<string[]>(["All"]);
   const [selectedTimeframe, setSelectedTimeframe] =
     useState<MaspAggregatesWindow>("24hr");
   const [showShieldedInflow, setShowShieldedInflow] = useState(true);
@@ -52,7 +52,7 @@ function ChartContainer() {
             borderColor="grey"
             checkColor="white"
           />
-          <CustomCheckbox
+          {/* <CustomCheckbox
             checked={visibility.anotherChart}
             onChange={() => toggleChart("anotherChart")}
             label="Another Chart"
@@ -65,14 +65,14 @@ function ChartContainer() {
             label="Another Chart 2"
             borderColor="grey"
             checkColor="white"
-          />
+          /> */}
         </div>
 
         {visibility.maspAggregates && (
           <div className="flex flex-col w-full">
             <MaspAggregatesChartTopBar
-              selectedAsset={selectedAsset}
-              onAssetSelect={setSelectedAsset}
+              selectedAssets={selectedAssets}
+              onAssetsSelect={setSelectedAssets}
               selectedTimeframe={selectedTimeframe}
               onTimeframeSelect={setSelectedTimeframe}
               showShieldedInflow={showShieldedInflow}
@@ -91,7 +91,7 @@ function ChartContainer() {
           <ErrorBoundary>
             <MaspAggregatesChartContainer
               isLoadingRegistry={isLoadingRegistry}
-              selectedAsset={selectedAsset}
+              selectedAssets={selectedAssets}
               selectedTimeframe={selectedTimeframe}
               showShieldedInflow={showShieldedInflow}
               showShieldedOutflow={showShieldedOutflow}
