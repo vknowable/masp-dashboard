@@ -84,7 +84,7 @@ export default function MaspAggregatesChart({
             assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
         const outflow =
             assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
-        console.log(inflow, outflow, "in out");
+
         return [
             {
                 symbol: asset.symbol,
