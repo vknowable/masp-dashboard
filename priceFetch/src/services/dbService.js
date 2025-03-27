@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { config } from '../config.js';
+import { namadaService } from './namadaService.js';
 
 const { Pool } = pg;
 
@@ -143,6 +144,157 @@ class DbService {
             return buckets;
         } catch (error) {
             console.error('Error fetching masp pool transactions:', error);
+            throw error;
+        }
+    }
+
+    /// Fetch the balance for a given owner and token at a specific height
+    /// If height is 0, it will fetch the balance at the latest block height
+    /// If no balance exists at the given height, it will find the closest previous height with a balance
+    /// @param {string} owner - The owner address
+    /// @param {string} token - The token address
+    /// @param {number} height - The block height (0 for latest)
+    /// @returns {Promise<Object>} - A promise that resolves to the balance information
+    async fetchBalanceAtHeight(owner, token, height) {
+        try {
+            let targetHeight = height;
+
+            // If height is 0, get the latest block height
+            if (height === 0) {
+                const latestBlockQuery = 'SELECT MAX(height) as max_height FROM public.blocks';
+                const latestBlockResult = await this.query(latestBlockQuery);
+                targetHeight = latestBlockResult.rows[0].max_height;
+            }
+
+            // Query to find the closest balance at or before the target height
+            const query = `
+                SELECT 
+                    owner,
+                    token,
+                    height,
+                    raw_amount
+                FROM public.balance_changes
+                WHERE owner = $1 
+                AND token = $2 
+                AND height <= $3
+                ORDER BY height DESC
+                LIMIT 1;
+            `;
+
+            const result = await this.query(query, [owner, token, targetHeight]);
+
+            if (result.rows.length === 0) {
+                return {
+                    token,
+                    raw_amount: '0'
+                };
+            }
+
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error fetching balance at height:', error);
+            throw error;
+        }
+    }
+
+    /// Fetch the balance for a given owner and token at a specific timestamp
+    /// Finds the closest block height at or before the given timestamp and returns the balance
+    /// @param {string} owner - The owner address
+    /// @param {string} token - The token address
+    /// @param {Date} timestamp - The timestamp in UTC
+    /// @returns {Promise<Object>} - A promise that resolves to the balance information
+    async fetchBalanceAtTime(owner, token, timestamp) {
+        try {
+            // Find the closest block height at or before the given timestamp
+            const blockQuery = `
+                SELECT height
+                FROM public.blocks
+                WHERE timestamp <= $1
+                ORDER BY timestamp DESC
+                LIMIT 1;
+            `;
+
+            const blockResult = await this.query(blockQuery, [timestamp]);
+
+            if (blockResult.rows.length === 0) {
+                // If no block found before the timestamp, return zero balance
+                return {
+                    token,
+                    raw_amount: '0'
+                };
+            }
+
+            // Use the found block height to get the balance
+            return await this.fetchBalanceAtHeight(owner, token, blockResult.rows[0].height);
+        } catch (error) {
+            console.error('Error fetching balance at time:', error);
+            throw error;
+        }
+    }
+
+    /// Fetch balances for all assets for a given owner at a specific height
+    /// @param {string} owner - The owner address
+    /// @param {number} height - The block height (0 for latest)
+    /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
+    async fetchBalancesAtHeight(owner, height) {
+        try {
+            let targetHeight = height;
+
+            // If height is 0, get the latest block height
+            if (height === 0) {
+                const latestBlockQuery = 'SELECT MAX(height) as max_height FROM public.blocks';
+                const latestBlockResult = await this.query(latestBlockQuery);
+                targetHeight = latestBlockResult.rows[0].max_height;
+            }
+
+            // Get the list of assets
+            const assetList = await namadaService.fetchAssetList();
+            if (!assetList || assetList.length === 0) {
+                throw new Error("Failed to fetch asset list");
+            }
+
+            // Fetch balance for each asset
+            const balancePromises = assetList.map(asset =>
+                this.fetchBalanceAtHeight(owner, asset.address, targetHeight)
+            );
+
+            // Wait for all balance fetches to complete
+            const balances = await Promise.all(balancePromises);
+
+            return balances;
+        } catch (error) {
+            console.error('Error fetching balances at height:', error);
+            throw error;
+        }
+    }
+
+    /// Fetch balances for all assets for a given owner at a specific timestamp
+    /// Finds the closest block height at or before the given timestamp and returns balances
+    /// @param {string} owner - The owner address
+    /// @param {Date} timestamp - The timestamp in UTC
+    /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
+    async fetchBalancesAtTime(owner, timestamp) {
+        try {
+            // Find the closest block height at or before the given timestamp
+            const blockQuery = `
+                SELECT height
+                FROM public.blocks
+                WHERE timestamp <= $1
+                ORDER BY timestamp DESC
+                LIMIT 1;
+            `;
+
+            const blockResult = await this.query(blockQuery, [timestamp]);
+
+            if (blockResult.rows.length === 0) {
+                // If no block found before the timestamp, return empty array
+                return [];
+            }
+
+            // Use the found block height to get the balances
+            return await this.fetchBalancesAtHeight(owner, blockResult.rows[0].height);
+        } catch (error) {
+            console.error('Error fetching balances at time:', error);
             throw error;
         }
     }

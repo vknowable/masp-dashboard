@@ -90,9 +90,9 @@ class PriceService {
     }
 
     startPriceUpdates() {
-        const refreshMillis = config.refreshSecs * 1000;
-        setInterval(() => this.fetchPrices(), refreshMillis);
-        this.fetchPrices(); // Initial fetch
+        // const refreshMillis = config.refreshSecs * 1000;
+        // setInterval(() => this.fetchPrices(), refreshMillis);
+        // this.fetchPrices(); // Initial fetch
     }
 
     getPrice(asset) {
