@@ -156,22 +156,23 @@ class DbService {
     /// @param {number} height - The block height (0 for latest)
     /// @returns {Promise<Object>} - A promise that resolves to the balance information
     async fetchBalanceAtHeight(owner, token, height) {
+        const startTime = Date.now();
         try {
             let targetHeight = height;
 
             // If height is 0, get the latest block height
             if (height === 0) {
                 const latestBlockQuery = 'SELECT MAX(height) as max_height FROM public.blocks';
+                const latestBlockStart = Date.now();
                 const latestBlockResult = await this.query(latestBlockQuery);
+                console.log(`Latest block query took ${Date.now() - latestBlockStart}ms`);
                 targetHeight = latestBlockResult.rows[0].max_height;
             }
 
             // Query to find the closest balance at or before the target height
             const query = `
                 SELECT 
-                    owner,
                     token,
-                    height,
                     raw_amount
                 FROM public.balance_changes
                 WHERE owner = $1 
@@ -181,7 +182,9 @@ class DbService {
                 LIMIT 1;
             `;
 
+            const balanceStart = Date.now();
             const result = await this.query(query, [owner, token, targetHeight]);
+            console.log(`Balance query took ${Date.now() - balanceStart}ms`);
 
             if (result.rows.length === 0) {
                 return {
@@ -194,6 +197,49 @@ class DbService {
         } catch (error) {
             console.error('Error fetching balance at height:', error);
             throw error;
+        } finally {
+            console.log(`fetchBalanceAtHeight took ${Date.now() - startTime}ms`);
+        }
+    }
+
+    /// Fetch the block height at or before a given timestamp
+    /// @param {Date} timestamp - The timestamp in UTC
+    /// @param {Object} [interpolationData] - Optional data for height interpolation
+    /// @returns {Promise<number>} - A promise that resolves to the block height
+    async fetchHeightAtTime(timestamp, interpolationData = null) {
+        const startTime = Date.now();
+        try {
+            // If we have interpolation data, use it to calculate the height
+            if (interpolationData) {
+                const { startHeight, startTime } = interpolationData;
+                const secondsDiff = (timestamp - startTime) / 1000;
+                const blocksDiff = Math.round(secondsDiff / 7);
+                const estimatedHeight = startHeight + blocksDiff;
+                console.log(`Height interpolation took ${Date.now() - startTime}ms`);
+                return estimatedHeight;
+            }
+
+            // Otherwise, query the database for the exact height
+            const blockQuery = `
+                SELECT height
+                FROM public.blocks
+                WHERE timestamp <= $1
+                ORDER BY timestamp DESC
+                LIMIT 1;
+            `;
+
+            const blockStart = Date.now();
+            const blockResult = await this.query(blockQuery, [timestamp]);
+            console.log(`Block height query took ${Date.now() - blockStart}ms`);
+
+            if (blockResult.rows.length === 0) {
+                return 0;
+            }
+
+            return blockResult.rows[0].height;
+        } catch (error) {
+            console.error('Error fetching height at time:', error);
+            throw error;
         }
     }
 
@@ -204,57 +250,57 @@ class DbService {
     /// @param {Date} timestamp - The timestamp in UTC
     /// @returns {Promise<Object>} - A promise that resolves to the balance information
     async fetchBalanceAtTime(owner, token, timestamp) {
+        const startTime = Date.now();
         try {
-            // Find the closest block height at or before the given timestamp
-            const blockQuery = `
-                SELECT height
-                FROM public.blocks
-                WHERE timestamp <= $1
-                ORDER BY timestamp DESC
-                LIMIT 1;
-            `;
-
-            const blockResult = await this.query(blockQuery, [timestamp]);
-
-            if (blockResult.rows.length === 0) {
-                // If no block found before the timestamp, return zero balance
+            const height = await this.fetchHeightAtTime(timestamp);
+            if (height === 0) {
                 return {
                     token,
                     raw_amount: '0'
                 };
             }
-
-            // Use the found block height to get the balance
-            return await this.fetchBalanceAtHeight(owner, token, blockResult.rows[0].height);
+            return await this.fetchBalanceAtHeight(owner, token, height);
         } catch (error) {
             console.error('Error fetching balance at time:', error);
             throw error;
+        } finally {
+            console.log(`fetchBalanceAtTime took ${Date.now() - startTime}ms`);
         }
     }
 
     /// Fetch balances for all assets for a given owner at a specific height
     /// @param {string} owner - The owner address
     /// @param {number} height - The block height (0 for latest)
+    /// @param {Array} [assetList] - Optional list of assets to fetch balances for. If not provided, will fetch from namadaService.
     /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
-    async fetchBalancesAtHeight(owner, height) {
+    async fetchBalancesAtHeight(owner, height, assetList = null) {
+        const startTime = Date.now();
         try {
             let targetHeight = height;
 
             // If height is 0, get the latest block height
             if (height === 0) {
                 const latestBlockQuery = 'SELECT MAX(height) as max_height FROM public.blocks';
+                const latestBlockStart = Date.now();
                 const latestBlockResult = await this.query(latestBlockQuery);
+                console.log(`Latest block query took ${Date.now() - latestBlockStart}ms`);
                 targetHeight = latestBlockResult.rows[0].max_height;
             }
 
-            // Get the list of assets
-            const assetList = await namadaService.fetchAssetList();
-            if (!assetList || assetList.length === 0) {
-                throw new Error("Failed to fetch asset list");
+            // Get the list of assets if not provided
+            let assets = assetList;
+            if (!assets) {
+                const assetListStart = Date.now();
+                assets = await namadaService.fetchAssetList();
+                console.log(`Asset list fetch took ${Date.now() - assetListStart}ms`);
+            }
+
+            if (!assets || assets.length === 0) {
+                throw new Error("No assets provided and failed to fetch asset list");
             }
 
             // Fetch balance for each asset
-            const balancePromises = assetList.map(asset =>
+            const balancePromises = assets.map(asset =>
                 this.fetchBalanceAtHeight(owner, asset.address, targetHeight)
             );
 
@@ -265,6 +311,8 @@ class DbService {
         } catch (error) {
             console.error('Error fetching balances at height:', error);
             throw error;
+        } finally {
+            console.log(`fetchBalancesAtHeight took ${Date.now() - startTime}ms`);
         }
     }
 
@@ -272,30 +320,21 @@ class DbService {
     /// Finds the closest block height at or before the given timestamp and returns balances
     /// @param {string} owner - The owner address
     /// @param {Date} timestamp - The timestamp in UTC
+    /// @param {Array} [assetList] - Optional list of assets to fetch balances for. If not provided, will fetch from namadaService.
     /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
-    async fetchBalancesAtTime(owner, timestamp) {
+    async fetchBalancesAtTime(owner, timestamp, assetList = null) {
+        const startTime = Date.now();
         try {
-            // Find the closest block height at or before the given timestamp
-            const blockQuery = `
-                SELECT height
-                FROM public.blocks
-                WHERE timestamp <= $1
-                ORDER BY timestamp DESC
-                LIMIT 1;
-            `;
-
-            const blockResult = await this.query(blockQuery, [timestamp]);
-
-            if (blockResult.rows.length === 0) {
-                // If no block found before the timestamp, return empty array
+            const height = await this.fetchHeightAtTime(timestamp);
+            if (height === 0) {
                 return [];
             }
-
-            // Use the found block height to get the balances
-            return await this.fetchBalancesAtHeight(owner, blockResult.rows[0].height);
+            return await this.fetchBalancesAtHeight(owner, height, assetList);
         } catch (error) {
             console.error('Error fetching balances at time:', error);
             throw error;
+        } finally {
+            console.log(`fetchBalancesAtTime took ${Date.now() - startTime}ms`);
         }
     }
 }
