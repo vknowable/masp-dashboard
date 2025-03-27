@@ -25,21 +25,26 @@ export default function MaspTxVolumeChart({
         () => {
             // Calculate net values for each bucket
             const netValues = txVolume?.map(bucket => {
-                // Calculate total value of inflow transactions
-                const inValue = bucket.in.reduce((total, tx) => {
-                    const asset = assets?.find(a => a.address === tx.token_address);
+                const metadata = (tokenAddress: string) => {
+                    const asset = assets?.find(a => a.address === tokenAddress);
                     const id = asset?.coingecko_id;
                     const exponent =
                         asset?.denom_units?.find((unit) => unit.denom === asset.display)
                             ?.exponent ?? 6;
                     const price = tokenPrices?.price?.find(p => p.id === id)?.usd ?? 0;
+                    return { price, exponent };
+                }
+
+                // Calculate total value of inflow transactions
+                const inValue = bucket.in.reduce((total, tx) => {
+                    const { price, exponent } = metadata(tx.token_address);
                     return total + (tx.raw_amount / 10 ** exponent * price);
                 }, 0);
 
                 // Calculate total value of outflow transactions
                 const outValue = bucket.out.reduce((total, tx) => {
-                    const price = tokenPrices?.price?.find(p => p.id === tx.token_address)?.usd ?? 0;
-                    return total + (tx.raw_amount * price);
+                    const { price, exponent } = metadata(tx.token_address);
+                    return total + (tx.raw_amount / 10 ** exponent * price);
                 }, 0);
 
                 return inValue - outValue;
@@ -85,6 +90,14 @@ export default function MaspTxVolumeChart({
                 return formatTime(time);
             }) || [];
 
+            // find the max number of transactions in a bucket
+            const maxInTransactions = Math.max(...txVolume?.map(bucket => bucket.in.length) || []);
+            const maxOutTransactions = Math.max(...txVolume?.map(bucket => bucket.out.length) || []);
+            const maxTransactions = Math.max(maxInTransactions, maxOutTransactions);
+
+            // find the max net value
+            const maxNetValue = Math.max(...netValues.map(Math.abs));
+
             return {
                 backgroundColor: "transparent",
                 grid: {
@@ -129,6 +142,8 @@ export default function MaspTxVolumeChart({
                         nameLocation: "middle" as const,
                         nameGap: 50,
                         position: 'left' as const,
+                        min: -maxTransactions,
+                        max: maxTransactions,
                         axisLine: {
                             lineStyle: {
                                 color: "#666",
@@ -152,6 +167,8 @@ export default function MaspTxVolumeChart({
                         nameLocation: "middle" as const,
                         nameGap: 50,
                         position: 'right' as const,
+                        min: -maxNetValue,
+                        max: maxNetValue,
                         axisLine: {
                             lineStyle: {
                                 color: "#666",
@@ -176,6 +193,7 @@ export default function MaspTxVolumeChart({
                             color: "#FFFF00",
                         },
                         showSymbol: false,
+                        z: 3,
                     },
                     {
                         name: "Outflow Transactions",
@@ -186,6 +204,7 @@ export default function MaspTxVolumeChart({
                             color: "#AAA",
                         },
                         showSymbol: false,
+                        z: 2,
                     },
                     {
                         name: "Net Value",
@@ -200,6 +219,7 @@ export default function MaspTxVolumeChart({
                         },
                         // Add color for legend
                         color: 'rgba(100, 255, 250, 0.25)',
+                        z: 1,
                     }
                 ],
                 tooltip: {
