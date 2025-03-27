@@ -28,8 +28,11 @@ class DbService {
             this.initialized = true;
             console.log('Database connection established successfully');
 
-            // Start the periodic data fetch
-            // this.startPeriodicDataFetch();
+            // Create historical balances table and functions if they don't exist
+            await this.createHistoricalBalancesTable();
+
+            // Start periodic data fetching
+            this.startPeriodicDataFetch();
         } catch (error) {
             console.error('Failed to initialize database connection:', error);
             throw error;
@@ -51,21 +54,27 @@ class DbService {
     }
 
     startPeriodicDataFetch() {
-        // Nothing here yet
+        // Update historical balances every hour
+        setInterval(async () => {
+            try {
+                const assets = await namadaService.fetchAssetList();
+                const tokenAddresses = assets.map(asset => asset.address);
+                await this.updateHistoricalBalances(tokenAddresses);
+            } catch (error) {
+                console.error('Error in periodic historical balances update:', error);
+            }
+        }, 60 * 60 * 1000); // 1 hour
 
-
-        // Placeholder: Refresh some db query every 60 seconds
-        // setInterval(() => {
-        //     this.fetchSomeData().catch(error => {
-        //         console.error('Error in periodic database fetch:', error);
-        //     });
-        // }, 60000); // 60 seconds
-
-        // Placeholder: Initial fetch for above
-        // this.fetchSomeData().catch(error => {
-        //     console.error('Error in initial database fetch:', error);
-        // });
-
+        // Initial update
+        (async () => {
+            try {
+                const assets = await namadaService.fetchAssetList();
+                const tokenAddresses = assets.map(asset => asset.address);
+                await this.updateHistoricalBalances(tokenAddresses);
+            } catch (error) {
+                console.error('Error in initial historical balances update:', error);
+            }
+        })();
     }
 
     getLatestData() {
@@ -335,6 +344,205 @@ class DbService {
             throw error;
         } finally {
             console.log(`fetchBalancesAtTime took ${Date.now() - startTime}ms`);
+        }
+    }
+
+    /// Create the masp_historical_balances table and related functions if they don't exist
+    async createHistoricalBalancesTable() {
+        try {
+            // Create the table
+            const createTableQuery = `
+                CREATE TABLE IF NOT EXISTS public.masp_historical_balances (
+                    id SERIAL PRIMARY KEY,
+                    token_address VARCHAR(45) NOT NULL,
+                    timestamp TIMESTAMP NOT NULL,
+                    balance NUMERIC(78, 0) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(token_address, timestamp)
+                );
+
+                -- Create index for fast lookups
+                CREATE INDEX IF NOT EXISTS idx_historical_balances_lookup 
+                ON public.masp_historical_balances (token_address, timestamp DESC);
+            `;
+
+            await this.query(createTableQuery);
+            console.log('Historical balances table and index created/verified');
+
+            // Create function to populate historical balances
+            const createFunctionQuery = `
+                CREATE OR REPLACE FUNCTION public.populate_historical_balances(
+                    p_token_address VARCHAR,
+                    p_start_time TIMESTAMP,
+                    p_end_time TIMESTAMP
+                ) RETURNS void AS $$
+                BEGIN
+                    INSERT INTO public.masp_historical_balances (token_address, timestamp, balance)
+                    WITH RECURSIVE 
+                    -- Get transactions from masp_pool
+                    masp_transactions AS (
+                        SELECT 
+                            token_address,
+                            timestamp,
+                            CASE 
+                                WHEN direction = 'in' THEN raw_amount
+                                ELSE -raw_amount
+                            END as amount_change
+                        FROM public.masp_pool
+                        WHERE token_address = p_token_address
+                        AND timestamp BETWEEN p_start_time AND p_end_time
+                    ),
+                    -- Get transactions from inner_transactions
+                    inner_transactions AS (
+                        SELECT 
+                            p_token_address as token_address,
+                            b.timestamp,
+                            CASE 
+                                WHEN it.kind = 'unshielding_transfer' THEN -(indexed_source->>'amount')::NUMERIC
+                                WHEN it.kind = 'shielding_transfer' THEN (indexed_source->>'amount')::NUMERIC
+                                ELSE 0
+                            END as amount_change
+                        FROM public.inner_transactions it
+                        JOIN public.wrapper_transactions wt ON it.wrapper_id = wt.id
+                        JOIN public.blocks b ON b.height = wt.block_height
+                        CROSS JOIN LATERAL jsonb_array_elements(it.data::jsonb->'sources') WITH ORDINALITY AS source(indexed_source, ord)
+                        WHERE it.kind IN ('unshielding_transfer', 'shielding_transfer', 'shielded_transfer')
+                        AND indexed_source->>'token' = p_token_address
+                        AND ord > 1  -- Ignore first element
+                        AND b.timestamp BETWEEN p_start_time AND p_end_time
+                    ),
+                    -- Combine all transactions
+                    all_transactions AS (
+                        SELECT * FROM masp_transactions
+                        UNION ALL
+                        SELECT * FROM inner_transactions
+                    ),
+                    -- Aggregate transactions by timestamp
+                    balance_history AS (
+                        SELECT 
+                            token_address,
+                            timestamp,
+                            SUM(amount_change) as amount_change
+                        FROM all_transactions
+                        GROUP BY token_address, timestamp
+                        ORDER BY timestamp ASC
+                    ),
+                    -- Calculate running balance
+                    running_balances AS (
+                        SELECT 
+                            token_address,
+                            timestamp,
+                            SUM(amount_change) OVER (ORDER BY timestamp) as running_balance
+                        FROM balance_history
+                    )
+                    -- Insert the running balances
+                    SELECT 
+                        token_address,
+                        timestamp,
+                        running_balance
+                    FROM running_balances
+                    ON CONFLICT (token_address, timestamp) 
+                    DO UPDATE SET 
+                        balance = EXCLUDED.balance,
+                        created_at = CURRENT_TIMESTAMP;
+                END;
+                $$ LANGUAGE plpgsql;
+            `;
+
+            await this.query(createFunctionQuery);
+            console.log('Historical balances population function created/verified');
+
+            // Create function to get latest timestamp
+            const createLatestTimestampFunction = `
+                CREATE OR REPLACE FUNCTION public.get_latest_historical_balance_timestamp(
+                    p_token_address VARCHAR
+                ) RETURNS TIMESTAMP AS $$
+                BEGIN
+                    RETURN (
+                        SELECT MAX(timestamp)
+                        FROM public.masp_historical_balances
+                        WHERE token_address = p_token_address
+                    );
+                END;
+                $$ LANGUAGE plpgsql;
+            `;
+
+            await this.query(createLatestTimestampFunction);
+            console.log('Latest timestamp function created/verified');
+        } catch (error) {
+            console.error('Error creating historical balances table and functions:', error);
+            throw error;
+        }
+    }
+
+    /// Populate historical balances for a given token and time range
+    /// @param {string} tokenAddress - The token address
+    /// @param {Date} startTime - Start time in UTC
+    /// @param {Date} endTime - End time in UTC
+    async populateHistoricalBalances(tokenAddress, startTime, endTime) {
+        try {
+            const query = `
+                SELECT public.populate_historical_balances($1, $2, $3);
+            `;
+            await this.query(query, [tokenAddress, startTime, endTime]);
+            console.log(`Populated historical balances for ${tokenAddress} from ${startTime} to ${endTime}`);
+        } catch (error) {
+            console.error('Error populating historical balances:', error);
+            throw error;
+        }
+    }
+
+    /// Get the latest timestamp we have historical balance data for
+    /// @param {string} tokenAddress - The token address
+    /// @returns {Promise<Date>} - The latest timestamp
+    async getLatestHistoricalBalanceTimestamp(tokenAddress) {
+        try {
+            const query = `
+                SELECT public.get_latest_historical_balance_timestamp($1) as latest_timestamp;
+            `;
+            const result = await this.query(query, [tokenAddress]);
+            return result.rows[0].latest_timestamp;
+        } catch (error) {
+            console.error('Error getting latest historical balance timestamp:', error);
+            throw error;
+        }
+    }
+
+    /// Update historical balances for all tokens with new data
+    /// @param {Array<string>} tokenAddresses - List of token addresses
+    async updateHistoricalBalances(tokenAddresses) {
+        try {
+            const now = new Date();
+
+            for (const tokenAddress of tokenAddresses) {
+                const latestTimestamp = await this.getLatestHistoricalBalanceTimestamp(tokenAddress);
+                if (!latestTimestamp) {
+                    // If no data exists, fetch from the beginning
+                    const earliestTransactionQuery = `
+                        SELECT MIN(timestamp) as earliest_timestamp
+                        FROM public.masp_pool
+                        WHERE token_address = $1;
+                    `;
+                    const result = await this.query(earliestTransactionQuery, [tokenAddress]);
+                    if (result.rows[0].earliest_timestamp) {
+                        await this.populateHistoricalBalances(
+                            tokenAddress,
+                            result.rows[0].earliest_timestamp,
+                            now
+                        );
+                    }
+                } else {
+                    // Update from last known timestamp
+                    await this.populateHistoricalBalances(
+                        tokenAddress,
+                        latestTimestamp,
+                        now
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error updating historical balances:', error);
+            throw error;
         }
     }
 }
