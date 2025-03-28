@@ -63,7 +63,7 @@ class DbService {
             } catch (error) {
                 console.error('Error in periodic historical balances update:', error);
             }
-        }, 60 * 60 * 1000); // 1 hour
+        }, 60 * 1000); // 1 minute
 
         // Initial update
         (async () => {
@@ -165,49 +165,59 @@ class DbService {
     /// @param {number} height - The block height (0 for latest)
     /// @returns {Promise<Object>} - A promise that resolves to the balance information
     async fetchBalanceAtHeight(owner, token, height) {
-        const startTime = Date.now();
         try {
             let targetHeight = height;
 
             // If height is 0, get the latest block height
             if (height === 0) {
                 const latestBlockQuery = 'SELECT MAX(height) as max_height FROM public.blocks';
-                const latestBlockStart = Date.now();
                 const latestBlockResult = await this.query(latestBlockQuery);
-                console.log(`Latest block query took ${Date.now() - latestBlockStart}ms`);
                 targetHeight = latestBlockResult.rows[0].max_height;
             }
 
-            // Query to find the closest balance at or before the target height
-            const query = `
-                SELECT 
-                    token,
-                    raw_amount
-                FROM public.balance_changes
-                WHERE owner = $1 
-                AND token = $2 
-                AND height <= $3
-                ORDER BY height DESC
-                LIMIT 1;
+            // Get the timestamp for this height
+            const timestampQuery = `
+                SELECT timestamp
+                FROM public.blocks
+                WHERE height = $1;
             `;
+            const timestampResult = await this.query(timestampQuery, [targetHeight]);
 
-            const balanceStart = Date.now();
-            const result = await this.query(query, [owner, token, targetHeight]);
-            console.log(`Balance query took ${Date.now() - balanceStart}ms`);
-
-            if (result.rows.length === 0) {
+            if (timestampResult.rows.length === 0) {
                 return {
                     token,
                     raw_amount: '0'
                 };
             }
 
-            return result.rows[0];
+            const blockTimestamp = timestampResult.rows[0].timestamp;
+
+            // Get the balance from historical_balances
+            const historicalQuery = `
+                SELECT balance
+                FROM public.masp_historical_balances
+                WHERE token_address = $1
+                AND timestamp <= $2
+                ORDER BY timestamp DESC
+                LIMIT 1;
+            `;
+            const historicalResult = await this.query(historicalQuery, [token, blockTimestamp]);
+
+            if (historicalResult.rows.length > 0) {
+                return {
+                    token,
+                    raw_amount: historicalResult.rows[0].balance.toString()
+                };
+            }
+
+            // If no balance found, return 0
+            return {
+                token,
+                raw_amount: '0'
+            };
         } catch (error) {
             console.error('Error fetching balance at height:', error);
             throw error;
-        } finally {
-            console.log(`fetchBalanceAtHeight took ${Date.now() - startTime}ms`);
         }
     }
 
@@ -215,20 +225,8 @@ class DbService {
     /// @param {Date} timestamp - The timestamp in UTC
     /// @param {Object} [interpolationData] - Optional data for height interpolation
     /// @returns {Promise<number>} - A promise that resolves to the block height
-    async fetchHeightAtTime(timestamp, interpolationData = null) {
-        const startTime = Date.now();
+    async fetchHeightAtTime(timestamp) {
         try {
-            // If we have interpolation data, use it to calculate the height
-            if (interpolationData) {
-                const { startHeight, startTime } = interpolationData;
-                const secondsDiff = (timestamp - startTime) / 1000;
-                const blocksDiff = Math.round(secondsDiff / 7);
-                const estimatedHeight = startHeight + blocksDiff;
-                console.log(`Height interpolation took ${Date.now() - startTime}ms`);
-                return estimatedHeight;
-            }
-
-            // Otherwise, query the database for the exact height
             const blockQuery = `
                 SELECT height
                 FROM public.blocks
@@ -237,9 +235,7 @@ class DbService {
                 LIMIT 1;
             `;
 
-            const blockStart = Date.now();
             const blockResult = await this.query(blockQuery, [timestamp]);
-            console.log(`Block height query took ${Date.now() - blockStart}ms`);
 
             if (blockResult.rows.length === 0) {
                 return 0;
@@ -259,21 +255,33 @@ class DbService {
     /// @param {Date} timestamp - The timestamp in UTC
     /// @returns {Promise<Object>} - A promise that resolves to the balance information
     async fetchBalanceAtTime(owner, token, timestamp) {
-        const startTime = Date.now();
         try {
-            const height = await this.fetchHeightAtTime(timestamp);
-            if (height === 0) {
+            // Get the balance from historical_balances
+            const historicalQuery = `
+                SELECT balance
+                FROM public.masp_historical_balances
+                WHERE token_address = $1
+                AND timestamp <= $2
+                ORDER BY timestamp DESC
+                LIMIT 1;
+            `;
+            const historicalResult = await this.query(historicalQuery, [token, timestamp]);
+
+            if (historicalResult.rows.length > 0) {
                 return {
                     token,
-                    raw_amount: '0'
+                    raw_amount: historicalResult.rows[0].balance.toString()
                 };
             }
-            return await this.fetchBalanceAtHeight(owner, token, height);
+
+            // If no balance found, return 0
+            return {
+                token,
+                raw_amount: '0'
+            };
         } catch (error) {
             console.error('Error fetching balance at time:', error);
             throw error;
-        } finally {
-            console.log(`fetchBalanceAtTime took ${Date.now() - startTime}ms`);
         }
     }
 
@@ -283,25 +291,20 @@ class DbService {
     /// @param {Array} [assetList] - Optional list of assets to fetch balances for. If not provided, will fetch from namadaService.
     /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
     async fetchBalancesAtHeight(owner, height, assetList = null) {
-        const startTime = Date.now();
         try {
             let targetHeight = height;
 
             // If height is 0, get the latest block height
             if (height === 0) {
                 const latestBlockQuery = 'SELECT MAX(height) as max_height FROM public.blocks';
-                const latestBlockStart = Date.now();
                 const latestBlockResult = await this.query(latestBlockQuery);
-                console.log(`Latest block query took ${Date.now() - latestBlockStart}ms`);
                 targetHeight = latestBlockResult.rows[0].max_height;
             }
 
             // Get the list of assets if not provided
             let assets = assetList;
             if (!assets) {
-                const assetListStart = Date.now();
                 assets = await namadaService.fetchAssetList();
-                console.log(`Asset list fetch took ${Date.now() - assetListStart}ms`);
             }
 
             if (!assets || assets.length === 0) {
@@ -314,14 +317,10 @@ class DbService {
             );
 
             // Wait for all balance fetches to complete
-            const balances = await Promise.all(balancePromises);
-
-            return balances;
+            return await Promise.all(balancePromises);
         } catch (error) {
             console.error('Error fetching balances at height:', error);
             throw error;
-        } finally {
-            console.log(`fetchBalancesAtHeight took ${Date.now() - startTime}ms`);
         }
     }
 
@@ -332,18 +331,43 @@ class DbService {
     /// @param {Array} [assetList] - Optional list of assets to fetch balances for. If not provided, will fetch from namadaService.
     /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
     async fetchBalancesAtTime(owner, timestamp, assetList = null) {
-        const startTime = Date.now();
         try {
-            const height = await this.fetchHeightAtTime(timestamp);
-            if (height === 0) {
-                return [];
+            // Get the list of assets if not provided
+            let assets = assetList;
+            if (!assets) {
+                assets = await namadaService.fetchAssetList();
             }
-            return await this.fetchBalancesAtHeight(owner, height, assetList);
+
+            if (!assets || assets.length === 0) {
+                throw new Error("No assets provided and failed to fetch asset list");
+            }
+
+            // Get all balances from historical_balances in parallel
+            const historicalQuery = `
+                SELECT token_address, balance
+                FROM public.masp_historical_balances
+                WHERE token_address = ANY($1)
+                AND timestamp <= $2
+                ORDER BY token_address, timestamp DESC
+            `;
+            const historicalResult = await this.query(historicalQuery, [assets.map(a => a.address), timestamp]);
+
+            // Create a map of token_address to balance from historical results
+            const historicalBalances = new Map();
+            historicalResult.rows.forEach(row => {
+                if (!historicalBalances.has(row.token_address)) {
+                    historicalBalances.set(row.token_address, row.balance);
+                }
+            });
+
+            // Return balances for all assets, using 0 for any missing ones
+            return assets.map(asset => ({
+                token: asset.address,
+                raw_amount: (historicalBalances.get(asset.address) || 0).toString()
+            }));
         } catch (error) {
             console.error('Error fetching balances at time:', error);
             throw error;
-        } finally {
-            console.log(`fetchBalancesAtTime took ${Date.now() - startTime}ms`);
         }
     }
 
@@ -374,7 +398,8 @@ class DbService {
                 CREATE OR REPLACE FUNCTION public.populate_historical_balances(
                     p_token_address VARCHAR,
                     p_start_time TIMESTAMP,
-                    p_end_time TIMESTAMP
+                    p_end_time TIMESTAMP,
+                    p_initial_balance NUMERIC DEFAULT 0
                 ) RETURNS void AS $$
                 BEGIN
                     INSERT INTO public.masp_historical_balances (token_address, timestamp, balance)
@@ -427,12 +452,12 @@ class DbService {
                         GROUP BY token_address, timestamp
                         ORDER BY timestamp ASC
                     ),
-                    -- Calculate running balance
+                    -- Calculate running balance, starting from initial balance
                     running_balances AS (
                         SELECT 
                             token_address,
                             timestamp,
-                            SUM(amount_change) OVER (ORDER BY timestamp) as running_balance
+                            p_initial_balance + COALESCE(SUM(amount_change) OVER (ORDER BY timestamp), 0) as running_balance
                         FROM balance_history
                     )
                     -- Insert the running balances
@@ -452,23 +477,25 @@ class DbService {
             await this.query(createFunctionQuery);
             console.log('Historical balances population function created/verified');
 
-            // Create function to get latest timestamp
-            const createLatestTimestampFunction = `
-                CREATE OR REPLACE FUNCTION public.get_latest_historical_balance_timestamp(
+            // Create function to get latest balance
+            const createLatestBalanceFunction = `
+                CREATE OR REPLACE FUNCTION public.get_latest_historical_balance(
                     p_token_address VARCHAR
-                ) RETURNS TIMESTAMP AS $$
+                ) RETURNS NUMERIC AS $$
                 BEGIN
                     RETURN (
-                        SELECT MAX(timestamp)
+                        SELECT balance
                         FROM public.masp_historical_balances
                         WHERE token_address = p_token_address
+                        ORDER BY timestamp DESC
+                        LIMIT 1
                     );
                 END;
                 $$ LANGUAGE plpgsql;
             `;
 
-            await this.query(createLatestTimestampFunction);
-            console.log('Latest timestamp function created/verified');
+            await this.query(createLatestBalanceFunction);
+            console.log('Latest balance function created/verified');
         } catch (error) {
             console.error('Error creating historical balances table and functions:', error);
             throw error;
@@ -479,15 +506,32 @@ class DbService {
     /// @param {string} tokenAddress - The token address
     /// @param {Date} startTime - Start time in UTC
     /// @param {Date} endTime - End time in UTC
-    async populateHistoricalBalances(tokenAddress, startTime, endTime) {
+    /// @param {number} [initialBalance] - Optional initial balance to start from
+    async populateHistoricalBalances(tokenAddress, startTime, endTime, initialBalance = 0) {
         try {
             const query = `
-                SELECT public.populate_historical_balances($1, $2, $3);
+                SELECT public.populate_historical_balances($1, $2, $3, $4);
             `;
-            await this.query(query, [tokenAddress, startTime, endTime]);
+            await this.query(query, [tokenAddress, startTime, endTime, initialBalance]);
             console.log(`Populated historical balances for ${tokenAddress} from ${startTime} to ${endTime}`);
         } catch (error) {
             console.error('Error populating historical balances:', error);
+            throw error;
+        }
+    }
+
+    /// Get the latest balance we have historical balance data for
+    /// @param {string} tokenAddress - The token address
+    /// @returns {Promise<number>} - The latest balance
+    async getLatestHistoricalBalance(tokenAddress) {
+        try {
+            const query = `
+                SELECT public.get_latest_historical_balance($1) as latest_balance;
+            `;
+            const result = await this.query(query, [tokenAddress]);
+            return result.rows[0].latest_balance || 0;
+        } catch (error) {
+            console.error('Error getting latest historical balance:', error);
             throw error;
         }
     }
@@ -515,7 +559,13 @@ class DbService {
             const now = new Date();
 
             for (const tokenAddress of tokenAddresses) {
+                const latestBalance = await this.getLatestHistoricalBalance(tokenAddress);
                 const latestTimestamp = await this.getLatestHistoricalBalanceTimestamp(tokenAddress);
+
+                console.log(`Updating historical balances for ${tokenAddress}:`);
+                console.log(`Latest balance: ${latestBalance}`);
+                console.log(`Latest timestamp: ${latestTimestamp}`);
+
                 if (!latestTimestamp) {
                     // If no data exists, fetch from the beginning
                     const earliestTransactionQuery = `
@@ -524,19 +574,24 @@ class DbService {
                         WHERE token_address = $1;
                     `;
                     const result = await this.query(earliestTransactionQuery, [tokenAddress]);
+                    console.log(`Earliest transaction timestamp: ${result.rows[0].earliest_timestamp}`);
+
                     if (result.rows[0].earliest_timestamp) {
                         await this.populateHistoricalBalances(
                             tokenAddress,
                             result.rows[0].earliest_timestamp,
-                            now
+                            now,
+                            0  // Start from 0 for initial population
                         );
                     }
                 } else {
-                    // Update from last known timestamp
+                    // Update from last known timestamp, using the latest balance as initial balance
+                    console.log(`Updating from ${latestTimestamp} to ${now} with initial balance ${latestBalance}`);
                     await this.populateHistoricalBalances(
                         tokenAddress,
                         latestTimestamp,
-                        now
+                        now,
+                        latestBalance
                     );
                 }
             }
