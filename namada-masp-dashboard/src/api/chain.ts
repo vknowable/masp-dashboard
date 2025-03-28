@@ -1,5 +1,4 @@
 import apiClient from "./apiClient";
-import { AbciQueryResponse } from "../types/abci";
 import { Token, Balance, AggregatesResponse } from "../types/token";
 import {
     MaspEpochResponse,
@@ -167,13 +166,6 @@ export async function fetchVotingPower(): Promise<VotingPower> {
 export async function fetchLatestEpoch(): Promise<EpochResponse> {
     const { data } = await apiClient.get(
         `${indexerUrl}/api/v1/chain/epoch/latest`,
-    );
-    return data;
-}
-
-export async function fetchTotalRewardsMinted(): Promise<AbciQueryResponse> {
-    const { data } = await apiClient.get(
-        `${rpcUrl}/abci_query?path="/shell/value/%23tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah/max_total_rewards"`,
     );
     return data;
 }

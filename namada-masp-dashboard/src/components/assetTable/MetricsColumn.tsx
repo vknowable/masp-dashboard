@@ -38,12 +38,8 @@ function MetricsColumn({
   return (
     <div className="h-full">
       <div className="column-heading-container bg-[#010101] justify-end rounded-tr-[5px]">
-        {/* <div className="flex-1">
-                    <ViewToggle currentView={viewMode} onViewChange={onViewChange} />
-                </div> */}
         <div className="h-[40px] px-4 flex items-center">
           <div className="flex column-heading-text w-full pl-8">
-            {/* {viewMode === 'shielded' ? ( */}
             <>
               <div className="flex-1">Current Value Shielded</div>
               <div className="flex-1">Current Value Transparent</div>
@@ -51,11 +47,6 @@ function MetricsColumn({
                 Est. Rewards Rate
               </div>
             </>
-            {/* ) : (
-                            <>
-                                <div className="flex-1">Current Value Transparent</div>
-                            </>
-                        )} */}
           </div>
         </div>
       </div>
@@ -63,7 +54,6 @@ function MetricsColumn({
         {assets.map((token) => (
           <MetricsRow
             key={token.address}
-            // viewMode={viewMode}
             token={token}
             tokenPrice={
               tokenPrices?.price.find(

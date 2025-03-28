@@ -5,10 +5,10 @@ import { AggregatesResponse } from "../../../types/token";
 import { MaspAggregatesWindow } from "./MaspAggregatesChartContainer";
 import { denomAmount } from "../../../utils/numbers";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
-import { TooltipFormatterCallback, TopLevelFormatterParams } from 'echarts/types/dist/shared';
+import { TopLevelFormatterParams } from "echarts/types/dist/shared";
 
 interface MaspAggregatesChartProps {
-    selectedAsset?: string;
+    selectedAssets: string[];
     selectedTimeframe?: MaspAggregatesWindow;
     showShieldedInflow?: boolean;
     showShieldedOutflow?: boolean;
@@ -17,7 +17,7 @@ interface MaspAggregatesChartProps {
 }
 
 export default function MaspAggregatesChart({
-    selectedAsset = "All",
+    selectedAssets,
     selectedTimeframe = "24hr",
     showShieldedInflow = true,
     showShieldedOutflow = true,
@@ -43,7 +43,7 @@ export default function MaspAggregatesChart({
         );
 
         // If "All" is selected, return data for all assets
-        if (selectedAsset === "All") {
+        if (selectedAssets.includes("All")) {
             return assets.map((asset) => {
                 const assetData = timeWindowData.filter(
                     (a) => a.tokenAddress === asset.address
@@ -73,34 +73,38 @@ export default function MaspAggregatesChart({
             });
         }
 
-        // Return data for selected asset only
-        const asset = assets.find((a) => a.symbol === selectedAsset);
-        if (!asset) return [];
+        // Return data for selected assets only
+        return assets
+            .filter((asset) => selectedAssets.includes(asset.symbol))
+            .map((asset) => {
+                const assetData = timeWindowData.filter(
+                    (a) => a.tokenAddress === asset.address
+                );
+                const inflow =
+                    assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
+                const outflow =
+                    assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
+                const price =
+                    tokenPrices?.price?.find((p) => p.id === asset.coingecko_id)?.usd ??
+                    0;
 
-        const assetData = timeWindowData.filter(
-            (a) => a.tokenAddress === asset.address
-        );
-        const inflow =
-            assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
-        const outflow =
-            assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
-
-        return [
-            {
-                symbol: asset.symbol,
-                shieldedInflow: parseFloat(inflow),
-                shieldedOutflow: parseFloat(outflow),
-                transparentInflow: 0, // TODO: Add transparent flow data when available
-                transparentOutflow: 0,
-            },
-        ];
-    }, [selectedAsset, selectedTimeframe, assets, maspAggregates]);
+                return {
+                    symbol: asset.symbol,
+                    shieldedInflow: Number(
+                        ((denomAmount(parseFloat(inflow)) ?? 0) * price).toFixed(2)
+                    ),
+                    shieldedOutflow: Number(
+                        ((denomAmount(parseFloat(outflow)) ?? 0) * price).toFixed(2)
+                    ),
+                };
+            });
+    }, [selectedAssets, selectedTimeframe, assets, maspAggregates, tokenPrices]);
 
     const option = useMemo(
         () => ({
             backgroundColor: "transparent",
             grid: {
-                left: "6%",
+                left: "3%",
                 right: "4%",
                 bottom: "3%",
                 containLabel: true,
@@ -114,9 +118,9 @@ export default function MaspAggregatesChart({
                     },
                 },
                 axisLabel: {
-                    rotate: 90, // Rotate labels 90 degrees (vertical facing up)
+                    rotate: 0, // Rotate labels 90 degrees (vertical facing up)
                     interval: 0, // Force all labels to show
-                    align: "right" as const, // Align text to left side
+                    align: "center" as const, // Align text to left side
                     padding: [0, 12, 0, 0], // Add some padding to prevent overlap
                     color: "#CCC", // Match text color with theme
                     fontSize: 15,
@@ -131,13 +135,25 @@ export default function MaspAggregatesChart({
             },
             yAxis: {
                 type: "value" as const,
-                name: "USD Value",
+                name: "(USD)",
                 nameLocation: "middle" as const,
                 nameGap: 50,
+                nameTextStyle: {
+                    color: "#CCC",
+                    fontSize: 14,
+                    padding: [0, 0, 10, 0],
+                },
                 axisLine: {
                     lineStyle: {
                         color: "#666",
                     },
+                },
+                axisLabel: {
+                    rotate: 0,
+                    align: "right" as const,
+                    padding: [0, 12, 0, 0],
+                    color: "#CCC",
+                    fontSize: 15,
                 },
                 splitLine: {
                     show: false,
@@ -184,7 +200,7 @@ export default function MaspAggregatesChart({
                     color: "#FFFFFF",
                 },
                 formatter: function (params: TopLevelFormatterParams) {
-                    if (!Array.isArray(params)) return '';
+                    if (!Array.isArray(params)) return "";
 
                     let result = params[0].name + "<br/>";
 

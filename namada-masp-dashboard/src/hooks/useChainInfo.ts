@@ -5,7 +5,7 @@ import {
     fetchBlockchainInfo,
     fetchVotingPower,
     fetchLatestEpoch,
-    fetchTotalRewardsMinted,
+    fetchTotalRewards,
     TransformedTokenAmounts,
     TokenPricesResponse,
 } from "../api/chain";
@@ -49,13 +49,13 @@ export interface ChainInfo {
 
 // Calculate average time between blocks in seconds
 function calculateAverageBlockTime(
-    blocks: { header: { time: string } }[],
+    blocks: { header: { time: string } }[]
 ): number | null {
     if (blocks.length < 2) return null;
     // Sort blocks by timestamp to ensure correct order
     const sortedBlocks = [...blocks].sort(
         (a, b) =>
-            new Date(a.header.time).getTime() - new Date(b.header.time).getTime(),
+            new Date(a.header.time).getTime() - new Date(b.header.time).getTime()
     );
     let totalDiff = 0;
     for (let i = 1; i < sortedBlocks.length; i++) {
@@ -70,7 +70,7 @@ function calculateAverageBlockTime(
 // Calculate staked percentage safely
 const calculateStakedPercentage = (
     totalStaked: string | null,
-    totalSupply: number | null,
+    totalSupply: number | null
 ): number | null => {
     if (!totalStaked || !totalSupply) return null;
     const parsedStaked = parseFloat(totalStaked); // already denominated in NAM
@@ -85,7 +85,7 @@ const calculateStakedPercentage = (
 const calculateTotalShieldedAssets = (
     maspBalances: TransformedTokenAmounts,
     tokenPrices: TokenPricesResponse,
-    assetMetadata: RegistryAsset[],
+    assetMetadata: RegistryAsset[]
 ): ShieldedAssetsMetrics => {
     if (!maspBalances?.balances || !tokenPrices?.price || !assetMetadata) {
         return {
@@ -109,7 +109,7 @@ const calculateTotalShieldedAssets = (
 
     return maspBalances.balances.reduce((total, balance) => {
         const metadata = assetMetadata.find(
-            (asset) => asset.address === balance.tokenAddress,
+            (asset) => asset.address === balance.tokenAddress
         );
         const exponent =
             metadata?.denom_units?.find((unit) => unit.denom === metadata.display)
@@ -119,7 +119,7 @@ const calculateTotalShieldedAssets = (
         }
 
         const price = tokenPrices.price.find(
-            (p) => p.id === metadata.coingecko_id,
+            (p) => p.id === metadata.coingecko_id
         )?.usd;
         if (!price) {
             return total;
@@ -151,8 +151,6 @@ export function useChainInfo(): ChainInfo {
         useTokenSupplies();
     const { data: maspBalances, isLoading: isLoadingMaspBalances } =
         useMaspBalances();
-    const { data: totalRewards, isLoading: isLoadingTotalRewards } =
-        useTotalRewards();
 
     // Get chain parameters (includes APR and native token address)
     const {
@@ -196,14 +194,13 @@ export function useChainInfo(): ChainInfo {
     });
 
     // Get total rewards minted
-    const { data: totalRewardsResponse, isLoading: isLoadingRewards } =
-        useQuery<AbciQueryResponse>({
-            queryKey: ["totalRewardsMinted"],
-            queryFn: fetchTotalRewardsMinted,
-            retry: retryPolicy,
-            retryDelay: retryDelay,
-            staleTime: 60000, // Consider fresh for 1 minute
-        });
+    const { data: totalRewards, isLoading: isLoadingRewards } = useQuery({
+        queryKey: ["totalRewardsMinted"],
+        queryFn: fetchTotalRewards,
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+        staleTime: 60000, // Consider fresh for 1 minute
+    });
 
     // Get latest epoch
     const { data: epochInfo, isLoading: isLoadingEpoch } = useQuery({
@@ -219,21 +216,18 @@ export function useChainInfo(): ChainInfo {
         ? calculateAverageBlockTime(blockchainInfo.result.block_metas)
         : null;
 
-    // TODO: This value is in uNAM but UI shows it as $ value
-    const totalRewardsMinted = totalRewards?.totalRewards ?? null;
-
     const totalSupply =
         tokenSupplies?.supplies.find(
-            (supply) => supply.address === parameters?.nativeTokenAddress,
+            (supply) => supply.address === parameters?.nativeTokenAddress
         )?.supplies.current || null;
     const percentStaked = calculateStakedPercentage(
         votingPower?.totalVotingPower ?? null,
-        totalSupply,
+        totalSupply
     );
     const totalShieldedAssets = calculateTotalShieldedAssets(
         maspBalances ?? { balances: [] },
         tokenPrices ?? { price: [] },
-        assets ?? [],
+        assets ?? []
     );
 
     return {
@@ -245,9 +239,7 @@ export function useChainInfo(): ChainInfo {
             totalStaked: votingPower?.totalVotingPower ?? null,
             percentStaked,
             totalShieldedAssets,
-            totalRewardsMinted: totalRewardsMinted
-                ? parseNumeric(totalRewardsMinted)
-                : null,
+            totalRewardsMinted: parseNumeric(totalRewards?.totalRewards),
             rewardsPerEpoch: null,
             epoch: epochInfo?.epoch ?? null,
         },
