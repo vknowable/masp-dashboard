@@ -21,7 +21,7 @@ export default function MaspAggregatesChartContainer({
     const { data: maspAggregates = [], isLoading: isLoadingAggregates } =
         useMaspAggregates();
 
-    const [selectedAsset, setSelectedAsset] = useState<string>("All");
+    const [selectedAssets, setSelectedAssets] = useState<string[]>(["All"]);
     const [selectedTimeframe, setSelectedTimeframe] =
         useState<MaspAggregatesWindow>("24hr");
     const [showShieldedInflow, setShowShieldedInflow] = useState(true);
@@ -58,8 +58,8 @@ export default function MaspAggregatesChartContainer({
 
             <div className="flex flex-col w-full">
                 <MaspAggregatesChartTopBar
-                    selectedAsset={selectedAsset}
-                    onAssetSelect={setSelectedAsset}
+                    selectedAssets={selectedAssets}
+                    onAssetsSelect={setSelectedAssets}
                     selectedTimeframe={selectedTimeframe}
                     onTimeframeSelect={setSelectedTimeframe}
                     showShieldedInflow={showShieldedInflow}
@@ -72,7 +72,7 @@ export default function MaspAggregatesChartContainer({
 
             <div className="min-w-full min-h-[508px]">
                 <MaspAggregatesChart
-                    selectedAsset={selectedAsset}
+                    selectedAssets={selectedAssets}
                     selectedTimeframe={selectedTimeframe}
                     showShieldedInflow={showShieldedInflow}
                     showShieldedOutflow={showShieldedOutflow}

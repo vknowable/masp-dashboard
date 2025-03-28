@@ -47,13 +47,13 @@ function ChartContainer() {
                         borderColor="grey"
                         checkColor="white"
                     />
-                    <CustomCheckbox
+                    {/* <CustomCheckbox
                         checked={visibility.anotherChart2}
                         onChange={() => toggleChart("anotherChart2")}
                         label="Another Chart 2"
                         borderColor="grey"
                         checkColor="white"
-                    />
+                    /> */}
                 </div>
             </div>
 
