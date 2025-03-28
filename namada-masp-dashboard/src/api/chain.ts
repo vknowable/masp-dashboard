@@ -120,6 +120,22 @@ export interface TransformedTokenAmount {
     };
 }
 
+export type MaspTxVolumeResponse = MaspTxVolumeBucket[];
+
+export interface MaspTxVolumeBucket {
+    bucket: number;
+    in: MaspPoolTx[];
+    out: MaspPoolTx[];
+}
+
+export interface MaspPoolTx {
+    id: number;
+    token_address: string;
+    timestamp: string;
+    raw_amount: number;
+    inner_tx_id: string;
+}
+
 export async function fetchChainParameters(): Promise<Parameters> {
     const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/parameters`);
     return data;
@@ -200,5 +216,16 @@ export async function fetchTotalRewards(): Promise<MaspTotalRewardsResponse> {
 
 export async function fetchMaspAggregates(): Promise<AggregatesResponse> {
     const { data } = await apiClient.get(`${indexerUrl}/api/v1/masp/aggregates`);
+    return data;
+}
+
+export async function fetchMaspTxVolume(
+    startTime: string,
+    endTime: string,
+    resolution: number,
+): Promise<MaspTxVolumeResponse> {
+    const { data } = await apiClient.get(
+        `${apiUrl}/api/v1/masp/txs?startTime=${startTime}&endTime=${endTime}&resolution=${resolution}`,
+    );
     return data;
 }
