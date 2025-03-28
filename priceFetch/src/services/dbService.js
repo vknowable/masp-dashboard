@@ -559,14 +559,40 @@ class DbService {
             const now = new Date();
 
             for (const tokenAddress of tokenAddresses) {
+                // Get the latest timestamp we have processed for this token
+                const lastProcessedQuery = `
+                    SELECT MAX(timestamp) as last_processed_timestamp
+                    FROM public.masp_historical_balances
+                    WHERE token_address = $1;
+                `;
+                const lastProcessedResult = await this.query(lastProcessedQuery, [tokenAddress]);
+                const lastProcessedTimestamp = lastProcessedResult.rows[0].last_processed_timestamp;
+
+                // Get the latest transaction timestamp from masp_pool
+                const latestTransactionQuery = `
+                    SELECT MAX(timestamp) as latest_timestamp
+                    FROM public.masp_pool
+                    WHERE token_address = $1;
+                `;
+                const latestTransactionResult = await this.query(latestTransactionQuery, [tokenAddress]);
+                const latestTransactionTimestamp = latestTransactionResult.rows[0].latest_timestamp;
+
+                // If there are no new transactions or we're up to date, skip this token
+                if (!latestTransactionTimestamp ||
+                    (lastProcessedTimestamp && latestTransactionTimestamp <= lastProcessedTimestamp)) {
+                    console.log(`No new transactions for ${tokenAddress}`);
+                    continue;
+                }
+
+                // Get the latest balance we have
                 const latestBalance = await this.getLatestHistoricalBalance(tokenAddress);
-                const latestTimestamp = await this.getLatestHistoricalBalanceTimestamp(tokenAddress);
 
                 console.log(`Updating historical balances for ${tokenAddress}:`);
                 console.log(`Latest balance: ${latestBalance}`);
-                console.log(`Latest timestamp: ${latestTimestamp}`);
+                console.log(`Last processed timestamp: ${lastProcessedTimestamp}`);
+                console.log(`Latest transaction timestamp: ${latestTransactionTimestamp}`);
 
-                if (!latestTimestamp) {
+                if (!lastProcessedTimestamp) {
                     // If no data exists, fetch from the beginning
                     const earliestTransactionQuery = `
                         SELECT MIN(timestamp) as earliest_timestamp
@@ -586,10 +612,10 @@ class DbService {
                     }
                 } else {
                     // Update from last known timestamp, using the latest balance as initial balance
-                    console.log(`Updating from ${latestTimestamp} to ${now} with initial balance ${latestBalance}`);
+                    console.log(`Updating from ${lastProcessedTimestamp} to ${now} with initial balance ${latestBalance}`);
                     await this.populateHistoricalBalances(
                         tokenAddress,
-                        latestTimestamp,
+                        lastProcessedTimestamp,
                         now,
                         latestBalance
                     );

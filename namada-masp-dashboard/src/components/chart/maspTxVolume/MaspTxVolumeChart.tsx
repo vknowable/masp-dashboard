@@ -97,9 +97,9 @@ export default function MaspTxVolumeChart({
                 backgroundColor: "transparent",
                 grid: {
                     left: "6%",
-                    right: "6%",
+                    right: 150,
                     bottom: "3%",
-                    top: "20%",
+                    top: 10,
                     containLabel: true,
                 },
                 xAxis: {
@@ -158,7 +158,7 @@ export default function MaspTxVolumeChart({
                         type: "value" as const,
                         name: "Net Tx Value (USD)",
                         nameLocation: "middle" as const,
-                        nameGap: 80,
+                        nameGap: 60,
                         position: 'right' as const,
                         min: 0,
                         max: maxNetValue,
@@ -178,7 +178,7 @@ export default function MaspTxVolumeChart({
                 ],
                 series: [
                     {
-                        name: "Inflow Transactions",
+                        name: "Inflow Txs",
                         type: "line" as const,
                         yAxisIndex: 0,
                         data: txVolume?.map(bucket => bucket.in.length) || [],
@@ -189,7 +189,7 @@ export default function MaspTxVolumeChart({
                         z: 3,
                     },
                     {
-                        name: "Outflow Transactions",
+                        name: "Outflow Txs",
                         type: "line" as const,
                         yAxisIndex: 0,
                         data: txVolume?.map(bucket => bucket.out.length) || [],
@@ -252,15 +252,14 @@ export default function MaspTxVolumeChart({
                     },
                 },
                 legend: {
-                    data: ["Inflow Transactions", "Outflow Transactions", "Net Value"],
+                    data: ["Inflow Txs", "Outflow Txs", "Net Value"],
                     textStyle: {
                         color: "#CCC",
                     },
-                    top: 0,
-                    right: 0,
                     align: 'right' as const,
                     orient: 'vertical' as const,
-                    itemGap: 10,
+                    top: 0,
+                    right: 0,
                 },
             };
         },
@@ -268,7 +267,7 @@ export default function MaspTxVolumeChart({
     );
 
     return (
-        <div className="w-full h-[580px] bg-[#191919] rounded-lg p-4 mt-[-32px]">
+        <div className="w-full h-[480px] bg-[#191919] rounded-lg p-4">
             <ReactECharts
                 option={option}
                 style={{ height: "100%", width: "100%" }}

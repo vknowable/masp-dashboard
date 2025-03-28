@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import MaspTxVolumeChart from './MaspTxVolumeChart';
+import MaspBalancesChart from './MaspBalancesChart';
 import { RegistryAsset } from '../../../types/chainRegistry';
 import DateTimeRangePicker from '@wojtekmaj/react-datetimerange-picker';
 import '@wojtekmaj/react-datetimerange-picker/dist/DateTimeRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import { customDateTimePickerStyles } from '../DateTimePickerStyles';
 
-interface MaspTxVolumeChartContainerProps {
+interface MaspBalancesChartContainerProps {
     isLoading?: boolean;
     error?: Error | null;
     assets?: RegistryAsset[];
@@ -15,11 +15,11 @@ interface MaspTxVolumeChartContainerProps {
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
-export default function MaspTxVolumeChartContainer({
+export default function MaspBalancesChartContainer({
     isLoading = false,
     error = null,
     assets = [],
-}: MaspTxVolumeChartContainerProps) {
+}: MaspBalancesChartContainerProps) {
     // Initialize with current time and 24 hours ago
     const [value, onChange] = useState<Value>(() => {
         const end = new Date();
@@ -78,7 +78,7 @@ export default function MaspTxVolumeChartContainer({
     return (
         <div className="flex flex-col gap-4">
             <div className="section-heading text-center text-xl md:text-2xl">
-                MASP Transaction Volume
+                MASP Assets Over Time
             </div>
 
             <div className="flex items-center gap-4 px-4">
@@ -100,7 +100,7 @@ export default function MaspTxVolumeChartContainer({
 
                 </div>
             </div>
-            <MaspTxVolumeChart
+            <MaspBalancesChart
                 assets={assets}
                 startTime={getUTCString(Array.isArray(value) ? value[0] : null)}
                 endTime={getUTCString(Array.isArray(value) ? value[1] : null)}

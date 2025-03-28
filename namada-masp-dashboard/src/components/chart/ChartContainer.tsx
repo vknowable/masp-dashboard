@@ -4,18 +4,19 @@ import CustomCheckbox from "../common/CustomCheckbox";
 import ErrorBoundary from "../common/ErrorBoundary";
 import { useRegistryData } from "../../hooks/useRegistryData";
 import MaspTxVolumeChartContainer from "./maspTxVolume/MaspTxVolumeChartContainer";
+import MaspBalancesChartContainer from "./maspBalances/MaspBalancesChartContainer";
 
 interface ChartVisibility {
     maspAggregates: boolean;
     maspTxVolume: boolean;
-    anotherChart2: boolean;
+    maspBalances: boolean;
 }
 
 function ChartContainer() {
     const [visibility, setVisibility] = useState<ChartVisibility>({
         maspAggregates: true,
         maspTxVolume: true,
-        anotherChart2: false,
+        maspBalances: true,
     });
 
     const toggleChart = (chart: keyof ChartVisibility) => {
@@ -47,18 +48,18 @@ function ChartContainer() {
                         borderColor="grey"
                         checkColor="white"
                     />
-                    {/* <CustomCheckbox
-                        checked={visibility.anotherChart2}
-                        onChange={() => toggleChart("anotherChart2")}
-                        label="Another Chart 2"
+                    <CustomCheckbox
+                        checked={visibility.maspBalances}
+                        onChange={() => toggleChart("maspBalances")}
+                        label="Masp Assets"
                         borderColor="grey"
                         checkColor="white"
-                    /> */}
+                    />
                 </div>
             </div>
 
             {/* Charts */}
-            <div className="space-y-8">
+            <div className="space-y-24">
                 {visibility.maspAggregates && (
                     <ErrorBoundary>
                         <MaspAggregatesChartContainer
@@ -76,10 +77,19 @@ function ChartContainer() {
                         />
                     </ErrorBoundary>
                 )}
+
+                {visibility.maspBalances && (
+                    <ErrorBoundary>
+                        <MaspBalancesChartContainer
+                            isLoading={isLoadingRegistry}
+                            assets={assets}
+                        />
+                    </ErrorBoundary>
+                )}
                 {/* Add more charts here as they become available */}
             </div>
 
-            {!visibility.maspAggregates && (
+            {!visibility.maspAggregates && !visibility.maspTxVolume && !visibility.maspBalances && (
                 <div className="min-h-[300px] flex items-center justify-center text-xl font-light text-white/50">
                     No charts selected
                 </div>
