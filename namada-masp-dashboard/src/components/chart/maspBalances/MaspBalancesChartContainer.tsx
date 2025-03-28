@@ -24,7 +24,7 @@ export default function MaspBalancesChartContainer({
     const [value, onChange] = useState<Value>(() => {
         const end = new Date();
         const start = new Date();
-        start.setHours(start.getHours() - 24);
+        start.setDate(start.getDate() - 30);
         return [start, end];
     });
 
