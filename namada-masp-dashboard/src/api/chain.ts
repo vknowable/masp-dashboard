@@ -136,6 +136,21 @@ export interface MaspPoolTx {
     inner_tx_id: string;
 }
 
+export interface MaspBalanceSeriesResponse {
+    owner: string;
+    series: MaspBalanceSeriesEntry[];
+}
+
+export interface MaspBalanceSeriesEntry {
+    timestamp: string;
+    balances: MaspBalance[];
+}
+
+export interface MaspBalance {
+    token: string;
+    raw_amount: string;
+}
+
 export async function fetchChainParameters(): Promise<Parameters> {
     const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/parameters`);
     return data;
@@ -226,6 +241,17 @@ export async function fetchMaspTxVolume(
 ): Promise<MaspTxVolumeResponse> {
     const { data } = await apiClient.get(
         `${apiUrl}/api/v1/masp/txs?startTime=${startTime}&endTime=${endTime}&resolution=${resolution}`,
+    );
+    return data;
+}
+
+export async function fetchMaspBalanceSeries(
+    startTime: string,
+    endTime: string,
+    resolution: number,
+): Promise<MaspBalanceSeriesResponse> {
+    const { data } = await apiClient.get(
+        `${apiUrl}/api/v1/masp/balances/series?startTime=${startTime}&endTime=${endTime}&resolution=${resolution}`,
     );
     return data;
 }

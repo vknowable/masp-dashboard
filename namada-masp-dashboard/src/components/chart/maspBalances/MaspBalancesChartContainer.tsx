@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import MaspTxVolumeChart from './MaspTxVolumeChart';
+import MaspBalancesChart from './MaspBalancesChart';
 import { RegistryAsset } from '../../../types/chainRegistry';
 import DateTimeRangePicker from '@wojtekmaj/react-datetimerange-picker';
 import '@wojtekmaj/react-datetimerange-picker/dist/DateTimeRangePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import { customDateTimePickerStyles } from '../DateTimePickerStyles';
 
-interface MaspTxVolumeChartContainerProps {
+interface MaspBalancesChartContainerProps {
     isLoading?: boolean;
     error?: Error | null;
     assets?: RegistryAsset[];
@@ -15,11 +15,11 @@ interface MaspTxVolumeChartContainerProps {
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
-export default function MaspTxVolumeChartContainer({
+export default function MaspBalancesChartContainer({
     isLoading = false,
     error = null,
     assets = [],
-}: MaspTxVolumeChartContainerProps) {
+}: MaspBalancesChartContainerProps) {
     // Initialize with current time and 24 hours ago
     const [value, onChange] = useState<Value>(() => {
         const end = new Date();
@@ -78,7 +78,7 @@ export default function MaspTxVolumeChartContainer({
     return (
         <div className="flex flex-col gap-4">
             <div className="section-heading text-center text-xl md:text-2xl">
-                MASP Transaction Volume
+                MASP Assets Over Time
             </div>
 
             <div className="flex items-center gap-4 px-4">
@@ -90,7 +90,7 @@ export default function MaspTxVolumeChartContainer({
                     <DateTimeRangePicker
                         onChange={handleDateTimeChange}
                         value={value}
-                        className="bg-[#3A3A3A] text-white font-light text-[14px] min-w-[170px] h-[26px] text-center rounded-[5px] border border-[#707070]"
+                        className="bg-[#3A3A3A] text-white font-light text-[14px] min-w-[170px] h-[26px] text-center rounded-[5px] border border-[#707070] mb-8"
                         format="yyyy-MM-dd HH:mm"
                         rangeDivider={<div className="px-2 text-white/70">⇒</div>}
                         disableClock={true}
@@ -100,7 +100,7 @@ export default function MaspTxVolumeChartContainer({
 
                 </div>
             </div>
-            <MaspTxVolumeChart
+            <MaspBalancesChart
                 assets={assets}
                 startTime={getUTCString(Array.isArray(value) ? value[0] : null)}
                 endTime={getUTCString(Array.isArray(value) ? value[1] : null)}
