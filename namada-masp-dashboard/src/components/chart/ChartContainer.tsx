@@ -89,7 +89,7 @@ function ChartContainer() {
                 {/* Add more charts here as they become available */}
             </div>
 
-            {!visibility.maspAggregates && (
+            {!visibility.maspAggregates && !visibility.maspTxVolume && !visibility.maspBalances && (
                 <div className="min-h-[300px] flex items-center justify-center text-xl font-light text-white/50">
                     No charts selected
                 </div>

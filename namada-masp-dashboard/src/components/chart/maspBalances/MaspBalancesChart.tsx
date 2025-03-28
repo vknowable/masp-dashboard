@@ -217,7 +217,7 @@ export default function MaspBalancesChart({
     );
 
     return (
-        <div className="w-full h-[480px] bg-[#191919] rounded-lg p-4 mt-[-32px]">
+        <div className="w-full h-[480px] bg-[#191919] rounded-lg p-4">
             <ReactECharts
                 option={option}
                 style={{ height: "100%", width: "100%" }}
