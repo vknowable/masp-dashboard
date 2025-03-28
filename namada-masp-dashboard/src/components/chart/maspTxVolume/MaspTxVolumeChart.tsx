@@ -90,11 +90,6 @@ export default function MaspTxVolumeChart({
                 return formatTime(time);
             }) || [];
 
-            // find the max number of transactions in a bucket
-            const maxInTransactions = Math.max(...txVolume?.map(bucket => bucket.in.length) || []);
-            const maxOutTransactions = Math.max(...txVolume?.map(bucket => bucket.out.length) || []);
-            const maxTransactions = Math.max(maxInTransactions, maxOutTransactions);
-
             // find the max net value
             const maxNetValue = Math.max(...netValues.map(Math.abs));
 
@@ -142,8 +137,6 @@ export default function MaspTxVolumeChart({
                         nameLocation: "middle" as const,
                         nameGap: 50,
                         position: 'left' as const,
-                        min: -maxTransactions,
-                        max: maxTransactions,
                         axisLine: {
                             lineStyle: {
                                 color: "#666",
@@ -165,9 +158,9 @@ export default function MaspTxVolumeChart({
                         type: "value" as const,
                         name: "Net Tx Value (USD)",
                         nameLocation: "middle" as const,
-                        nameGap: 50,
+                        nameGap: 80,
                         position: 'right' as const,
-                        min: -maxNetValue,
+                        min: 0,
                         max: maxNetValue,
                         axisLine: {
                             lineStyle: {
@@ -210,11 +203,11 @@ export default function MaspTxVolumeChart({
                         name: "Net Value",
                         type: "bar" as const,
                         yAxisIndex: 1,
-                        data: netValues,
+                        data: netValues.map(value => Math.abs(value)),
                         itemStyle: {
                             color: (params: any) => {
-                                const value = params.data as number;
-                                return value >= 0 ? 'rgba(100, 255, 250, 0.25)' : 'rgba(255, 0, 0, 0.35)';
+                                const originalValue = netValues[params.dataIndex];
+                                return originalValue >= 0 ? 'rgba(100, 255, 250, 0.25)' : 'rgba(255, 0, 0, 0.35)';
                             }
                         },
                         // Add color for legend
@@ -238,7 +231,9 @@ export default function MaspTxVolumeChart({
                         let result = params[0].name + "<br/>";
 
                         params.forEach((param) => {
-                            const value = param.value ?? 0;
+                            const value = param.seriesName === "Net Value"
+                                ? netValues[param.dataIndex]
+                                : (param.value ?? 0);
                             const formattedValue = param.seriesName === "Net Value"
                                 ? `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
                                 : value.toLocaleString();
