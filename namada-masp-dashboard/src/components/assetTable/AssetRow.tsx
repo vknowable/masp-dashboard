@@ -53,7 +53,7 @@ function AssetRow({
             <div className="flex items-center space-x-3">
                 {/* Asset Icon with Tooltip */}
                 <div className="relative group">
-                    <div className="w-[40px] h-[40px] rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
+                    <div className="w-[40px] h-[40px] rounded-full overflow-hidden bg-[#010101] flex-shrink-0">
                         {token.logo_URIs?.svg && (
                             <img
                                 src={token.logo_URIs.svg}
