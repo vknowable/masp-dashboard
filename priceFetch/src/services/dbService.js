@@ -568,6 +568,22 @@ class DbService {
                 const lastProcessedResult = await this.query(lastProcessedQuery, [tokenAddress]);
                 const lastProcessedTimestamp = lastProcessedResult.rows[0].last_processed_timestamp;
 
+                // Check if there are any unprocessed transactions at or after our last processed timestamp
+                const unprocessedTransactionsQuery = `
+                    SELECT COUNT(*) as count
+                    FROM public.masp_pool mp
+                    WHERE mp.token_address = $1
+                    AND mp.timestamp >= COALESCE($2, '1970-01-01'::timestamp)
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM public.masp_historical_balances mhb
+                        WHERE mhb.token_address = mp.token_address
+                        AND mhb.timestamp = mp.timestamp
+                    );
+                `;
+                const unprocessedResult = await this.query(unprocessedTransactionsQuery, [tokenAddress, lastProcessedTimestamp]);
+                const hasUnprocessedTransactions = parseInt(unprocessedResult.rows[0].count) > 0;
+
                 // Get the latest transaction timestamp from masp_pool
                 const latestTransactionQuery = `
                     SELECT MAX(timestamp) as latest_timestamp
@@ -577,9 +593,8 @@ class DbService {
                 const latestTransactionResult = await this.query(latestTransactionQuery, [tokenAddress]);
                 const latestTransactionTimestamp = latestTransactionResult.rows[0].latest_timestamp;
 
-                // If there are no new transactions or we're up to date, skip this token
-                if (!latestTransactionTimestamp ||
-                    (lastProcessedTimestamp && latestTransactionTimestamp <= lastProcessedTimestamp)) {
+                // Skip if there are no transactions or if we're up to date
+                if (!latestTransactionTimestamp || (!hasUnprocessedTransactions && latestTransactionTimestamp <= lastProcessedTimestamp)) {
                     console.log(`No new transactions for ${tokenAddress}`);
                     continue;
                 }
@@ -591,6 +606,7 @@ class DbService {
                 console.log(`Latest balance: ${latestBalance}`);
                 console.log(`Last processed timestamp: ${lastProcessedTimestamp}`);
                 console.log(`Latest transaction timestamp: ${latestTransactionTimestamp}`);
+                console.log(`Has unprocessed transactions: ${hasUnprocessedTransactions}`);
 
                 if (!lastProcessedTimestamp) {
                     // If no data exists, fetch from the beginning
