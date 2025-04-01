@@ -444,6 +444,7 @@ class DbService {
                         AND indexed_source->>'token' = p_token_address
                         AND ord > 1  -- Ignore first element
                         AND b.timestamp BETWEEN p_start_time AND p_end_time
+                        AND it.exit_code = 'applied'
                         AND NOT EXISTS (
                             SELECT 1
                             FROM public.masp_historical_balances mhb
