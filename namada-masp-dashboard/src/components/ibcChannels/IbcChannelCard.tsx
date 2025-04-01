@@ -16,6 +16,7 @@ export interface IbcChannel {
     associatedAssets: Array<{
         address: string;
         trace: string;
+        symbol: string;
     }>;
 }
 
@@ -141,14 +142,15 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
 
                     {/* Assets Section */}
                     {channel.associatedAssets.length > 0 && (
-                        <div className="my-4 mt-8 pt-8 border-t border-white/30">
-                            <h4 className="text-white font-normal tracking-[0.2px] mb-4">Associated Tokens</h4>
-                            <ul className="space-y-4 list-disc text-[#FFFF00]/70">
+                        <div className="my-2 mt-8 pt-4 border-t border-white/30">
+                            <h4 className="text-white font-normal tracking-[0.2px] mb-4">Whitelisted Tokens</h4>
+                            <ul className="space-y-1 text-[#B9B9B9]">
                                 {channel.associatedAssets.map((asset, index) => (
-                                    <li key={index}>
-                                        <div className="text-white font-light tracking-[0.2px] flex flex-col gap-1">
-                                            <div className="text-[#B9B9B9]">{asset.address}</div>
+                                    <li key={index} className="flex flex-col">
+                                        <div className="text-white font-light tracking-[0.2px] flex gap-2 items-center mt-1">
+                                            <div className="text-white font-normal">{asset.symbol}:</div>
                                             <div className="text-[#B9B9B9]">{asset.trace}</div>
+                                            <div className="text-[#B9B9B9]">({asset.address})</div>
                                         </div>
                                     </li>
                                 ))}

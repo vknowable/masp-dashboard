@@ -91,6 +91,16 @@ function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[]): I
                     const traceParts = token.trace.split("/");
                     const channelId = traceParts[1]; // Get the channel ID from the trace
                     return channelId === channelId1 || channelId === channelId2;
+                })
+                .map(token => {
+                    const registryAsset = registryData.assetList.assets.find(
+                        asset => asset.address === token.address
+                    );
+                    return {
+                        address: token.address,
+                        trace: token.trace,
+                        symbol: registryAsset?.symbol || ''
+                    };
                 });
 
             return {
