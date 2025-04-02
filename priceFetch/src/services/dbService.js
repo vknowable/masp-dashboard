@@ -381,8 +381,9 @@ class DbService {
                     token_address VARCHAR(45) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     balance NUMERIC(78, 0) NOT NULL,
+                    inner_tx_id VARCHAR(64),
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(token_address, timestamp)
+                    UNIQUE(token_address, inner_tx_id)
                 );
 
                 -- Create index for fast lookups
@@ -402,26 +403,34 @@ class DbService {
                     p_initial_balance NUMERIC DEFAULT 0
                 ) RETURNS void AS $$
                 BEGIN
-                    INSERT INTO public.masp_historical_balances (token_address, timestamp, balance)
+                    INSERT INTO public.masp_historical_balances (token_address, timestamp, balance, inner_tx_id)
                     WITH RECURSIVE 
                     -- Get transactions from masp_pool
                     masp_transactions AS (
                         SELECT 
                             token_address,
                             timestamp,
+                            inner_tx_id,
                             CASE 
                                 WHEN direction = 'in' THEN raw_amount
                                 ELSE -raw_amount
                             END as amount_change
-                        FROM public.masp_pool
+                        FROM public.masp_pool mp
                         WHERE token_address = p_token_address
                         AND timestamp BETWEEN p_start_time AND p_end_time
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM public.masp_historical_balances mhb
+                            WHERE mhb.token_address = mp.token_address
+                            AND mhb.inner_tx_id = mp.inner_tx_id
+                        )
                     ),
                     -- Get transactions from inner_transactions
                     inner_transactions AS (
                         SELECT 
                             p_token_address as token_address,
                             b.timestamp,
+                            it.id as inner_tx_id,
                             CASE 
                                 WHEN it.kind = 'unshielding_transfer' THEN -(indexed_source->>'amount')::NUMERIC
                                 WHEN it.kind = 'shielding_transfer' THEN (indexed_source->>'amount')::NUMERIC
@@ -435,6 +444,13 @@ class DbService {
                         AND indexed_source->>'token' = p_token_address
                         AND ord > 1  -- Ignore first element
                         AND b.timestamp BETWEEN p_start_time AND p_end_time
+                        AND it.exit_code = 'applied'
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM public.masp_historical_balances mhb
+                            WHERE mhb.token_address = p_token_address
+                            AND mhb.inner_tx_id = it.id
+                        )
                     ),
                     -- Combine all transactions
                     all_transactions AS (
@@ -447,9 +463,10 @@ class DbService {
                         SELECT 
                             token_address,
                             timestamp,
+                            inner_tx_id,
                             SUM(amount_change) as amount_change
                         FROM all_transactions
-                        GROUP BY token_address, timestamp
+                        GROUP BY token_address, timestamp, inner_tx_id
                         ORDER BY timestamp ASC
                     ),
                     -- Calculate running balance, starting from initial balance
@@ -457,6 +474,7 @@ class DbService {
                         SELECT 
                             token_address,
                             timestamp,
+                            inner_tx_id,
                             p_initial_balance + COALESCE(SUM(amount_change) OVER (ORDER BY timestamp), 0) as running_balance
                         FROM balance_history
                     )
@@ -464,11 +482,13 @@ class DbService {
                     SELECT 
                         token_address,
                         timestamp,
-                        running_balance
+                        running_balance,
+                        inner_tx_id
                     FROM running_balances
-                    ON CONFLICT (token_address, timestamp) 
+                    ON CONFLICT (token_address, inner_tx_id) 
                     DO UPDATE SET 
                         balance = EXCLUDED.balance,
+                        timestamp = EXCLUDED.timestamp,
                         created_at = CURRENT_TIMESTAMP;
                 END;
                 $$ LANGUAGE plpgsql;
@@ -568,58 +588,20 @@ class DbService {
                 const lastProcessedResult = await this.query(lastProcessedQuery, [tokenAddress]);
                 const lastProcessedTimestamp = lastProcessedResult.rows[0].last_processed_timestamp;
 
-                // Get the latest transaction timestamp from masp_pool
-                const latestTransactionQuery = `
-                    SELECT MAX(timestamp) as latest_timestamp
-                    FROM public.masp_pool
-                    WHERE token_address = $1;
-                `;
-                const latestTransactionResult = await this.query(latestTransactionQuery, [tokenAddress]);
-                const latestTransactionTimestamp = latestTransactionResult.rows[0].latest_timestamp;
-
-                // If there are no new transactions or we're up to date, skip this token
-                if (!latestTransactionTimestamp ||
-                    (lastProcessedTimestamp && latestTransactionTimestamp <= lastProcessedTimestamp)) {
-                    console.log(`No new transactions for ${tokenAddress}`);
-                    continue;
-                }
-
                 // Get the latest balance we have
                 const latestBalance = await this.getLatestHistoricalBalance(tokenAddress);
 
                 console.log(`Updating historical balances for ${tokenAddress}:`);
                 console.log(`Latest balance: ${latestBalance}`);
                 console.log(`Last processed timestamp: ${lastProcessedTimestamp}`);
-                console.log(`Latest transaction timestamp: ${latestTransactionTimestamp}`);
 
-                if (!lastProcessedTimestamp) {
-                    // If no data exists, fetch from the beginning
-                    const earliestTransactionQuery = `
-                        SELECT MIN(timestamp) as earliest_timestamp
-                        FROM public.masp_pool
-                        WHERE token_address = $1;
-                    `;
-                    const result = await this.query(earliestTransactionQuery, [tokenAddress]);
-                    console.log(`Earliest transaction timestamp: ${result.rows[0].earliest_timestamp}`);
-
-                    if (result.rows[0].earliest_timestamp) {
-                        await this.populateHistoricalBalances(
-                            tokenAddress,
-                            result.rows[0].earliest_timestamp,
-                            now,
-                            0  // Start from 0 for initial population
-                        );
-                    }
-                } else {
-                    // Update from last known timestamp, using the latest balance as initial balance
-                    console.log(`Updating from ${lastProcessedTimestamp} to ${now} with initial balance ${latestBalance}`);
-                    await this.populateHistoricalBalances(
-                        tokenAddress,
-                        lastProcessedTimestamp,
-                        now,
-                        latestBalance
-                    );
-                }
+                // Update from last known timestamp, using the latest balance as initial balance
+                await this.populateHistoricalBalances(
+                    tokenAddress,
+                    lastProcessedTimestamp || new Date('1970-01-01'), // If no data exists, start from beginning
+                    now,
+                    latestBalance || 0 // If no balance exists, start from 0
+                );
             }
         } catch (error) {
             console.error('Error updating historical balances:', error);
