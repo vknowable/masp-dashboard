@@ -5,6 +5,7 @@ import { rateLimiter } from "./middleware/rateLimiter.js";
 import priceRoutes from "./routes/priceRoutes.js";
 import namadaRoutes from "./routes/namadaRoutes.js";
 import maspRoutes from "./routes/maspRoutes.js";
+import ibcRoutes from "./routes/ibcRoutes.js";
 import { wasmService } from "./services/wasmService.js";
 import { dbService } from "./services/dbService.js";
 
@@ -19,6 +20,7 @@ app.use(rateLimiter);
 app.use("/api/v1", priceRoutes);
 app.use("/api/v1", namadaRoutes);
 app.use("/api/v1/masp", maspRoutes);
+app.use("/api/v1/ibc", ibcRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

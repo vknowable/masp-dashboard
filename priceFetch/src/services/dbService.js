@@ -31,6 +31,9 @@ class DbService {
             // Create historical balances table and functions if they don't exist
             await this.createHistoricalBalancesTable();
 
+            // Create IBC transactions table and populate it
+            await this.createIbcTransactionsTable();
+
             // Start periodic data fetching
             this.startPeriodicDataFetch();
         } catch (error) {
@@ -54,7 +57,7 @@ class DbService {
     }
 
     startPeriodicDataFetch() {
-        // Update historical balances every hour
+        // Update historical balances every minute
         setInterval(async () => {
             try {
                 const assets = await namadaService.fetchAssetList();
@@ -65,14 +68,24 @@ class DbService {
             }
         }, 60 * 1000); // 1 minute
 
+        // Update IBC transactions every minute
+        setInterval(async () => {
+            try {
+                await this.updateIbcTransactions();
+            } catch (error) {
+                console.error('Error in periodic IBC transactions update:', error);
+            }
+        }, 60 * 1000); // 1 minute
+
         // Initial update
         (async () => {
             try {
                 const assets = await namadaService.fetchAssetList();
                 const tokenAddresses = assets.map(asset => asset.address);
                 await this.updateHistoricalBalances(tokenAddresses);
+                await this.updateIbcTransactions();
             } catch (error) {
-                console.error('Error in initial historical balances update:', error);
+                console.error('Error in initial updates:', error);
             }
         })();
     }
@@ -605,6 +618,171 @@ class DbService {
             }
         } catch (error) {
             console.error('Error updating historical balances:', error);
+            throw error;
+        }
+    }
+
+    /// Create the ibc_transactions_applied table and populate it with initial data
+    async createIbcTransactionsTable() {
+        try {
+            // Create the table
+            const createTableQuery = `
+                CREATE TABLE IF NOT EXISTS public.ibc_transactions_applied (
+                    id VARCHAR(64) PRIMARY KEY,
+                    wrapper_id VARCHAR(64) NOT NULL,
+                    kind VARCHAR(50) NOT NULL,
+                    memo TEXT,
+                    token_address VARCHAR(45) NOT NULL,
+                    raw_amount NUMERIC(78, 0) NOT NULL,
+                    source VARCHAR(45) NOT NULL,
+                    target VARCHAR(45) NOT NULL,
+                    direction VARCHAR(10) NOT NULL,
+                    timestamp TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+
+                -- Create index for fast lookups
+                CREATE INDEX IF NOT EXISTS idx_ibc_transactions_lookup 
+                ON public.ibc_transactions_applied (token_address, timestamp DESC);
+            `;
+
+            await this.query(createTableQuery);
+            console.log('IBC transactions table and index created/verified');
+
+            // Populate the table with initial data
+            const populateQuery = `
+                INSERT INTO public.ibc_transactions_applied (
+                    id, wrapper_id, kind, memo, token_address, raw_amount, 
+                    source, target, direction, timestamp
+                )
+                SELECT
+                    it.id,
+                    it.wrapper_id,
+                    it.kind,
+                    it.memo,
+                    jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'token') AS token_address,
+                    (jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'amount'))::numeric AS raw_amount,
+                    jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') AS source,
+                    jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') AS target,
+                    CASE
+                        WHEN it.kind = 'ibc_shielding_transfer' THEN 'in'
+                        WHEN it.kind = 'ibc_unshielding_transfer' THEN 'out'
+                        WHEN it.kind = 'ibc_transparent_transfer' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             THEN 'in'
+                        WHEN it.kind = 'ibc_transparent_transfer' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             THEN 'out'
+                        ELSE NULL
+                    END AS direction,
+                    b.timestamp
+                FROM public.inner_transactions it
+                JOIN public.wrapper_transactions wt ON it.wrapper_id = wt.id
+                JOIN public.blocks b ON wt.block_height = b.height
+                WHERE it.kind IN ('ibc_unshielding_transfer', 'ibc_shielding_transfer', 'ibc_transparent_transfer')
+                    AND it.exit_code = 'applied'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM public.ibc_transactions_applied ita 
+                        WHERE ita.id = it.id
+                    );
+            `;
+
+            const result = await this.query(populateQuery);
+            console.log(`Populated ${result.rowCount} IBC transactions`);
+        } catch (error) {
+            console.error('Error creating IBC transactions table:', error);
+            throw error;
+        }
+    }
+
+    /// Update IBC transactions with new data
+    async updateIbcTransactions() {
+        try {
+            // Get the latest timestamp we have processed
+            const lastProcessedQuery = `
+                SELECT MAX(timestamp) as last_processed_timestamp
+                FROM public.ibc_transactions_applied;
+            `;
+            const lastProcessedResult = await this.query(lastProcessedQuery);
+            const lastProcessedTimestamp = lastProcessedResult.rows[0].last_processed_timestamp;
+
+            if (!lastProcessedTimestamp) {
+                console.log('No previous IBC transactions found, skipping update');
+                return;
+            }
+
+            // Get all block heights since our last processed timestamp
+            const blockHeightsQuery = `
+                SELECT height
+                FROM public.blocks
+                WHERE timestamp >= $1
+                ORDER BY height ASC;
+            `;
+            const blockHeightsResult = await this.query(blockHeightsQuery, [lastProcessedTimestamp]);
+            const blockHeights = blockHeightsResult.rows.map(row => row.height);
+
+            if (blockHeights.length === 0) {
+                console.log('No new blocks found since last update');
+                return;
+            }
+
+            // Get all wrapper IDs for these block heights
+            const wrapperIdsQuery = `
+                SELECT id
+                FROM public.wrapper_transactions
+                WHERE block_height = ANY($1);
+            `;
+            const wrapperIdsResult = await this.query(wrapperIdsQuery, [blockHeights]);
+            const wrapperIds = wrapperIdsResult.rows.map(row => row.id);
+
+            if (wrapperIds.length === 0) {
+                console.log('No new wrapper transactions found');
+                return;
+            }
+
+            // Insert new IBC transactions
+            const insertQuery = `
+                INSERT INTO public.ibc_transactions_applied (
+                    id, wrapper_id, kind, memo, token_address, raw_amount, 
+                    source, target, direction, timestamp
+                )
+                SELECT
+                    it.id,
+                    it.wrapper_id,
+                    it.kind,
+                    it.memo,
+                    jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'token') AS token_address,
+                    (jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'amount'))::numeric AS raw_amount,
+                    jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') AS source,
+                    jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') AS target,
+                    CASE
+                        WHEN it.kind = 'ibc_shielding_transfer' THEN 'in'
+                        WHEN it.kind = 'ibc_unshielding_transfer' THEN 'out'
+                        WHEN it.kind = 'ibc_transparent_transfer' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             THEN 'in'
+                        WHEN it.kind = 'ibc_transparent_transfer' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             THEN 'out'
+                        ELSE NULL
+                    END AS direction,
+                    b.timestamp
+                FROM public.inner_transactions it
+                JOIN public.wrapper_transactions wt ON it.wrapper_id = wt.id
+                JOIN public.blocks b ON wt.block_height = b.height
+                WHERE it.wrapper_id = ANY($1)
+                    AND it.kind IN ('ibc_unshielding_transfer', 'ibc_shielding_transfer', 'ibc_transparent_transfer')
+                    AND it.exit_code = 'applied'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM public.ibc_transactions_applied ita 
+                        WHERE ita.id = it.id
+                    );
+            `;
+
+            const result = await this.query(insertQuery, [wrapperIds]);
+            console.log(`Updated IBC transactions: added ${result.rowCount} new transactions`);
+        } catch (error) {
+            console.error('Error updating IBC transactions:', error);
             throw error;
         }
     }
