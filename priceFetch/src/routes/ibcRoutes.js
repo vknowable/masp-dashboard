@@ -114,10 +114,44 @@ router.get('/txs', async (req, res) => {
 
 router.get('/count', async (req, res) => {
     try {
+        const { timeWindow = 'allTime' } = req.query;
+
+        // Validate time window parameter
+        const validTimeWindows = ['oneDay', 'sevenDays', 'thirtyDays', 'allTime'];
+        if (!validTimeWindows.includes(timeWindow)) {
+            return res.status(400).json({
+                error: 'Invalid time window',
+                message: 'Time window must be one of: oneDay, sevenDays, thirtyDays, allTime'
+            });
+        }
+
         // Get asset list
         const assets = await namadaService.fetchAssetList();
         if (!assets || assets.length === 0) {
             throw new Error('Failed to fetch asset list');
+        }
+
+        const now = new Date();
+        let timestampFilter = '';
+        let timestampParam = null;
+
+        // Set up timestamp filter based on time window
+        switch (timeWindow) {
+            case 'oneDay':
+                timestampFilter = 'AND timestamp >= $2';
+                timestampParam = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                break;
+            case 'sevenDays':
+                timestampFilter = 'AND timestamp >= $2';
+                timestampParam = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'thirtyDays':
+                timestampFilter = 'AND timestamp >= $2';
+                timestampParam = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            case 'allTime':
+                timestampFilter = '';
+                break;
         }
 
         // Get counts for each token
@@ -130,10 +164,11 @@ router.get('/count', async (req, res) => {
                         COUNT(*) FILTER (WHERE kind = 'ibc_transparent_transfer' AND direction = 'in') as transparent_in,
                         COUNT(*) FILTER (WHERE kind = 'ibc_transparent_transfer' AND direction = 'out') as transparent_out
                     FROM public.ibc_transactions_applied
-                    WHERE token_address = $1;
+                    WHERE token_address = $1 ${timestampFilter};
                 `;
 
-                const result = await dbService.query(query, [asset.address]);
+                const queryParams = timestampParam ? [asset.address, timestampParam] : [asset.address];
+                const result = await dbService.query(query, queryParams);
                 const counts = result.rows[0];
 
                 return {
