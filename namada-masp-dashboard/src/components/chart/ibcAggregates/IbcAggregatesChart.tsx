@@ -12,11 +12,6 @@ import { useTokenList } from "../../../hooks/useTokenList";
 import { useRegistryData } from "../../../hooks/useRegistryData";
 import { parseIbcConnections } from "../../ibcChannels/IbcChannelsContainer";
 
-interface IbcToken {
-    address: string;
-    trace: string;
-}
-
 interface IbcAggregatesChartProps {
     selectedAssets: string[];
     selectedTimeframe?: IbcAggregatesWindow;
@@ -47,6 +42,15 @@ export default function IbcAggregatesChart({
                 : selectedTimeframe === "30d"
                     ? "thirtyDays"
                     : "allTime";
+
+    const displayTimeframe =
+        selectedTimeframe === "24hr"
+            ? "1 Day"
+            : selectedTimeframe === "7d"
+                ? "7 Day"
+                : selectedTimeframe === "30d"
+                    ? "30 Day"
+                    : "All Time";
 
     const { data: tokenPrices } = useTokenPrices();
     const { data: ibcTxCount } = useIbcTxCount(timeWindow);
@@ -313,7 +317,7 @@ export default function IbcAggregatesChart({
                 },
                 data: [{
                     value: ibcChannels.map(channel => channel.totalTxs),
-                    name: selectedTimeframe,
+                    name: displayTimeframe,
                     areaStyle: {
                         color: 'rgba(255, 255, 0, 0.2)'
                     }
@@ -326,7 +330,7 @@ export default function IbcAggregatesChart({
             return {
                 backgroundColor: "transparent",
                 title: {
-                    text: "No. of Transactions",
+                    text: `No. of Transactions (${displayTimeframe})`,
                     left: "center",
                     top: 0,
                     textStyle: {
