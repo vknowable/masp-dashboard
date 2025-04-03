@@ -170,7 +170,7 @@ export default function IbcAggregatesChartTopBar({
                 <CustomCheckbox
                     checked={showTransparentInflow}
                     onChange={onTransparentInflowToggle}
-                    label="Transparent Outflow"
+                    label="Transparent Inflow"
                     borderColor="grey"
                     checkColor="black"
                     fill="grey"
