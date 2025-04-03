@@ -7,7 +7,7 @@ export function useIbcTxCount(timeWindow: string) {
     return useQuery<IbcTxCountResponse, AxiosError>({
         queryKey: ["ibcTxCount", timeWindow],
         queryFn: () => fetchIbcTxCount(timeWindow),
-        staleTime: 10000, // Consider fresh for 10 seconds
+        staleTime: 60000, // Consider fresh for 1 minute
         retry: retryPolicy,
         retryDelay: retryDelay,
     });

@@ -1,31 +1,34 @@
-import MaspAggregatesChart from "./MaspAggregatesChart";
-import { useMaspAggregates } from "../../../hooks/useMaspAggregates";
-
+import IbcAggregatesChart from "./IbcAggregatesChart";
+import { useIbcAggregates } from "../../../hooks/useIbcAggregates";
 import { RegistryAsset } from "../../../types/chainRegistry";
-import MaspAggregatesChartTopBar from "./MaspAggregatesChartTopBar";
+import IbcAggregatesChartTopBar from "./IbcAggregatesChartTopBar";
 import { useState } from "react";
-export type MaspAggregatesWindow = "24hr" | "7d" | "30d" | "Alltime";
-interface MaspAggregatesChartContainerProps {
+
+export type IbcAggregatesWindow = "24hr" | "7d" | "30d" | "Alltime";
+
+interface IbcAggregatesChartContainerProps {
     isLoading?: boolean;
     error?: Error | null;
     isLoadingRegistry?: boolean;
     assets: RegistryAsset[];
 }
 
-export default function MaspAggregatesChartContainer({
+export default function IbcAggregatesChartContainer({
     isLoading = false,
     error = null,
     isLoadingRegistry = false,
     assets,
-}: MaspAggregatesChartContainerProps) {
-    const { data: maspAggregates = [], isLoading: isLoadingAggregates } =
-        useMaspAggregates();
+}: IbcAggregatesChartContainerProps) {
+    const { data: ibcAggregates = [], isLoading: isLoadingAggregates } =
+        useIbcAggregates();
 
     const [selectedAssets, setSelectedAssets] = useState<string[]>(["All"]);
     const [selectedTimeframe, setSelectedTimeframe] =
-        useState<MaspAggregatesWindow>("24hr");
+        useState<IbcAggregatesWindow>("24hr");
     const [showShieldedInflow, setShowShieldedInflow] = useState(true);
     const [showShieldedOutflow, setShowShieldedOutflow] = useState(true);
+    const [showTransparentInflow, setShowTransparentInflow] = useState(true);
+    const [showTransparentOutflow, setShowTransparentOutflow] = useState(true);
 
     if (isLoading || isLoadingRegistry || isLoadingAggregates) {
         return (
@@ -53,11 +56,11 @@ export default function MaspAggregatesChartContainer({
     return (
         <div className="px-4 py-4">
             <div className="section-heading text-center text-xl md:text-2xl">
-                MASP Total Inflow/Outflow (USD)
+                IBC Inflow/Outflow (USD)
             </div>
 
             <div className="flex flex-col w-full">
-                <MaspAggregatesChartTopBar
+                <IbcAggregatesChartTopBar
                     selectedAssets={selectedAssets}
                     onAssetsSelect={setSelectedAssets}
                     selectedTimeframe={selectedTimeframe}
@@ -66,18 +69,24 @@ export default function MaspAggregatesChartContainer({
                     onShieldedInflowToggle={setShowShieldedInflow}
                     showShieldedOutflow={showShieldedOutflow}
                     onShieldedOutflowToggle={setShowShieldedOutflow}
+                    showTransparentInflow={showTransparentInflow}
+                    onTransparentInflowToggle={setShowTransparentInflow}
+                    showTransparentOutflow={showTransparentOutflow}
+                    onTransparentOutflowToggle={setShowTransparentOutflow}
                     assets={assets}
                 />
             </div>
 
             <div className="min-w-full min-h-[508px]">
-                <MaspAggregatesChart
+                <IbcAggregatesChart
                     selectedAssets={selectedAssets}
                     selectedTimeframe={selectedTimeframe}
                     showShieldedInflow={showShieldedInflow}
                     showShieldedOutflow={showShieldedOutflow}
+                    showTransparentInflow={showTransparentInflow}
+                    showTransparentOutflow={showTransparentOutflow}
                     assets={assets}
-                    maspAggregates={maspAggregates}
+                    ibcAggregates={ibcAggregates}
                 />
             </div>
         </div>

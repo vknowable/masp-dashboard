@@ -1,21 +1,25 @@
 import { useState, useRef, useEffect } from "react";
 import CustomCheckbox from "../../common/CustomCheckbox";
 import { RegistryAsset } from "../../../types/chainRegistry";
-import { MaspAggregatesWindow } from "./MaspAggregatesChartContainer";
+import { IbcAggregatesWindow } from "./IbcAggregatesChartContainer";
 
-interface MaspAggregatesChartTopBarProps {
+interface IbcAggregatesChartTopBarProps {
     selectedAssets: string[];
     onAssetsSelect: (assets: string[]) => void;
-    selectedTimeframe: MaspAggregatesWindow;
-    onTimeframeSelect: (timeframe: MaspAggregatesWindow) => void;
+    selectedTimeframe: IbcAggregatesWindow;
+    onTimeframeSelect: (timeframe: IbcAggregatesWindow) => void;
     showShieldedInflow: boolean;
     onShieldedInflowToggle: (show: boolean) => void;
     showShieldedOutflow: boolean;
     onShieldedOutflowToggle: (show: boolean) => void;
+    showTransparentInflow: boolean;
+    onTransparentInflowToggle: (show: boolean) => void;
+    showTransparentOutflow: boolean;
+    onTransparentOutflowToggle: (show: boolean) => void;
     assets: RegistryAsset[];
 }
 
-export default function MaspAggregatesChartTopBar({
+export default function IbcAggregatesChartTopBar({
     selectedAssets,
     onAssetsSelect,
     selectedTimeframe,
@@ -24,8 +28,12 @@ export default function MaspAggregatesChartTopBar({
     onShieldedInflowToggle,
     showShieldedOutflow,
     onShieldedOutflowToggle,
+    showTransparentInflow,
+    onTransparentInflowToggle,
+    showTransparentOutflow,
+    onTransparentOutflowToggle,
     assets,
-}: MaspAggregatesChartTopBarProps) {
+}: IbcAggregatesChartTopBarProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -145,7 +153,7 @@ export default function MaspAggregatesChartTopBar({
                 <CustomCheckbox
                     checked={showShieldedInflow}
                     onChange={onShieldedInflowToggle}
-                    label="MASP Inflow"
+                    label="Shielded Inflow"
                     borderColor="yellow"
                     checkColor="black"
                     fill="yellow"
@@ -154,10 +162,26 @@ export default function MaspAggregatesChartTopBar({
                 <CustomCheckbox
                     checked={showShieldedOutflow}
                     onChange={onShieldedOutflowToggle}
-                    label="MASP Outflow"
+                    label="Shielded Outflow"
+                    borderColor="yellow"
+                    checkColor="yellow"
+                />
+
+                <CustomCheckbox
+                    checked={showTransparentInflow}
+                    onChange={onTransparentInflowToggle}
+                    label="Transparent Outflow"
                     borderColor="grey"
                     checkColor="black"
                     fill="grey"
+                />
+
+                <CustomCheckbox
+                    checked={showTransparentOutflow}
+                    onChange={onTransparentOutflowToggle}
+                    label="Transparent Outflow"
+                    borderColor="grey"
+                    checkColor="grey"
                 />
             </div>
         </div>

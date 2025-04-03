@@ -2,28 +2,32 @@ import ReactECharts from "echarts-for-react";
 import { useMemo } from "react";
 import { RegistryAsset } from "../../../types/chainRegistry";
 import { AggregatesResponse } from "../../../types/token";
-import { MaspAggregatesWindow } from "./MaspAggregatesChartContainer";
+import { IbcAggregatesWindow } from "./IbcAggregatesChartContainer";
 import { denomAmount } from "../../../utils/numbers";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
 import { TopLevelFormatterParams } from "echarts/types/dist/shared";
 
-interface MaspAggregatesChartProps {
+interface IbcAggregatesChartProps {
     selectedAssets: string[];
-    selectedTimeframe?: MaspAggregatesWindow;
+    selectedTimeframe?: IbcAggregatesWindow;
     showShieldedInflow?: boolean;
     showShieldedOutflow?: boolean;
+    showTransparentInflow?: boolean;
+    showTransparentOutflow?: boolean;
     assets?: RegistryAsset[];
-    maspAggregates?: AggregatesResponse;
+    ibcAggregates?: AggregatesResponse;
 }
 
-export default function MaspAggregatesChart({
+export default function IbcAggregatesChart({
     selectedAssets,
     selectedTimeframe = "24hr",
     showShieldedInflow = true,
     showShieldedOutflow = true,
+    showTransparentInflow = true,
+    showTransparentOutflow = true,
     assets = [],
-    maspAggregates = [],
-}: MaspAggregatesChartProps) {
+    ibcAggregates: ibcAggregates = [],
+}: IbcAggregatesChartProps) {
     const { data: tokenPrices } = useTokenPrices();
 
     const filteredData = useMemo(() => {
@@ -38,7 +42,7 @@ export default function MaspAggregatesChart({
                         : "allTime";
 
         // Filter aggregates for the selected time window
-        const timeWindowData = maspAggregates.filter(
+        const timeWindowData = ibcAggregates.filter(
             (a) => a.timeWindow === timeWindow
         );
 
@@ -48,10 +52,14 @@ export default function MaspAggregatesChart({
                 const assetData = timeWindowData.filter(
                     (a) => a.tokenAddress === asset.address
                 );
-                const inflow =
-                    assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
-                const outflow =
-                    assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
+                const shieldedInflow =
+                    assetData.find((a) => a.kind === "shieldedIn")?.totalAmount || "0";
+                const shieldedOutflow =
+                    assetData.find((a) => a.kind === "shieldedOut")?.totalAmount || "0";
+                const transparentInflow =
+                    assetData.find((a) => a.kind === "transparentIn")?.totalAmount || "0";
+                const transparentOutflow =
+                    assetData.find((a) => a.kind === "transparentOut")?.totalAmount || "0";
                 // Capitalize all st-based assets => stTIA, stOSMO, stATOM etc
                 const symbol =
                     asset.symbol.slice(0, 2) === "st"
@@ -64,10 +72,16 @@ export default function MaspAggregatesChart({
                 return {
                     symbol,
                     shieldedInflow: Number(
-                        ((denomAmount(parseFloat(inflow)) ?? 0) * price).toFixed(2)
+                        ((denomAmount(parseFloat(shieldedInflow)) ?? 0) * price).toFixed(2)
                     ),
                     shieldedOutflow: Number(
-                        ((denomAmount(parseFloat(outflow)) ?? 0) * price).toFixed(2)
+                        ((denomAmount(parseFloat(shieldedOutflow)) ?? 0) * price).toFixed(2)
+                    ),
+                    transparentInflow: Number(
+                        ((denomAmount(parseFloat(transparentInflow)) ?? 0) * price).toFixed(2)
+                    ),
+                    transparentOutflow: Number(
+                        ((denomAmount(parseFloat(transparentOutflow)) ?? 0) * price).toFixed(2)
                     ),
                 };
             });
@@ -80,10 +94,14 @@ export default function MaspAggregatesChart({
                 const assetData = timeWindowData.filter(
                     (a) => a.tokenAddress === asset.address
                 );
-                const inflow =
-                    assetData.find((a) => a.kind === "inflows")?.totalAmount || "0";
-                const outflow =
-                    assetData.find((a) => a.kind === "outflows")?.totalAmount || "0";
+                const shieldedInflow =
+                    assetData.find((a) => a.kind === "shieldedIn")?.totalAmount || "0";
+                const shieldedOutflow =
+                    assetData.find((a) => a.kind === "shieldedOut")?.totalAmount || "0";
+                const transparentInflow =
+                    assetData.find((a) => a.kind === "transparentIn")?.totalAmount || "0";
+                const transparentOutflow =
+                    assetData.find((a) => a.kind === "transparentOut")?.totalAmount || "0";
                 const price =
                     tokenPrices?.price?.find((p) => p.id === asset.coingecko_id)?.usd ??
                     0;
@@ -91,14 +109,20 @@ export default function MaspAggregatesChart({
                 return {
                     symbol: asset.symbol,
                     shieldedInflow: Number(
-                        ((denomAmount(parseFloat(inflow)) ?? 0) * price).toFixed(2)
+                        ((denomAmount(parseFloat(shieldedInflow)) ?? 0) * price).toFixed(2)
                     ),
                     shieldedOutflow: Number(
-                        ((denomAmount(parseFloat(outflow)) ?? 0) * price).toFixed(2)
+                        ((denomAmount(parseFloat(shieldedOutflow)) ?? 0) * price).toFixed(2)
+                    ),
+                    transparentInflow: Number(
+                        ((denomAmount(parseFloat(transparentInflow)) ?? 0) * price).toFixed(2)
+                    ),
+                    transparentOutflow: Number(
+                        ((denomAmount(parseFloat(transparentOutflow)) ?? 0) * price).toFixed(2)
                     ),
                 };
             });
-    }, [selectedAssets, selectedTimeframe, assets, maspAggregates, tokenPrices]);
+    }, [selectedAssets, selectedTimeframe, assets, ibcAggregates, tokenPrices]);
 
     const option = useMemo(
         () => ({
@@ -184,7 +208,35 @@ export default function MaspAggregatesChart({
                         ? filteredData.map((d) => d.shieldedOutflow)
                         : [],
                     itemStyle: {
+                        color: "transparent",
+                        borderColor: "#FFFF00",
+                        borderWidth: 1,
+                    },
+                    barGap: "0%",
+                    barCategoryGap: "0%",
+                },
+                {
+                    name: "Transparent Inflow",
+                    type: "bar" as const,
+                    data: showTransparentInflow
+                        ? filteredData.map((d) => d.transparentInflow)
+                        : [],
+                    itemStyle: {
                         color: "#4C4C4C",
+                    },
+                    barGap: "0%",
+                    barCategoryGap: "0%",
+                },
+                {
+                    name: "Transparent Outflow",
+                    type: "bar" as const,
+                    data: showTransparentOutflow
+                        ? filteredData.map((d) => d.transparentOutflow)
+                        : [],
+                    itemStyle: {
+                        color: "transparent",
+                        borderColor: "#747474",
+                        borderWidth: 1,
                     },
                     barGap: "0%",
                     barCategoryGap: "0%",
@@ -221,7 +273,7 @@ export default function MaspAggregatesChart({
                 },
             },
         }),
-        [filteredData, showShieldedInflow, showShieldedOutflow]
+        [filteredData, showShieldedInflow, showShieldedOutflow, showTransparentInflow, showTransparentOutflow]
     );
 
     return (
