@@ -1,21 +1,11 @@
 import ReactECharts from "echarts-for-react";
 import { useMemo } from "react";
-import { RegistryAsset, ChainMetadata, RegistryIbcMetadata } from "../../../types/chainRegistry";
-import { AggregatesResponse, Token, IbcToken as TokenIbcToken } from "../../../types/token";
-import { IbcAggregatesWindow } from "./IbcAggregatesChartContainer";
+import { RegistryAsset } from "../../../types/chainRegistry";
+import { AggregatesResponse } from "../../../types/token";
+import { IbcAggregatesWindow } from "./IbcTxVolumeChartContainer";
 import { denomAmount } from "../../../utils/numbers";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
 import { TopLevelFormatterParams } from "echarts/types/dist/shared";
-import { RadarSeriesOption, EChartsOption } from "echarts";
-import { useIbcTxCount } from "../../../hooks/useIbcData";
-import { useTokenList } from "../../../hooks/useTokenList";
-import { useRegistryData } from "../../../hooks/useRegistryData";
-import { parseIbcConnections } from "../../ibcChannels/IbcChannelsContainer";
-
-interface IbcToken {
-    address: string;
-    trace: string;
-}
 
 interface IbcAggregatesChartProps {
     selectedAssets: string[];
@@ -38,22 +28,19 @@ export default function IbcAggregatesChart({
     assets = [],
     ibcAggregates: ibcAggregates = [],
 }: IbcAggregatesChartProps) {
-    // Get the time window based on selected timeframe
-    const timeWindow =
-        selectedTimeframe === "24hr"
-            ? "oneDay"
-            : selectedTimeframe === "7d"
-                ? "sevenDays"
-                : selectedTimeframe === "30d"
-                    ? "thirtyDays"
-                    : "allTime";
-
     const { data: tokenPrices } = useTokenPrices();
-    const { data: ibcTxCount } = useIbcTxCount(timeWindow);
-    const { data: tokenList = [] } = useTokenList();
-    const { registryData } = useRegistryData();
 
     const filteredData = useMemo(() => {
+        // Get the time window based on selected timeframe
+        const timeWindow =
+            selectedTimeframe === "24hr"
+                ? "oneDay"
+                : selectedTimeframe === "7d"
+                    ? "sevenDays"
+                    : selectedTimeframe === "30d"
+                        ? "thirtyDays"
+                        : "allTime";
+
         // Filter aggregates for the selected time window
         const timeWindowData = ibcAggregates.filter(
             (a) => a.timeWindow === timeWindow
@@ -137,7 +124,7 @@ export default function IbcAggregatesChart({
             });
     }, [selectedAssets, selectedTimeframe, assets, ibcAggregates, tokenPrices]);
 
-    const barChartOption = useMemo(
+    const option = useMemo(
         () => ({
             backgroundColor: "transparent",
             grid: {
@@ -289,118 +276,13 @@ export default function IbcAggregatesChart({
         [filteredData, showShieldedInflow, showShieldedOutflow, showTransparentInflow, showTransparentOutflow]
     );
 
-    const radarChartOption = useMemo(
-        (): EChartsOption => {
-            if (!ibcTxCount?.length || !registryData?.ibcMetadata?.length || !tokenList?.length) return {};
-
-            const ibcChannels = parseIbcConnections(registryData, tokenList, ibcTxCount).sort((a, b) => a.chainB.name.localeCompare(b.chainB.name));
-
-            const seriesData = {
-                type: 'radar' as const,
-                symbol: 'circle' as const,
-                symbolSize: 6,
-                lineStyle: {
-                    width: 2,
-                    color: '#FFFF00'
-                },
-                itemStyle: {
-                    color: '#FFFF00'
-                },
-                emphasis: {
-                    areaStyle: {
-                        color: 'rgba(255, 255, 0, 0.3)'
-                    }
-                },
-                data: [{
-                    value: ibcChannels.map(channel => channel.totalTxs),
-                    name: selectedTimeframe,
-                    areaStyle: {
-                        color: 'rgba(255, 255, 0, 0.2)'
-                    }
-                }]
-            };
-
-            const maxValue = Math.max(...seriesData.data[0].value);
-            const roundedMax = Math.ceil(maxValue * 1.2 / 5) * 5;
-
-            return {
-                backgroundColor: "transparent",
-                title: {
-                    text: "No. of Transactions",
-                    left: "center",
-                    top: 0,
-                    textStyle: {
-                        color: "#FFF",
-                        fontSize: 16,
-                        fontWeight: "normal" as const
-                    }
-                },
-                tooltip: {
-                    trigger: 'item',
-                    backgroundColor: "#2A2A2A",
-                    borderColor: "#707070",
-                    textStyle: {
-                        color: "#FFFFFF"
-                    },
-                },
-                radar: {
-                    center: ['50%', '35%'],
-                    radius: '35%',
-                    indicator: ibcChannels.map(chain => ({
-                        name: chain.chainB.name,
-                        max: roundedMax
-                    })),
-                    splitNumber: 5,
-                    axisTick: { show: false },
-                    axisLine: {
-                        lineStyle: {
-                            color: '#666'
-                        }
-                    },
-                    splitLine: {
-                        lineStyle: {
-                            color: '#666'
-                        }
-                    },
-                    splitArea: {
-                        show: true,
-                        areaStyle: {
-                            color: ['#2A2A2A', '#333333']
-                        }
-                    },
-                    axisLabel: {
-                        color: '#CCC',
-                        fontSize: 12,
-                        padding: [3, 5]
-                    },
-                    axisName: {
-                        color: '#CCC',
-                        fontSize: 12,
-                        padding: [3, 5]
-                    }
-                },
-                series: seriesData
-            };
-        },
-        [ibcTxCount, registryData, tokenList, selectedTimeframe]
-    );
-
     return (
-        <div className="w-full bg-[#191919] rounded-lg p-4 flex gap-4">
-            <div className="w-4/5">
-                <ReactECharts
-                    option={barChartOption}
-                    style={{ height: "440px", width: "100%" }}
-                    theme="dark"
-                />
-            </div>
-            <div className="w-1/5 flex items-center">
-                <ReactECharts
-                    option={radarChartOption}
-                    style={{ height: "440px", width: "100%" }}
-                    theme="dark"
-                />
-            </div>
+        <div className="w-full h-[440px] bg-[#191919] rounded-lg p-4">
+            <ReactECharts
+                option={option}
+                style={{ height: "100%", width: "100%" }}
+                theme="dark"
+            />
         </div>
     );
 }

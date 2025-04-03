@@ -14,7 +14,7 @@ function IbcChannelsContainer() {
     const { data: tokenList = [], isLoading: isLoadingTokenList } = useTokenList();
     const { data: ibcTxCount = [], isLoading: isLoadingIbcTxCount } = useIbcTxCount("allTime");
     const channels = useMemo(
-        () => (registryData ? parseIbcConnections(registryData, tokenList, ibcTxCount) : []),
+        () => (registryData ? parseIbcConnections(registryData, tokenList, ibcTxCount).sort((a, b) => a.chainB.name.localeCompare(b.chainB.name)) : []),
         [registryData, tokenList, ibcTxCount],
     );
 
@@ -54,7 +54,7 @@ function IbcChannelsContainer() {
 }
 
 // Transform ibcMetadata into IbcChannel format
-function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[], ibcTxCount: IbcTxCountResponse): IbcChannel[] {
+export function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[], ibcTxCount: IbcTxCountResponse): IbcChannel[] {
     return (
         registryData?.ibcMetadata?.map((conn, index) => {
             // Helper function to get chain details from registry data
