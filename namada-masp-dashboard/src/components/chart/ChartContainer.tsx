@@ -5,11 +5,13 @@ import ErrorBoundary from "../common/ErrorBoundary";
 import { useRegistryData } from "../../hooks/useRegistryData";
 import MaspTxVolumeChartContainer from "./maspTxVolume/MaspTxVolumeChartContainer";
 import MaspBalancesChartContainer from "./maspBalances/MaspBalancesChartContainer";
+import IbcAggregatesChartContainer from "./ibcAggregates/IbcAggregatesChartContainer";
 
 interface ChartVisibility {
     maspAggregates: boolean;
     maspTxVolume: boolean;
     maspBalances: boolean;
+    ibcAggregates: boolean;
 }
 
 function ChartContainer() {
@@ -17,6 +19,7 @@ function ChartContainer() {
         maspAggregates: true,
         maspTxVolume: true,
         maspBalances: true,
+        ibcAggregates: true,
     });
 
     const toggleChart = (chart: keyof ChartVisibility) => {
@@ -51,7 +54,14 @@ function ChartContainer() {
                     <CustomCheckbox
                         checked={visibility.maspBalances}
                         onChange={() => toggleChart("maspBalances")}
-                        label="Masp Assets"
+                        label="Masp Asset Values"
+                        borderColor="grey"
+                        checkColor="white"
+                    />
+                    <CustomCheckbox
+                        checked={visibility.ibcAggregates}
+                        onChange={() => toggleChart("ibcAggregates")}
+                        label="IBC Inflow/Outflow"
                         borderColor="grey"
                         checkColor="white"
                     />
@@ -86,10 +96,19 @@ function ChartContainer() {
                         />
                     </ErrorBoundary>
                 )}
+
+                {visibility.ibcAggregates && (
+                    <ErrorBoundary>
+                        <IbcAggregatesChartContainer
+                            isLoadingRegistry={isLoadingRegistry}
+                            assets={assets}
+                        />
+                    </ErrorBoundary>
+                )}
                 {/* Add more charts here as they become available */}
             </div>
 
-            {!visibility.maspAggregates && !visibility.maspTxVolume && !visibility.maspBalances && (
+            {!visibility.maspAggregates && !visibility.maspTxVolume && !visibility.maspBalances && !visibility.ibcAggregates && (
                 <div className="min-h-[300px] flex items-center justify-center text-xl font-light text-white/50">
                     No charts selected
                 </div>

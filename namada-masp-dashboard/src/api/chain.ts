@@ -151,6 +151,36 @@ export interface MaspBalance {
     raw_amount: string;
 }
 
+export type IbcTxCountResponse = IbcTxCount[];
+
+export interface IbcTxCount {
+    token_address: string;
+    shielded_in: number;
+    shielded_out: number;
+    transparent_in: number;
+    transparent_out: number;
+}
+
+export type IbcTxSeriesResponse = IbcTxSeries[];
+
+export interface IbcTxSeries {
+    bucket: number;
+    shielded_in: IbcTxSummary[];
+    shielded_out: IbcTxSummary[];
+    transparent_in: IbcTxSummary[];
+    transparent_out: IbcTxSummary[];
+}
+
+export interface IbcTxSummary {
+    token_address: string;
+    source: string;
+    target: string;
+    raw_amount: number;
+    id: string;
+    wrapper_id: string;
+    timestamp: string;
+}
+
 export async function fetchChainParameters(): Promise<Parameters> {
     const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/parameters`);
     return data;
@@ -252,6 +282,27 @@ export async function fetchMaspBalanceSeries(
 ): Promise<MaspBalanceSeriesResponse> {
     const { data } = await apiClient.get(
         `${apiUrl}/api/v1/masp/balances/series?startTime=${startTime}&endTime=${endTime}&resolution=${resolution}`,
+    );
+    return data;
+}
+
+export async function fetchIbcAggregates(): Promise<AggregatesResponse> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/ibc/aggregates`);
+    return data;
+}
+
+export async function fetchIbcTxCount(timeWindow: string = 'allTime'): Promise<IbcTxCountResponse> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/ibc/count?timeWindow=${timeWindow}`);
+    return data;
+}
+
+export async function fetchIbcTxSeries(
+    startTime: string,
+    endTime: string,
+    resolution: number,
+): Promise<IbcTxSeriesResponse> {
+    const { data } = await apiClient.get(
+        `${apiUrl}/api/v1/ibc/txs?startTime=${startTime}&endTime=${endTime}&resolution=${resolution}`,
     );
     return data;
 }

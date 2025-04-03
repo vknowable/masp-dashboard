@@ -78,7 +78,7 @@ export default function MaspBalancesChartContainer({
     return (
         <div className="flex flex-col gap-4">
             <div className="section-heading text-center text-xl md:text-2xl">
-                MASP Assets Over Time
+                MASP Asset Values Over Time
             </div>
 
             <div className="flex items-center gap-4 px-4">
