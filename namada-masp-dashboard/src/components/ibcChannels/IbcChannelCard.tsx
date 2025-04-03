@@ -18,6 +18,7 @@ export interface IbcChannel {
         trace: string;
         symbol: string;
     }>;
+    totalTxs: number;
 }
 
 interface IbcChannelCardProps {
@@ -58,7 +59,7 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
 
     return (
         <div className="bg-[#010101] rounded-[5px] p-6">
-            <div className="space-y-4">
+            <div className="space-y-8">
                 {/* Header with chain logo and status badge */}
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -71,8 +72,11 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
                             {toTitleCase(channel.chainB.name)}
                         </h3>
                     </div>
-                    <div className="px-3 py-1 rounded-[5px] bg-[#00FF33]/15 text-[#00FF33] text-sm">
-                        Active
+                    <div className="flex flex-col items-end gap-2">
+                        <div className="px-3 py-1 rounded-[5px] bg-[#00FF33]/15 text-[#00FF33] text-sm">
+                            Active
+                        </div>
+                        <div className="ml-2 text-[#B9B9B9] text-xs font-light tracking-[0.2px] flex gap-2 items-center mt-1">{channel.totalTxs} Transactions</div>
                     </div>
                 </div>
 
@@ -150,7 +154,7 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
                                         <div className="text-white font-light tracking-[0.2px] flex gap-2 items-center mt-1">
                                             <div className="text-white font-normal">{asset.symbol}:</div>
                                             <div className="text-[#B9B9B9]">{asset.trace}</div>
-                                            <div className="text-[#B9B9B9]">({asset.address})</div>
+                                            <div className="text-[#B9B9B9] break-all">({asset.address})</div>
                                         </div>
                                     </li>
                                 ))}

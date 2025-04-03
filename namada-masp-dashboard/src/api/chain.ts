@@ -267,11 +267,11 @@ export async function fetchMaspBalanceSeries(
 }
 
 export async function fetchIbcAggregates(): Promise<AggregatesResponse> {
-    const { data } = await apiClient.get(`${indexerUrl}/api/v1/ibc/aggregates`);
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/ibc/aggregates`);
     return data;
 }
 
 export async function fetchIbcTxCount(timeWindow: string = 'allTime'): Promise<IbcTxCountResponse> {
-    const { data } = await apiClient.get(`${indexerUrl}/api/v1/ibc/aggregates?timeWindow=${timeWindow}`);
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/ibc/count?timeWindow=${timeWindow}`);
     return data;
 }

@@ -6,13 +6,16 @@ import { useMemo } from "react";
 import ErrorBoundary from "../common/ErrorBoundary";
 import "../../styles/shared.css";
 import { Token, IbcToken } from "../../types/token";
+import { useIbcTxCount } from "../../hooks/useIbcData";
+import { IbcTxCountResponse } from "../../api/chain";
 
 function IbcChannelsContainer() {
     const { registryData, isLoading: isLoadingRegistry } = useRegistryData();
     const { data: tokenList = [], isLoading: isLoadingTokenList } = useTokenList();
+    const { data: ibcTxCount = [], isLoading: isLoadingIbcTxCount } = useIbcTxCount("allTime");
     const channels = useMemo(
-        () => (registryData ? parseIbcConnections(registryData, tokenList) : []),
-        [registryData, tokenList],
+        () => (registryData ? parseIbcConnections(registryData, tokenList, ibcTxCount) : []),
+        [registryData, tokenList, ibcTxCount],
     );
 
     if (isLoadingRegistry || !registryData) {
@@ -51,7 +54,7 @@ function IbcChannelsContainer() {
 }
 
 // Transform ibcMetadata into IbcChannel format
-function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[]): IbcChannel[] {
+function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[], ibcTxCount: IbcTxCountResponse): IbcChannel[] {
     return (
         registryData?.ibcMetadata?.map((conn, index) => {
             // Helper function to get chain details from registry data
@@ -103,6 +106,16 @@ function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[]): I
                     };
                 });
 
+            // Calculate total transactions for all associated assets
+            const totalTxs = associatedAssets.reduce((total, asset) => {
+                const txCount = ibcTxCount.find(entry => entry.token_address === asset.address);
+                if (txCount) {
+                    return total + txCount.shielded_in + txCount.shielded_out +
+                        txCount.transparent_in + txCount.transparent_out;
+                }
+                return total;
+            }, 0);
+
             return {
                 id: index.toString(),
                 status: "active",
@@ -125,6 +138,7 @@ function parseIbcConnections(registryData: ChainMetadata, tokenList: Token[]): I
                     logoUri: chain2Details.logoUri,
                 },
                 associatedAssets,
+                totalTxs,
             };
         }) || []
     );
