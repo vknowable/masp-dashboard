@@ -33,9 +33,10 @@ function ChartContainer() {
 
     return (
         <div className="container-surface mt-8 py-4 px-4">
-            <div className="section-heading text-xl md:text-2xl">Namada Metrics</div>
+            <div className="section-heading text-xl md:text-2xl mb-8">Namada Metrics</div>
+
             {/* Chart Toggles */}
-            <div className="flex flex-col gap-6 mb-16">
+            <div className="flex flex-col gap-4 mb-8">
                 <div className="flex flex-wrap items-center gap-3 md:gap-4">
                     <CustomCheckbox
                         checked={visibility.maspAggregates}
@@ -66,6 +67,7 @@ function ChartContainer() {
                         checkColor="white"
                     />
                 </div>
+                <div className="text-xs text-white/50">Note: All USD values calculated using <span className="text-white">current price</span>, not historical price</div>
             </div>
 
             {/* Charts */}

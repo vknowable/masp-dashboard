@@ -130,11 +130,23 @@ router.get('/balances/series', async (req, res) => {
         const numTicks = Math.ceil(timeWindowHours / resolutionHours);
 
         // Generate timestamps for each tick
-        const timestamps = Array.from({ length: numTicks }, (_, i) => {
+        const timestamps = [];
+
+        // Add startTime as the first tick
+        timestamps.push(new Date(queryStartTime));
+
+        // Add intermediate ticks at regular intervals
+        for (let i = 1; i < numTicks; i++) {
             const timestamp = new Date(queryStartTime);
             timestamp.setHours(timestamp.getHours() + (i * resolutionHours));
-            return timestamp;
-        });
+            timestamps.push(timestamp);
+        }
+
+        // Add endTime as the last tick if it's different from the last calculated tick
+        const lastCalculatedTick = timestamps[timestamps.length - 1];
+        if (lastCalculatedTick.getTime() !== queryEndTime.getTime()) {
+            timestamps.push(new Date(queryEndTime));
+        }
 
         // Get asset list
         const assets = await namadaService.fetchAssetList();
