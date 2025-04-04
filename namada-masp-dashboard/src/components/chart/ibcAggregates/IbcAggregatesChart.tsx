@@ -45,11 +45,11 @@ export default function IbcAggregatesChart({
 
     const displayTimeframe =
         selectedTimeframe === "24hr"
-            ? "1 Day"
+            ? "24 Hours"
             : selectedTimeframe === "7d"
-                ? "7 Day"
+                ? "7 Days"
                 : selectedTimeframe === "30d"
-                    ? "30 Day"
+                    ? "30 Days"
                     : "All Time";
 
     const { data: tokenPrices } = useTokenPrices();
