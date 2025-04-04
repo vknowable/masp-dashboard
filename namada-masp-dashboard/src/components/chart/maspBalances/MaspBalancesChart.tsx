@@ -66,9 +66,9 @@ export default function MaspBalancesChart({
     // Define a consistent color palette for both charts
     const colorPalette = useMemo(() => {
         return [
-            '#eeee00', '#4466b3', '#8f5ca6', '#52a3b0', '#b84d75',
-            '#b86b47', '#a8b357', '#8c6c99', '#c279a8', '#6b82b3',
-            '#89a670', '#c5a557', '#c5a557', '#729daf',
+            '#FFFF00', '#00D4D4', '#D4A0D4', '#90D490', '#D46B4A',
+            '#4A6AD4', '#D490B4', '#4AD44A', '#A090D4', '#20A0A0',
+            '#D4B000', '#D46B4A', '#7B68D4', '#00A0A0',
         ];
     }, []);
 
