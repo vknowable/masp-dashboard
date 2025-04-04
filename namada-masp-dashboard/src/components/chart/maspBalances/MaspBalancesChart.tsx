@@ -111,6 +111,33 @@ export default function MaspBalancesChart({
                 };
             });
 
+            // Calculate total values by summing up all token balances at each time point
+            const totalValues = [];
+            const numTimePoints = balanceSeries.length;
+
+            for (let i = 0; i < numTimePoints; i++) {
+                let total = 0;
+                for (const [_, balances] of tokenBalances.entries()) {
+                    total += balances[i] || 0;
+                }
+                totalValues.push(total);
+            }
+
+            // Add the total series with a thicker line
+            series.push({
+                name: "Total",
+                type: "line" as const,
+                data: totalValues,
+                showSymbol: false,
+                lineStyle: {
+                    width: 3,
+                    type: "dashed" as const,
+                },
+                itemStyle: {
+                    color: "#DDC", // White color for the total line
+                },
+            } as any); // Using type assertion to bypass the type checking for now
+
             return {
                 backgroundColor: "transparent",
                 grid: {
