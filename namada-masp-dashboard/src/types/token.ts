@@ -23,6 +23,11 @@ export interface Balance {
     minDenomAmount: string;
 }
 
+export interface ApiBalance {
+    token: string;
+    raw_amount: string;
+}
+
 // MASP aggregate data
 export interface FlowAggregate {
     tokenAddress: string;
