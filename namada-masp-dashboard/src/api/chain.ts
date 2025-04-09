@@ -1,5 +1,5 @@
 import apiClient from "./apiClient";
-import { Token, Balance, AggregatesResponse } from "../types/token";
+import { Token, Balance, AggregatesResponse, ApiBalance } from "../types/token";
 import {
     MaspEpochResponse,
     MaspInflationResponse,
@@ -99,6 +99,8 @@ export interface TransformedTokenSupply {
 export interface MaspBalances {
     balances: Balance[];
 }
+
+export type ApiMaspBalances = ApiBalance[];
 
 export interface TransformedTokenAmounts {
     balances: Array<TransformedTokenAmount>;
@@ -245,6 +247,11 @@ export async function fetchMaspBalances(): Promise<MaspBalances> {
         `${indexerUrl}/api/v1/account/${MASP_ADDRESS}`,
     );
     return { balances: data };
+}
+
+export async function fetchMaspBalancesAtTime(timestamp: string): Promise<ApiMaspBalances> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/masp/balances/all?time=${timestamp}`);
+    return data;
 }
 
 export async function fetchRewardTokens(): Promise<RewardTokensResponse> {

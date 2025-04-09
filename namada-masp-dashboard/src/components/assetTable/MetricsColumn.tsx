@@ -34,6 +34,7 @@ function MetricsColumn({
             </div>
         );
     }
+    console.log(maspBalances)
 
     return (
         <div className="h-full">

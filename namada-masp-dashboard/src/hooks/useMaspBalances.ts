@@ -2,21 +2,28 @@ import { useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import {
     fetchMaspBalances,
+    fetchMaspBalancesAtTime,
     TransformedTokenAmounts,
     MaspBalances,
 } from "../api/chain";
-import { useMaspAggregates } from "./useMaspAggregates";
 import { retryPolicy, retryDelay } from "../api/apiClient";
 
 /**
- * Calculate net change between inflows and outflows
+ * Calculate UTC timestamp for a given number of days ago
  */
-function calculateNetChange(
-    inflows: string | undefined,
-    outflows: string | undefined,
-): number | null {
-    if (!inflows && !outflows) return null;
-    return Number(inflows ?? 0) - Number(outflows ?? 0);
+function getTimestampForDaysAgo(days: number): string {
+    const now = new Date();
+    const utcNow = Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        now.getUTCHours(),
+        now.getUTCMinutes(),
+        now.getUTCSeconds(),
+        now.getUTCMilliseconds()
+    );
+    const daysAgo = utcNow - (days * 24 * 60 * 60 * 1000);
+    return new Date(daysAgo).toISOString();
 }
 
 /**
@@ -24,78 +31,40 @@ function calculateNetChange(
  * @returns Object containing transformed balances data with changes, loading state, and error
  */
 export function useMaspBalances() {
-    const { data: aggregates } = useMaspAggregates();
-
     return useQuery<TransformedTokenAmounts, AxiosError>({
         queryKey: ["maspBalances"],
         queryFn: async () => {
-            const data = await fetchMaspBalances();
+            const [currentBalances, dayAgoBalances, weekAgoBalances, monthAgoBalances] = await Promise.all([
+                fetchMaspBalances(),
+                fetchMaspBalancesAtTime(getTimestampForDaysAgo(1)),
+                fetchMaspBalancesAtTime(getTimestampForDaysAgo(7)),
+                fetchMaspBalancesAtTime(getTimestampForDaysAgo(30)),
+            ]);
 
             return {
-                balances: data.balances.map((balance) => {
-                    // Find all aggregates for this token
-                    const tokenAggregates =
-                        aggregates?.filter(
-                            (agg) => agg.tokenAddress === balance.tokenAddress,
-                        ) ?? [];
-
-                    // Calculate changes for each time window
-                    const changes = {
-                        "24h": calculateNetChange(
-                            tokenAggregates.find(
-                                (agg) => agg.timeWindow === "oneDay" && agg.kind === "inflows",
-                            )?.totalAmount,
-                            tokenAggregates.find(
-                                (agg) => agg.timeWindow === "oneDay" && agg.kind === "outflows",
-                            )?.totalAmount,
-                        ),
-                        "7d": calculateNetChange(
-                            tokenAggregates.find(
-                                (agg) =>
-                                    agg.timeWindow === "sevenDays" && agg.kind === "inflows",
-                            )?.totalAmount,
-                            tokenAggregates.find(
-                                (agg) =>
-                                    agg.timeWindow === "sevenDays" && agg.kind === "outflows",
-                            )?.totalAmount,
-                        ),
-                        "30d": calculateNetChange(
-                            tokenAggregates.find(
-                                (agg) =>
-                                    agg.timeWindow === "thirtyDays" && agg.kind === "inflows",
-                            )?.totalAmount,
-                            tokenAggregates.find(
-                                (agg) =>
-                                    agg.timeWindow === "thirtyDays" && agg.kind === "outflows",
-                            )?.totalAmount,
-                        ),
-                        allTime: calculateNetChange(
-                            tokenAggregates.find(
-                                (agg) => agg.timeWindow === "allTime" && agg.kind === "inflows",
-                            )?.totalAmount,
-                            tokenAggregates.find(
-                                (agg) =>
-                                    agg.timeWindow === "allTime" && agg.kind === "outflows",
-                            )?.totalAmount,
-                        ),
-                    };
-
+                balances: currentBalances.balances.map((balance) => {
                     const currentBalance = Number(balance.minDenomAmount);
+
+                    // Find historical balances for this token
+                    const dayAgoBalance = dayAgoBalances.find(b => b.token === balance.tokenAddress)?.raw_amount;
+                    const weekAgoBalance = weekAgoBalances.find(b => b.token === balance.tokenAddress)?.raw_amount;
+                    const monthAgoBalance = monthAgoBalances.find(b => b.token === balance.tokenAddress)?.raw_amount;
+
+                    // Calculate changes
+                    const changes = {
+                        "24h": dayAgoBalance ? currentBalance - Number(dayAgoBalance) : null,
+                        "7d": weekAgoBalance ? currentBalance - Number(weekAgoBalance) : null,
+                        "30d": monthAgoBalance ? currentBalance - Number(monthAgoBalance) : null,
+                        allTime: null, // We don't have this data anymore
+                    };
 
                     return {
                         tokenAddress: balance.tokenAddress,
                         balances: {
                             current: currentBalance,
-                            "1dAgo":
-                                changes["24h"] !== null
-                                    ? currentBalance - changes["24h"]
-                                    : null,
-                            "7dAgo":
-                                changes["7d"] !== null ? currentBalance - changes["7d"] : null,
-                            "30dAgo":
-                                changes["30d"] !== null
-                                    ? currentBalance - changes["30d"]
-                                    : null,
+                            "1dAgo": dayAgoBalance ? Number(dayAgoBalance) : null,
+                            "7dAgo": weekAgoBalance ? Number(weekAgoBalance) : null,
+                            "30dAgo": monthAgoBalance ? Number(monthAgoBalance) : null,
                             changes,
                         },
                     };
@@ -106,6 +75,5 @@ export function useMaspBalances() {
         refetchInterval: 30000, // Refetch every 30 seconds
         retry: retryPolicy,
         retryDelay: retryDelay,
-        enabled: !!aggregates, // Only run query when we have aggregates data
     });
 }
