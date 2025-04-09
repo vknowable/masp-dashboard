@@ -97,9 +97,9 @@ export default function MaspTxVolumeChart({
                 backgroundColor: "transparent",
                 grid: {
                     left: "6%",
-                    right: window.innerWidth < 768 ? 0 : 150,
+                    right: window.innerWidth < 1100 ? 0 : 150,
                     bottom: "3%",
-                    top: window.innerWidth < 768 ? 40 : 10,
+                    top: window.innerWidth < 1100 ? 40 : 10,
                     containLabel: true,
                 },
                 xAxis: {
@@ -116,7 +116,7 @@ export default function MaspTxVolumeChart({
                     },
                     axisLabel: {
                         rotate: 90,
-                        interval: window.innerWidth < 768 ? 3 : 0, // Show every 3rd label on mobile
+                        interval: window.innerWidth < 1100 ? 3 : 0, // Show every 3rd label on mobile
                         align: "right" as const,
                         padding: [0, 12, 0, 0],
                         color: "#CCC",
@@ -257,7 +257,7 @@ export default function MaspTxVolumeChart({
                         color: "#CCC",
                     },
                     align: 'right' as const,
-                    orient: window.innerWidth < 768 ? 'horizontal' as const : 'vertical' as const,
+                    orient: window.innerWidth < 1100 ? 'horizontal' as const : 'vertical' as const,
                     top: 0,
                     right: 0,
                 },

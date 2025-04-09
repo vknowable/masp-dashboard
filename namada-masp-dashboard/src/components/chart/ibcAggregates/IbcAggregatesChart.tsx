@@ -159,9 +159,9 @@ export default function IbcAggregatesChart({
                     },
                 },
                 axisLabel: {
-                    rotate: window.innerWidth < 768 ? 90 : 0, // Rotate labels 90 degrees on mobile
+                    rotate: window.innerWidth < 1100 ? 90 : 0, // Rotate labels 90 degrees on mobile
                     interval: 0, // Force all labels to show
-                    align: window.innerWidth < 768 ? "right" as const : "center" as const,
+                    align: window.innerWidth < 1100 ? "right" as const : "center" as const,
                     padding: [0, 12, 0, 0], // Add some padding to prevent overlap
                     color: "#CCC", // Match text color with theme
                     fontSize: 15,
