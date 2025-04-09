@@ -274,7 +274,7 @@ export default function MaspBalancesChart({
             backgroundColor: "transparent",
             color: colorPalette, // Apply the color palette to the chart
             title: {
-                text: "Value Distribution",
+                text: window.innerWidth < 768 ? "" : "Value Distribution",
                 left: "82%",
                 textAlign: "center",
                 top: 14,
@@ -286,9 +286,9 @@ export default function MaspBalancesChart({
             },
             grid: {
                 left: "6%",
-                right: "30%",
+                right: window.innerWidth < 768 ? "6%" : "30%",
                 bottom: "3%",
-                top: 10,
+                top: window.innerWidth < 768 ? 60 : 10,
                 containLabel: true,
             },
             xAxis: {
@@ -305,7 +305,7 @@ export default function MaspBalancesChart({
                 },
                 axisLabel: {
                     rotate: 90,
-                    interval: 0,
+                    interval: window.innerWidth < 768 ? 3 : 0, // Show every 3rd label on mobile
                     align: "right" as const,
                     padding: [0, 12, 0, 0],
                     color: "#CCC",
@@ -341,7 +341,7 @@ export default function MaspBalancesChart({
                     },
                 },
             },
-            series: allSeries,
+            series: window.innerWidth < 768 ? lineSeries : allSeries,
             tooltip: {
                 trigger: "axis" as const,
                 axisPointer: {
@@ -378,7 +378,7 @@ export default function MaspBalancesChart({
                     color: "#CCC",
                 },
                 align: 'right' as const,
-                orient: 'vertical' as const,
+                orient: window.innerWidth < 768 ? 'horizontal' as const : 'vertical' as const,
                 top: 0,
                 right: 0,
             },

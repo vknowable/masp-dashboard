@@ -181,6 +181,14 @@ export interface IbcTxSummary {
     timestamp: string;
 }
 
+export interface MaspTxCountResponse {
+    shielding_transfer: number;
+    unshielding_transfer: number;
+    shielded_transfer: number;
+    ibc_shielding_transfer: number;
+    ibc_unshielding_transfer: number;
+}
+
 export async function fetchChainParameters(): Promise<Parameters> {
     const { data } = await apiClient.get(`${indexerUrl}/api/v1/chain/parameters`);
     return data;
@@ -304,5 +312,10 @@ export async function fetchIbcTxSeries(
     const { data } = await apiClient.get(
         `${apiUrl}/api/v1/ibc/txs?startTime=${startTime}&endTime=${endTime}&resolution=${resolution}`,
     );
+    return data;
+}
+
+export async function fetchMaspTxCount(): Promise<MaspTxCountResponse> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/masp/count`);
     return data;
 }

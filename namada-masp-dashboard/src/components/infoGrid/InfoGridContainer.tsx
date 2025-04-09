@@ -116,6 +116,7 @@ function createInfoCards(
     const nativeInflationData = lastInflation?.data?.find(
         (item) => item.address === NATIVE_NAM_ADDRESS,
     );
+
     return [
         {
             topText: "Total Shielded Assets",
@@ -153,17 +154,15 @@ function createInfoCards(
             variant: "primary" as const,
         },
         {
-            topText: "NAM rewards minted per EPOCH",
-            bottomText: `$${formatNumber(denomAmount(chainMetrics.rewardsPerEpoch))}`,
+            topText: "Total MASP Transactions",
+            bottomText: `${formatNumber(chainMetrics.maspTxCount, 0)}`,
             size: "large" as const,
             bgColor: "white" as const,
             variant: "primary" as const,
         },
         {
-            topText: "Block Time",
-            bottomText: chainMetrics.blockTime
-                ? `${formatNumber(chainMetrics.blockTime, 2)} sec`
-                : "--",
+            topText: "NAM rewards minted last MASP EPOCH",
+            bottomText: `$${formatNumber(denomAmount(chainMetrics.rewardsPerEpoch))}`,
             size: "small" as const,
             variant: "secondary" as const,
         },
@@ -177,7 +176,7 @@ function createInfoCards(
             variant: "secondary" as const,
         },
         {
-            topText: "Inflation Rate",
+            topText: "Total Shielded Inflation Rate",
             bottomText: `${nativeInflationData ? nativeInflationData?.last_inflation : "--"
                 }%`,
             size: "small" as const,
