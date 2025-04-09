@@ -3,6 +3,7 @@ import { RegistryAsset } from "../../types/chainRegistry";
 import { TransformedTokenSupply } from "../../api/chain";
 import NetChangeSpans from "./NetChangeSpans";
 import "../../styles/shared.css";
+import { useRewardTokens } from "../../hooks/useMaspData";
 
 interface AssetRowProps {
     token: RegistryAsset;
@@ -46,9 +47,16 @@ function AssetRow({
 
     const rawCurrentSupply = tokenSupplies.supplies.current;
     const denomCurrentSupply = denomAmount(rawCurrentSupply, 6);
+    const { data: rewardTokens } = useRewardTokens();
+
+    const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
+        return rewardToken.address === token.address;
+    });
+    const ssrEligible = (tokenRewardRate?.max_reward_rate ?? 0) > 0 ? true : false;
+    const borderClass = ssrEligible ? "border border-[#FFFF00] border-r-0 " : "";
 
     return (
-        <div className="h-[94px] p-4 pr-32 flex gap-12 items-center bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]">
+        <div className={`h-[94px] p-4 pr-32 flex gap-12 items-center ${borderClass} bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>
             {/* Token Column */}
             <div className="flex items-center space-x-3">
                 {/* Asset Icon with Tooltip */}
