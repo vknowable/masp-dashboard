@@ -149,40 +149,44 @@ export default function IbcAggregatesChartTopBar({
             </div>
 
             {/* Flow Toggles */}
-            <div className="flex items-center gap-4 ml-2 mt-1">
-                <CustomCheckbox
-                    checked={showShieldedInflow}
-                    onChange={onShieldedInflowToggle}
-                    label="Shielded Inflow"
-                    borderColor="yellow"
-                    checkColor="black"
-                    fill="yellow"
-                />
+            <div className="flex flex-wrap items-center gap-4 ml-2 mt-1">
+                <div className="flex md:flex-row flex-wrap gap-4">
+                    <CustomCheckbox
+                        checked={showShieldedInflow}
+                        onChange={onShieldedInflowToggle}
+                        label="Shielded Inflow"
+                        borderColor="yellow"
+                        checkColor="black"
+                        fill="yellow"
+                    />
 
-                <CustomCheckbox
-                    checked={showShieldedOutflow}
-                    onChange={onShieldedOutflowToggle}
-                    label="Shielded Outflow"
-                    borderColor="yellow"
-                    checkColor="yellow"
-                />
+                    <CustomCheckbox
+                        checked={showShieldedOutflow}
+                        onChange={onShieldedOutflowToggle}
+                        label="Shielded Outflow"
+                        borderColor="yellow"
+                        checkColor="yellow"
+                    />
+                </div>
 
-                <CustomCheckbox
-                    checked={showTransparentInflow}
-                    onChange={onTransparentInflowToggle}
-                    label="Transparent Inflow"
-                    borderColor="grey"
-                    checkColor="black"
-                    fill="grey"
-                />
+                <div className="flex md:flex-row flex-wrap gap-4">
+                    <CustomCheckbox
+                        checked={showTransparentInflow}
+                        onChange={onTransparentInflowToggle}
+                        label="Transparent Inflow"
+                        borderColor="grey"
+                        checkColor="black"
+                        fill="grey"
+                    />
 
-                <CustomCheckbox
-                    checked={showTransparentOutflow}
-                    onChange={onTransparentOutflowToggle}
-                    label="Transparent Outflow"
-                    borderColor="grey"
-                    checkColor="grey"
-                />
+                    <CustomCheckbox
+                        checked={showTransparentOutflow}
+                        onChange={onTransparentOutflowToggle}
+                        label="Transparent Outflow"
+                        borderColor="grey"
+                        checkColor="grey"
+                    />
+                </div>
             </div>
         </div>
     );

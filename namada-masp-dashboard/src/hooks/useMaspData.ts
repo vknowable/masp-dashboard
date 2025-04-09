@@ -1,17 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  fetchRewardTokens,
-  fetchLastInflation,
-  fetchMaspEpoch,
-  fetchTotalRewards,
+    fetchRewardTokens,
+    fetchLastInflation,
+    fetchMaspEpoch,
+    fetchTotalRewards,
+    fetchMaspTxCount,
+    MaspTxCountResponse,
 } from "../api/chain";
 import { AxiosError } from "axios";
 import { retryPolicy, retryDelay } from "../api/apiClient";
 import {
-  MaspEpochResponse,
-  MaspInflationResponse,
-  MaspTotalRewardsResponse,
-  RewardTokensResponse,
+    MaspEpochResponse,
+    MaspInflationResponse,
+    MaspTotalRewardsResponse,
+    RewardTokensResponse,
 } from "../types/masp";
 
 /**
@@ -19,13 +21,13 @@ import {
  * @returns Object containing reward tokens data, loading state, and error
  */
 export function useRewardTokens() {
-  return useQuery<RewardTokensResponse, AxiosError>({
-    queryKey: ["rewardTokens"],
-    queryFn: fetchRewardTokens,
-    staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
-    retry: retryPolicy,
-    retryDelay: retryDelay,
-  });
+    return useQuery<RewardTokensResponse, AxiosError>({
+        queryKey: ["rewardTokens"],
+        queryFn: fetchRewardTokens,
+        staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+    });
 }
 
 /**
@@ -33,13 +35,13 @@ export function useRewardTokens() {
  * @returns Object containing last inflation data, loading state, and error
  */
 export function useLastInflation() {
-  return useQuery<MaspInflationResponse, AxiosError>({
-    queryKey: ["lastInflation"],
-    queryFn: fetchLastInflation,
-    staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
-    retry: retryPolicy,
-    retryDelay: retryDelay,
-  });
+    return useQuery<MaspInflationResponse, AxiosError>({
+        queryKey: ["lastInflation"],
+        queryFn: fetchLastInflation,
+        staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+    });
 }
 
 /**
@@ -47,13 +49,13 @@ export function useLastInflation() {
  * @returns Object containing MASP epoch data, loading state, and error
  */
 export function useMaspEpoch() {
-  return useQuery<MaspEpochResponse, AxiosError>({
-    queryKey: ["maspEpoch"],
-    queryFn: fetchMaspEpoch,
-    staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
-    retry: retryPolicy,
-    retryDelay: retryDelay,
-  });
+    return useQuery<MaspEpochResponse, AxiosError>({
+        queryKey: ["maspEpoch"],
+        queryFn: fetchMaspEpoch,
+        staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+    });
 }
 
 /**
@@ -61,11 +63,21 @@ export function useMaspEpoch() {
  * @returns Object containing total rewards data, loading state, and error
  */
 export function useTotalRewards() {
-  return useQuery<MaspTotalRewardsResponse, AxiosError>({
-    queryKey: ["totalRewards"],
-    queryFn: fetchTotalRewards,
-    staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
-    retry: retryPolicy,
-    retryDelay: retryDelay,
-  });
+    return useQuery<MaspTotalRewardsResponse, AxiosError>({
+        queryKey: ["totalRewards"],
+        queryFn: fetchTotalRewards,
+        staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+    });
+}
+
+export function useMaspTxCount() {
+    return useQuery<MaspTxCountResponse, AxiosError>({
+        queryKey: ["maspTxCount"],
+        queryFn: fetchMaspTxCount,
+        staleTime: 60000, // Consider fresh for 1 minute (matches backend refresh)
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+    });
 }

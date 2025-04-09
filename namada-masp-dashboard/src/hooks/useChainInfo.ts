@@ -2,14 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import {
     fetchChainParameters,
     fetchLatestBlock,
-    fetchBlockchainInfo,
     fetchVotingPower,
     fetchLatestEpoch,
     fetchTotalRewards,
     TransformedTokenAmounts,
     TokenPricesResponse,
 } from "../api/chain";
-import { AbciQueryResponse } from "../types/abci";
 import { denomAmount, parseNumeric } from "../utils/numbers";
 import { BlockHeight } from "../api/chain";
 import { retryPolicy, retryDelay } from "../api/apiClient";
@@ -18,7 +16,8 @@ import { useTokenSupplies } from "./useTokenSupplies";
 import { useTokenPrices } from "./useTokenPrices";
 import { useMaspBalances } from "./useMaspBalances";
 import { RegistryAsset } from "../types/chainRegistry";
-import { useTotalRewards } from "./useMaspData";
+import { useMaspTxCount } from "./useMaspData";
+
 interface ShieldedAssetsMetrics {
     current: number | null;
     changes: {
@@ -39,6 +38,7 @@ export interface ChainMetrics {
     totalRewardsMinted: number | null;
     rewardsPerEpoch: number | null;
     epoch: string | null;
+    maspTxCount: number | null;
 }
 
 export interface ChainInfo {
@@ -151,6 +151,7 @@ export function useChainInfo(): ChainInfo {
         useTokenSupplies();
     const { data: maspBalances, isLoading: isLoadingMaspBalances } =
         useMaspBalances();
+    const { data: maspTxCount, isLoading: isLoadingMaspTxCount } = useMaspTxCount();
 
     // Get chain parameters (includes APR and native token address)
     const {
@@ -171,18 +172,19 @@ export function useChainInfo(): ChainInfo {
     });
 
     // Get block time calculation data - separate from block height updates
-    const { data: blockchainInfo, isLoading: isLoadingBlockchain } = useQuery({
-        queryKey: ["blockchain"],
-        queryFn: async () => {
-            const latest = await fetchLatestBlock();
-            if (!latest?.block) {
-                throw new Error("Latest block height not available");
-            }
-            const latestHeight = parseInt(latest.block);
-            return fetchBlockchainInfo(latestHeight - 5, latestHeight);
-        },
-        refetchInterval: 30000, // Refresh every 30 seconds (less frequent than block height)
-    });
+    // No longer used, but kept for reference
+    // const { data: blockchainInfo, isLoading: isLoadingBlockchain } = useQuery({
+    //     queryKey: ["blockchain"],
+    //     queryFn: async () => {
+    //         const latest = await fetchLatestBlock();
+    //         if (!latest?.block) {
+    //             throw new Error("Latest block height not available");
+    //         }
+    //         const latestHeight = parseInt(latest.block);
+    //         return fetchBlockchainInfo(latestHeight - 5, latestHeight);
+    //     },
+    //     refetchInterval: 30000, // Refresh every 30 seconds (less frequent than block height)
+    // });
 
     // Get total voting power (total staked)
     const { data: votingPower, isLoading: isLoadingVotingPower } = useQuery({
@@ -212,9 +214,9 @@ export function useChainInfo(): ChainInfo {
     });
 
     // Calculate block time from the last 5 blocks
-    const blockTime = blockchainInfo?.result.block_metas
-        ? calculateAverageBlockTime(blockchainInfo.result.block_metas)
-        : null;
+    // const blockTime = blockchainInfo?.result.block_metas
+    //     ? calculateAverageBlockTime(blockchainInfo.result.block_metas)
+    //     : null;
 
     const totalSupply =
         tokenSupplies?.supplies.find(
@@ -229,10 +231,13 @@ export function useChainInfo(): ChainInfo {
         tokenPrices ?? { price: [] },
         assets ?? []
     );
+    const maspTxs = maspTxCount ? maspTxCount?.shielding_transfer + maspTxCount?.unshielding_transfer
+        + maspTxCount?.shielded_transfer + maspTxCount?.ibc_shielding_transfer + maspTxCount?.ibc_unshielding_transfer
+        : null;
 
     return {
         metrics: {
-            blockTime,
+            blockTime: null,
             blockHeight: parseNumeric(blockInfo?.block),
             stakingApr: parseNumeric(parameters?.apr),
             totalSupply,
@@ -242,6 +247,7 @@ export function useChainInfo(): ChainInfo {
             totalRewardsMinted: parseNumeric(totalRewards?.totalRewards),
             rewardsPerEpoch: null,
             epoch: epochInfo?.epoch ?? null,
+            maspTxCount: maspTxs,
         },
         isLoading: isLoadingParams,
         isError: paramsError !== null,

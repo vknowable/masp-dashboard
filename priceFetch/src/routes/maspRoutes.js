@@ -184,4 +184,46 @@ router.get('/balances/series', async (req, res) => {
     }
 });
 
+router.get('/count', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) FILTER (WHERE kind = 'shielding_transfer') as shielding_transfer,
+                COUNT(*) FILTER (WHERE kind = 'unshielding_transfer') as unshielding_transfer,
+                COUNT(*) FILTER (WHERE kind = 'shielded_transfer') as shielded_transfer,
+                COUNT(*) FILTER (WHERE kind = 'ibc_shielding_transfer') as ibc_shielding_transfer,
+                COUNT(*) FILTER (WHERE kind = 'ibc_unshielding_transfer') as ibc_unshielding_transfer
+            FROM public.inner_transactions
+            WHERE kind IN (
+                'shielding_transfer',
+                'unshielding_transfer',
+                'shielded_transfer',
+                'ibc_shielding_transfer',
+                'ibc_unshielding_transfer'
+            )
+            AND exit_code = 'applied';
+        `;
+
+        const result = await dbService.query(query);
+        const counts = result.rows[0];
+
+        // Convert all counts to integers
+        const response = {
+            shielding_transfer: parseInt(counts.shielding_transfer),
+            unshielding_transfer: parseInt(counts.unshielding_transfer),
+            shielded_transfer: parseInt(counts.shielded_transfer),
+            ibc_shielding_transfer: parseInt(counts.ibc_shielding_transfer),
+            ibc_unshielding_transfer: parseInt(counts.ibc_unshielding_transfer)
+        };
+
+        res.json(response);
+    } catch (error) {
+        console.error('Error in masp transaction counts endpoint:', error);
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
 export default router; 

@@ -159,9 +159,9 @@ export default function IbcAggregatesChart({
                     },
                 },
                 axisLabel: {
-                    rotate: 0, // Rotate labels 90 degrees (vertical facing up)
+                    rotate: window.innerWidth < 1100 ? 90 : 0, // Rotate labels 90 degrees on mobile
                     interval: 0, // Force all labels to show
-                    align: "center" as const, // Align text to left side
+                    align: window.innerWidth < 1100 ? "right" as const : "center" as const,
                     padding: [0, 12, 0, 0], // Add some padding to prevent overlap
                     color: "#CCC", // Match text color with theme
                     fontSize: 15,
@@ -330,12 +330,12 @@ export default function IbcAggregatesChart({
             return {
                 backgroundColor: "transparent",
                 title: {
-                    text: `No. of Transactions (${displayTimeframe})`,
+                    text: window.innerWidth < 1300 ? `No. of Transactions \n(${displayTimeframe})` : `No. of Transactions (${displayTimeframe})`,
                     left: "center",
-                    top: 0,
+                    top: window.innerWidth < 1400 ? 30 : 15,
                     textStyle: {
                         color: "#FFF",
-                        fontSize: 16,
+                        fontSize: window.innerWidth < 1200 ? 14 : 16,
                         fontWeight: "normal" as const
                     }
                 },
@@ -375,12 +375,14 @@ export default function IbcAggregatesChart({
                     axisLabel: {
                         color: '#CCC',
                         fontSize: 12,
-                        padding: [3, 5]
+                        padding: [3, 5],
+                        formatter: (value: string) => value.split(' ').join('\n')
                     },
                     axisName: {
                         color: '#CCC',
-                        fontSize: 12,
-                        padding: [3, 5]
+                        fontSize: window.innerWidth < 1200 ? 9 : 12,
+                        padding: [5, 5],
+                        formatter: (name?: string) => name ? name.split(' ').join('\n') : ''
                     }
                 },
                 series: seriesData
@@ -391,14 +393,14 @@ export default function IbcAggregatesChart({
 
     return (
         <div className="w-full bg-[#191919] rounded-lg p-4 flex gap-4">
-            <div className="w-4/5">
+            <div className="w-full lg:w-4/5">
                 <ReactECharts
                     option={barChartOption}
                     style={{ height: "440px", width: "100%" }}
                     theme="dark"
                 />
             </div>
-            <div className="w-1/5 flex items-center">
+            <div className="hidden lg:flex lg:w-1/5 items-center">
                 <ReactECharts
                     option={radarChartOption}
                     style={{ height: "440px", width: "100%" }}
