@@ -1,7 +1,7 @@
 {
-    "name": "pricefetch",
+    "name": "masp-dashboard-api",
     "version": "1.0.0",
-    "description": "A (very basic) backend for fetching the asset prices from Coingecko and serving them to the frontend app at `{base url}/api/v1/{asset}/price`.",
+    "description": "Backend API server for the Namada MASP Dashboard",
     "type": "module",
     "main": "src/app.js",
     "scripts": {
