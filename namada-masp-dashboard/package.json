@@ -11,12 +11,13 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.64.1",
+    "@tanstack/react-query-devtools": "^5.67.2",
     "@tanstack/react-table": "^8.20.6",
+    "@wojtekmaj/react-datetimerange-picker": "^6.0.0",
     "axios": "^1.7.9",
     "axios-retry": "^4.5.0",
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
-    "masp_dashboard_wasm": "file:../pkg",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "vite-plugin-wasm": "^3.4.1"

@@ -1,0 +1,22 @@
+{
+    "name": "masp-dashboard-api",
+    "version": "1.0.0",
+    "description": "Backend API server for the Namada MASP Dashboard",
+    "type": "module",
+    "main": "src/app.js",
+    "scripts": {
+        "start": "node src/app.js",
+        "dev": "NODE_ENV=development nodemon src/app.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.8.1",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "express-rate-limit": "^7.5.0",
+        "pg": "^8.14.1"
+    }
+}

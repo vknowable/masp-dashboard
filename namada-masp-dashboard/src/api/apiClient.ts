@@ -1,17 +1,23 @@
-import axios from 'axios'
-import axiosRetry from 'axios-retry'
+import axios from "axios";
 
 const apiClient = axios.create({
-  timeout: 10000,
-})
-
-// Apply axiosRetry
-axiosRetry(apiClient, {
-  retries: 3, // Number of retry attempts
-  retryDelay: retryCount => retryCount * 1000, // Incremental backoff
-  retryCondition: error => {
-    return (error.response?.status ?? 0) >= 500 || error.code === 'ECONNABORTED' // Retry on server errors or timeout
+  timeout: 10000, // 10 second timeout
+  headers: {
+    "Content-Type": "application/json",
   },
-})
+});
 
-export default apiClient
+export const retryPolicy = (failureCount: number, error: any) => {
+  // Only retry on 5xx errors or network/timeout issues
+  const status = error.response?.status;
+  return (
+    failureCount < 3 && // Maximum 3 retries
+    (status === undefined || // Network/timeout error
+      status >= 500) // Server error
+  );
+};
+
+export const retryDelay = (attemptIndex: number) =>
+  Math.min(1000 * 2 ** attemptIndex, 30000);
+
+export default apiClient;
