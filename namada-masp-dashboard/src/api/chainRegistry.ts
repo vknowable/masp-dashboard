@@ -12,7 +12,7 @@ const GITHUB_BRANCH = import.meta.env.VITE_REGISTRY_BRANCH || "main";
 const REPO_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}`;
 const COSMOS_REGISTRY_REPO = "cosmos/chain-registry";
 const COSMOS_REGISTRY_URL = `https://raw.githubusercontent.com/${COSMOS_REGISTRY_REPO}/refs/heads/master`;
-
+console.log(import.meta.env.VITE_REGISTRY_BRANCH, GITHUB_BRANCH, REPO_URL);
 async function fetchRegistryJson<T>(url: string): Promise<T | null> {
     try {
         const { data } = await apiClient.get<T>(url);
@@ -91,7 +91,7 @@ export async function fetchChainMetadata(
 
         const chain_name = chainJson.chain_name;
         const fileList = await fetchIbcFileList(
-            `https://api.github.com/repos/${GITHUB_REPO}/contents/_IBC`,
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/_IBC?ref=${GITHUB_BRANCH}`,
         );
 
         // filter the fileList for matches of the form {name}-{chainB}.json or {chainA}-{name}.json
