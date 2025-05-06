@@ -12,7 +12,7 @@ const GITHUB_BRANCH = import.meta.env.VITE_REGISTRY_BRANCH || "main";
 const REPO_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}`;
 const COSMOS_REGISTRY_REPO = "cosmos/chain-registry";
 const COSMOS_REGISTRY_URL = `https://raw.githubusercontent.com/${COSMOS_REGISTRY_REPO}/refs/heads/master`;
-console.log(import.meta.env.VITE_REGISTRY_BRANCH, GITHUB_BRANCH, REPO_URL);
+
 async function fetchRegistryJson<T>(url: string): Promise<T | null> {
     try {
         const { data } = await apiClient.get<T>(url);
@@ -122,6 +122,21 @@ export async function fetchChainMetadata(
 
                 if (fileData) {
                     ibcMetadata.push(fileData);
+
+                    // Check if counterparty chain exists in Cosmos Chain Registry
+                    const counterPartyExists = await fetch(
+                        `https://api.github.com/repos/${COSMOS_REGISTRY_REPO}/contents/${counterPartyChainName}`
+                    ).then(res => {
+                        if (res.status === 404) {
+                            return false;
+                        }
+                        return res.status === 200;
+                    }).catch(() => false);
+
+                    if (!counterPartyExists) {
+                        // Skip fetching registry data if chain folder doesn't exist
+                        return;
+                    }
 
                     const [counterPartyChainJson, counterPartyAssetListJson] =
                         await Promise.all([

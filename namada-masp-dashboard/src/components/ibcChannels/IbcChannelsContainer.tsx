@@ -9,6 +9,12 @@ import { Token, IbcToken } from "../../types/token";
 import { useIbcTxCount } from "../../hooks/useIbcData";
 import { IbcTxCountResponse } from "../../api/chain";
 
+const chainLogoMapping: Record<string, string> = {
+    neutron: "neutron.svg",
+    nym: "nym.svg",
+    penumbra: "um.svg",
+};
+
 function IbcChannelsContainer() {
     const { registryData, isLoading: isLoadingRegistry } = useRegistryData();
     const { data: tokenList = [], isLoading: isLoadingTokenList } = useTokenList();
@@ -70,12 +76,25 @@ export function parseIbcConnections(registryData: ChainMetadata, tokenList: Toke
                 const counterparty = registryData.counterParties.find(
                     (cp) => cp.chain.chain_name === chainName,
                 );
+
+                // A few of the chains don't have a logo in the registry, so we map them to a local image
+                // Neutron's registry logo is not suitable for display on a black background, so we add a special case for it
+                let logoUri = counterparty?.chain.logo_URIs?.svg;
+                // Prioritize local mapping for specific chains like neutron
+                if (chainName === 'neutron' && chainName in chainLogoMapping) {
+                    logoUri = `/images/chain/${chainLogoMapping[chainName]}`;
+                } else if (!logoUri && chainName in chainLogoMapping) {
+                    logoUri = `/images/chain/${chainLogoMapping[chainName]}`;
+                }
+                // Fallback if still no logo found
+                if (!logoUri) {
+                    logoUri = "https://raw.githubusercontent.com/anoma/namada-chain-registry/main/namada/images/namada.svg";
+                }
+
                 return {
                     chainId: counterparty?.chain.chain_id || "unknown",
                     prettyName: counterparty?.chain.pretty_name || chainName,
-                    logoUri:
-                        counterparty?.chain.logo_URIs?.svg ||
-                        "https://raw.githubusercontent.com/anoma/namada-chain-registry/main/namada/images/namada.svg",
+                    logoUri: logoUri,
                 };
             };
 

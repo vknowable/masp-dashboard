@@ -376,13 +376,20 @@ export default function IbcAggregatesChart({
                         color: '#CCC',
                         fontSize: 12,
                         padding: [3, 5],
-                        formatter: (value: string) => value.split(' ').join('\n')
+                        formatter: (value: string) => value.split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join('\n')
                     },
                     axisName: {
                         color: '#CCC',
                         fontSize: window.innerWidth < 1200 ? 9 : 12,
                         padding: [5, 5],
-                        formatter: (name?: string) => name ? name.split(' ').join('\n') : ''
+                        formatter: (name?: string) => {
+                            if (!name) return ''; // Handle undefined case
+                            return name.split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                .join('\n')
+                        }
                     }
                 },
                 series: seriesData
