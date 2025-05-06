@@ -69,16 +69,23 @@ class PriceService {
         const assetList = await this.fetchAssetList();
         console.log(`Attempting to fetch prices for ${assetList.length} assets`);
 
-        const results = await Promise.allSettled(
-            assetList.map(async (asset) => {
-                const success = await this.fetchPriceWithRetry(asset);
-                return { asset, success };
-            })
-        );
+        // Randomize the order of assets
+        const shuffledAssets = [...assetList].sort(() => Math.random() - 0.5);
+
+        const results = [];
+
+        // Process assets sequentially with delays
+        for (const asset of shuffledAssets) {
+            const success = await this.fetchPriceWithRetry(asset);
+            results.push({ asset, success });
+
+            // Use a fixed 5-second delay between requests
+            await this.delay(5000);
+        }
 
         const failedAssets = results
-            .filter(result => result.status === 'rejected' || !result.value.success)
-            .map(result => result.value?.asset || 'unknown');
+            .filter(result => !result.success)
+            .map(result => result.asset);
 
         if (failedAssets.length > 0) {
             console.warn(`Failed to fetch prices for ${failedAssets.length} assets:`, failedAssets);
