@@ -107,10 +107,10 @@ class NamadaService {
 
                     // Decode the ABCI value using WASM
                     const decodedBalance = wasmService.decodeAbciAmount(balanceResponse.data.result.response.value);
-                    return decodedSupply - decodedBalance;
+                    return (decodedSupply - decodedBalance).toString();
                 }
 
-                return decodedSupply;
+                return decodedSupply.toString();
             } catch (error) {
                 console.log(`Token supply query failed for ${tokenAddress} at height ${height}: ${error.message}`);
                 return null;
