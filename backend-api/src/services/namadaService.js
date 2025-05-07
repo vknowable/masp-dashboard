@@ -72,11 +72,14 @@ class NamadaService {
         return this.queryWithRetry(async () => {
             try {
                 const path = `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${tokenAddress}/balance/minted"`;
+                const params = {
+                    path,
+                    height: height.toString()
+                };
+                const queryString = new URLSearchParams(params).toString();
+                // console.log('Token Supply Query URL:', `${config.namadaRpcUrl}/abci_query?${queryString}`);
                 const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
-                    params: {
-                        path: path,
-                        height: height.toString()
-                    }
+                    params
                 });
 
                 if (!response.data?.result?.response?.value) {
@@ -135,27 +138,29 @@ class NamadaService {
             }
 
             // Fetch supplies for each token at each height
-            const tokenSupplies = await Promise.all(
-                assetList.map(async (asset) => {
-                    // Handle each timeframe independently
-                    const [current, oneDayAgo, sevenDaysAgo, thirtyDaysAgo] = await Promise.all([
-                        this.fetchTokenSupply(asset.address, heights.current).catch(() => null),
-                        this.fetchTokenSupply(asset.address, heights.oneDayAgo).catch(() => null),
-                        this.fetchTokenSupply(asset.address, heights.sevenDaysAgo).catch(() => null),
-                        this.fetchTokenSupply(asset.address, heights.thirtyDaysAgo).catch(() => null)
-                    ]);
+            const tokenSupplies = [];
+            for (const asset of assetList) {
+                // Handle each timeframe independently
+                const [current, oneDayAgo, sevenDaysAgo, thirtyDaysAgo] = await Promise.all([
+                    this.fetchTokenSupply(asset.address, heights.current).catch(() => null),
+                    this.fetchTokenSupply(asset.address, heights.oneDayAgo).catch(() => null),
+                    this.fetchTokenSupply(asset.address, heights.sevenDaysAgo).catch(() => null),
+                    this.fetchTokenSupply(asset.address, heights.thirtyDaysAgo).catch(() => null)
+                ]);
 
-                    return {
-                        address: asset.address,
-                        supplies: {
-                            current,
-                            '1dAgo': oneDayAgo,
-                            '7dAgo': sevenDaysAgo,
-                            '30dAgo': thirtyDaysAgo
-                        }
-                    };
-                })
-            );
+                tokenSupplies.push({
+                    address: asset.address,
+                    supplies: {
+                        current,
+                        '1dAgo': oneDayAgo,
+                        '7dAgo': sevenDaysAgo,
+                        '30dAgo': thirtyDaysAgo
+                    }
+                });
+
+                // Add delay between assets
+                await this.delay(1000);
+            }
 
             this.tokenSupplies = tokenSupplies;
             return tokenSupplies;
@@ -263,47 +268,64 @@ class NamadaService {
             }
 
             // Fetch inflation data for each token
-            const inflationData = await Promise.all(
-                assetList.map(async (asset) => {
-                    try {
-                        // Query last inflation
-                        const inflationResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
-                            params: {
-                                path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_inflation"`
-                            }
-                        });
+            const inflationData = [];
+            for (const asset of assetList) {
+                try {
+                    // Query last inflation
+                    const params = {
+                        path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_inflation"`
+                    };
+                    const queryString = new URLSearchParams(params).toString();
+                    // console.log('Inflation Query URL:', `${config.namadaRpcUrl}/abci_query?${queryString}`);
+                    const inflationResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                        params
+                    });
 
-                        // Query last locked amount
-                        const lockedResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
-                            params: {
-                                path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_locked_amount"`
-                            }
-                        });
+                    // Query last locked amount
+                    const lockedParams = {
+                        path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_locked_amount"`
+                    };
+                    const lockedQueryString = new URLSearchParams(lockedParams).toString();
+                    // console.log('Locked Amount Query URL:', `${config.namadaRpcUrl}/abci_query?${lockedQueryString}`);
+                    const lockedResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                        params: lockedParams
+                    });
 
-                        if (!inflationResponse.data?.result?.response?.value ||
-                            !lockedResponse.data?.result?.response?.value) {
-                            console.log(`No inflation data for token ${asset.address}`);
-                            return null;
-                        }
-
-                        // Decode both values using WASM
-                        const lastInflation = wasmService.decodeAbciAmount(inflationResponse.data.result.response.value);
-                        const lastLocked = wasmService.decodeAbciAmount(lockedResponse.data.result.response.value);
-
-                        return {
+                    if (!inflationResponse.data?.result?.response?.value ||
+                        !lockedResponse.data?.result?.response?.value) {
+                        console.log(`No inflation data for token ${asset.address}`);
+                        inflationData.push({
                             address: asset.address,
-                            last_locked: lastLocked,
-                            last_inflation: lastInflation
-                        };
-                    } catch (error) {
-                        console.log(`Inflation query failed for ${asset.address}: ${error.message}`);
-                        return null;
+                            last_locked: null,
+                            last_inflation: null
+                        });
+                        continue;
                     }
-                })
-            );
 
-            // Filter out null values and update the stored data
-            this.maspInflation = inflationData.filter(data => data !== null);
+                    // Decode both values using WASM
+                    const lastInflation = wasmService.decodeAbciAmount(inflationResponse.data.result.response.value);
+                    const lastLocked = wasmService.decodeAbciAmount(lockedResponse.data.result.response.value);
+
+                    inflationData.push({
+                        address: asset.address,
+                        last_locked: lastLocked,
+                        last_inflation: lastInflation
+                    });
+
+                    // Add delay between assets
+                    await this.delay(1000);
+                } catch (error) {
+                    console.log(`Inflation query failed for ${asset.address}: ${error.message}`);
+                    inflationData.push({
+                        address: asset.address,
+                        last_locked: null,
+                        last_inflation: null
+                    });
+                }
+            }
+
+            // Update the stored data
+            this.maspInflation = inflationData;
             return this.maspInflation;
         } catch (error) {
             console.error("Error fetching MASP inflation:", error);
