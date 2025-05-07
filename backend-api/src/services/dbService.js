@@ -9,10 +9,22 @@ class DbService {
         this.pool = null;
         this.latestData = null; // placeholder for now
         this.initialized = false;
+        this.mockMode = false;
+    }
+
+    setMockMode(enabled) {
+        this.mockMode = enabled;
+        console.log(`Database mock mode ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     async init() {
         if (this.initialized) return;
+
+        if (this.mockMode) {
+            console.log('Running in mock mode - database access disabled');
+            this.initialized = true;
+            return;
+        }
 
         try {
             this.pool = new Pool({
@@ -45,6 +57,11 @@ class DbService {
     async query(text, params) {
         if (!this.initialized) {
             throw new Error('Database service not initialized');
+        }
+
+        if (this.mockMode) {
+            console.log('Mock query:', text);
+            return { rows: [] };
         }
 
         try {
@@ -101,6 +118,16 @@ class DbService {
     /// @param {number} resolutionHours - The resolution of the buckets in hours
     /// @returns {Promise<Object>} - A promise that resolves to an object containing the buckets
     async fetchMaspPoolTransactions(startTime, endTime, resolutionHours) {
+        if (this.mockMode) {
+            // Return empty buckets
+            const timeWindowHours = (endTime - startTime) / (1000 * 60 * 60);
+            const numBuckets = Math.ceil(timeWindowHours / resolutionHours);
+            return Array.from({ length: numBuckets }, (_, i) => ({
+                bucket: i,
+                in: 0,
+                out: 0
+            }));
+        }
         try {
             // Calculate the number of buckets needed
             const timeWindowHours = (endTime - startTime) / (1000 * 60 * 60);
@@ -178,6 +205,12 @@ class DbService {
     /// @param {number} height - The block height (0 for latest)
     /// @returns {Promise<Object>} - A promise that resolves to the balance information
     async fetchBalanceAtHeight(owner, token, height) {
+        if (this.mockMode) {
+            return {
+                token,
+                raw_amount: '0'
+            };
+        }
         try {
             let targetHeight = height;
 
@@ -268,6 +301,12 @@ class DbService {
     /// @param {Date} timestamp - The timestamp in UTC
     /// @returns {Promise<Object>} - A promise that resolves to the balance information
     async fetchBalanceAtTime(owner, token, timestamp) {
+        if (this.mockMode) {
+            return {
+                token,
+                raw_amount: '0'
+            };
+        }
         try {
             // Get the balance from historical_balances
             const historicalQuery = `
@@ -304,6 +343,12 @@ class DbService {
     /// @param {Array} [assetList] - Optional list of assets to fetch balances for. If not provided, will fetch from namadaService.
     /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
     async fetchBalancesAtHeight(owner, height, assetList = null) {
+        if (this.mockMode) {
+            return assetList ? assetList.map(asset => ({
+                token: asset.address,
+                raw_amount: '0'
+            })) : [];
+        }
         try {
             let targetHeight = height;
 
@@ -344,6 +389,12 @@ class DbService {
     /// @param {Array} [assetList] - Optional list of assets to fetch balances for. If not provided, will fetch from namadaService.
     /// @returns {Promise<Array>} - A promise that resolves to an array of balance information for each asset
     async fetchBalancesAtTime(owner, timestamp, assetList = null) {
+        if (this.mockMode) {
+            return assetList ? assetList.map(asset => ({
+                token: asset.address,
+                raw_amount: '0'
+            })) : [];
+        }
         try {
             // Get the list of assets if not provided
             let assets = assetList;
