@@ -15,6 +15,29 @@ const chainLogoMapping: Record<string, string> = {
     penumbra: "um.svg",
 };
 
+const zeroSupplyTokens: IbcToken[] = [
+    {
+        address: "tnam1pk6pgu4cpqeu4hqjkt6s724eufu64svpqgu52m3g",
+        trace: "transfer/channel-7/untrn",
+        type: "ibc",
+    },
+    {
+        address: "tnam1phv4vcuw2ftsjahhvg65w4ux8as09tlysuhvzqje",
+        trace: "transfer/channel-6/unym",
+        type: "ibc",
+    },
+    {
+        address: "tnam1pkl64du8p2d240my5umxm24qhrjsvh42ruc98f97",
+        trace: "transfer/channel-5/uusdc",
+        type: "ibc",
+    },
+    {
+        address: "tnam1pk288t54tg99umhamwx998nh0q2dhc7slch45sqy",
+        trace: "transfer/channel-4/upenumbra",
+        type: "ibc",
+    },
+]
+
 function IbcChannelsContainer() {
     const { registryData, isLoading: isLoadingRegistry } = useRegistryData();
     const { data: tokenList = [], isLoading: isLoadingTokenList } = useTokenList();
@@ -106,13 +129,13 @@ export function parseIbcConnections(registryData: ChainMetadata, tokenList: Toke
             const channelId2 = conn.channels[0]?.chain_2.channel_id || "";
 
             // Find associated assets by matching channel IDs in the trace
-            const associatedAssets = tokenList
+            const associatedAssets = [...tokenList, ...zeroSupplyTokens]
                 .filter(token => registryData.assetList.assets.some(asset => asset.address === token.address))
                 .filter((token): token is IbcToken => 'trace' in token)
                 .filter(token => {
                     const traceParts = token.trace.split("/");
                     const channelId = traceParts[1]; // Get the channel ID from the trace
-                    return channelId === channelId1 || channelId === channelId2;
+                    return channelId === channelId1;
                 })
                 .map(token => {
                     const registryAsset = registryData.assetList.assets.find(
