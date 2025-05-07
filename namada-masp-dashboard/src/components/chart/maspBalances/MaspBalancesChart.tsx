@@ -121,17 +121,20 @@ export default function MaspBalancesChart({
         // First pass: collect unique tokens, their exponents, and prices
         balanceSeries.forEach(entry => {
             entry.balances.forEach(balance => {
-                if (!tokenExponents.has(balance.token)) {
-                    const asset = assets.find(a => a.address === balance.token);
-                    const exponent = asset?.denom_units?.find(
-                        (unit) => unit.denom === asset.display
-                    )?.exponent ?? 6;
-                    tokenExponents.set(balance.token, exponent);
+                // Only process tokens that exist in the registry
+                const asset = assets.find(a => a.address === balance.token);
+                if (asset) {
+                    if (!tokenExponents.has(balance.token)) {
+                        const exponent = asset.denom_units?.find(
+                            (unit) => unit.denom === asset.display
+                        )?.exponent ?? 6;
+                        tokenExponents.set(balance.token, exponent);
 
-                    // Get token price
-                    const coingeckoId = asset?.coingecko_id;
-                    const price = tokenPrices?.price?.find(p => p.id === coingeckoId)?.usd ?? 0;
-                    tokenPriceMap.set(balance.token, price);
+                        // Get token price
+                        const coingeckoId = asset.coingecko_id;
+                        const price = tokenPrices?.price?.find(p => p.id === coingeckoId)?.usd ?? 0;
+                        tokenPriceMap.set(balance.token, price);
+                    }
                 }
             });
         });
@@ -139,14 +142,18 @@ export default function MaspBalancesChart({
         // Second pass: collect USD values for each token
         balanceSeries.forEach(entry => {
             entry.balances.forEach(balance => {
-                const exponent = tokenExponents.get(balance.token) ?? 6;
-                const price = tokenPriceMap.get(balance.token) ?? 0;
-                const amount = (Number(balance.raw_amount) / 10 ** exponent) * price;
+                // Only process tokens that exist in the registry
+                const asset = assets.find(a => a.address === balance.token);
+                if (asset) {
+                    const exponent = tokenExponents.get(balance.token) ?? 6;
+                    const price = tokenPriceMap.get(balance.token) ?? 0;
+                    const amount = (Number(balance.raw_amount) / 10 ** exponent) * price;
 
-                if (!tokenBalances.has(balance.token)) {
-                    tokenBalances.set(balance.token, []);
+                    if (!tokenBalances.has(balance.token)) {
+                        tokenBalances.set(balance.token, []);
+                    }
+                    tokenBalances.get(balance.token)?.push(amount);
                 }
-                tokenBalances.get(balance.token)?.push(amount);
             });
         });
 
