@@ -25,16 +25,10 @@ function MetricsColumn({
 
     if (isLoadingRegistry || !assets) {
         return (
-            <div className="p-4">
-                {/* <div className="animate-pulse space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-gray-700 rounded" />
-                    ))}
-                </div> */}
+            <div>
             </div>
         );
     }
-    console.log(maspBalances)
 
     return (
         <div className="h-full">

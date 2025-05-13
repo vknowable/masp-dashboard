@@ -25,33 +25,29 @@ function MetricsRow({
 
     if (isLoading) {
         return (
-            <div className="p-4">
-                <div className="animate-pulse space-y-4">
-                    {[...Array(1)].map((_, i) => (
-                        <div key={i} className="h-[96px] bg-gray-700 rounded" />
-                    ))}
-                </div>
+            <div className="animate-pulse space-y-4">
+                {[...Array(1)].map((_, i) => (
+                    <div key={i} className="h-[94px] bg-gray-800 rounded flex items-center justify-center text-sm">Loading</div>
+                ))}
             </div>
         );
     }
 
     // TODO: Add loading state for token supplies, so we can still show the token symbol and icon
-    if (!maspBalances || !transparentBalances) {
+    if (!maspBalances && !transparentBalances) {
         return (
-            <div className="p-4">
-                <div className="animate-pulse space-y-4">
-                    {[...Array(1)].map((_, i) => (
-                        <div key={i} className="h-[96px] bg-gray-700 rounded" />
-                    ))}
-                </div>
+            <div className="space-y-4">
+                {[...Array(1)].map((_, i) => (
+                    <div key={i} className="h-[94px] bg-gray-800 rounded flex items-center justify-center text-sm">Data not available</div>
+                ))}
             </div>
         );
     }
 
-    const rawCurrentMasp = maspBalances.balances.current;
+    const rawCurrentMasp = maspBalances?.balances.current;
     const denomCurrentMasp = denomAmount(rawCurrentMasp, 6);
 
-    const rawCurrentTransparent = transparentBalances.balances.current;
+    const rawCurrentTransparent = transparentBalances?.balances.current;
     const denomCurrentTransparent = denomAmount(rawCurrentTransparent, 6);
 
     const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
@@ -73,7 +69,7 @@ function MetricsRow({
                         ? formatNumber(denomCurrentMasp * tokenPrice, 2)
                         : "--"}
                 </div>
-                <NetChangeSpans changes={maspBalances.balances.changes} />
+                {maspBalances && <NetChangeSpans changes={maspBalances.balances.changes} />}
             </div>
 
             {/* Transparent Value Column */}
@@ -87,7 +83,7 @@ function MetricsRow({
                         ? formatNumber(denomCurrentTransparent * tokenPrice, 2)
                         : "--"}
                 </div>
-                <NetChangeSpans changes={transparentBalances.balances.changes} />
+                {transparentBalances && <NetChangeSpans changes={transparentBalances.balances.changes} />}
             </div>
 
             {/* Rewards Param Column */}

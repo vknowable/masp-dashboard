@@ -9,6 +9,35 @@ import { Token, IbcToken } from "../../types/token";
 import { useIbcTxCount } from "../../hooks/useIbcData";
 import { IbcTxCountResponse } from "../../api/chain";
 
+const chainLogoMapping: Record<string, string> = {
+    neutron: "neutron.svg",
+    nym: "nym.svg",
+    penumbra: "um.svg",
+};
+
+const zeroSupplyTokens: IbcToken[] = [
+    {
+        address: "tnam1pk6pgu4cpqeu4hqjkt6s724eufu64svpqgu52m3g",
+        trace: "transfer/channel-7/untrn",
+        type: "ibc",
+    },
+    {
+        address: "tnam1phv4vcuw2ftsjahhvg65w4ux8as09tlysuhvzqje",
+        trace: "transfer/channel-6/unym",
+        type: "ibc",
+    },
+    {
+        address: "tnam1pkl64du8p2d240my5umxm24qhrjsvh42ruc98f97",
+        trace: "transfer/channel-5/uusdc",
+        type: "ibc",
+    },
+    {
+        address: "tnam1pk288t54tg99umhamwx998nh0q2dhc7slch45sqy",
+        trace: "transfer/channel-4/upenumbra",
+        type: "ibc",
+    },
+]
+
 function IbcChannelsContainer() {
     const { registryData, isLoading: isLoadingRegistry } = useRegistryData();
     const { data: tokenList = [], isLoading: isLoadingTokenList } = useTokenList();
@@ -70,12 +99,25 @@ export function parseIbcConnections(registryData: ChainMetadata, tokenList: Toke
                 const counterparty = registryData.counterParties.find(
                     (cp) => cp.chain.chain_name === chainName,
                 );
+
+                // A few of the chains don't have a logo in the registry, so we map them to a local image
+                // Neutron's registry logo is not suitable for display on a black background, so we add a special case for it
+                let logoUri = counterparty?.chain.logo_URIs?.svg;
+                // Prioritize local mapping for specific chains like neutron
+                if (chainName === 'neutron' && chainName in chainLogoMapping) {
+                    logoUri = `/images/chain/${chainLogoMapping[chainName]}`;
+                } else if (!logoUri && chainName in chainLogoMapping) {
+                    logoUri = `/images/chain/${chainLogoMapping[chainName]}`;
+                }
+                // Fallback if still no logo found
+                if (!logoUri) {
+                    logoUri = "https://raw.githubusercontent.com/anoma/namada-chain-registry/main/namada/images/namada.svg";
+                }
+
                 return {
                     chainId: counterparty?.chain.chain_id || "unknown",
                     prettyName: counterparty?.chain.pretty_name || chainName,
-                    logoUri:
-                        counterparty?.chain.logo_URIs?.svg ||
-                        "https://raw.githubusercontent.com/anoma/namada-chain-registry/main/namada/images/namada.svg",
+                    logoUri: logoUri,
                 };
             };
 
@@ -87,13 +129,13 @@ export function parseIbcConnections(registryData: ChainMetadata, tokenList: Toke
             const channelId2 = conn.channels[0]?.chain_2.channel_id || "";
 
             // Find associated assets by matching channel IDs in the trace
-            const associatedAssets = tokenList
+            const associatedAssets = [...tokenList, ...zeroSupplyTokens]
                 .filter(token => registryData.assetList.assets.some(asset => asset.address === token.address))
                 .filter((token): token is IbcToken => 'trace' in token)
                 .filter(token => {
                     const traceParts = token.trace.split("/");
                     const channelId = traceParts[1]; // Get the channel ID from the trace
-                    return channelId === channelId1 || channelId === channelId2;
+                    return channelId === channelId1;
                 })
                 .map(token => {
                     const registryAsset = registryData.assetList.assets.find(

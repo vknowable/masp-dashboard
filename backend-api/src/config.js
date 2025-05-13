@@ -20,4 +20,5 @@ export const config = {
     dbName: process.env.DB_NAME,
     dbPassword: process.env.DB_PASSWORD,
     dbPort: process.env.DB_PORT || 5432,
+    dbMockMode: process.env.DB_MOCK_MODE === 'true',
 }; 

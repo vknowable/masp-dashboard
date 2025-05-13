@@ -40,6 +40,12 @@ app.use((req, res) => {
 async function startServer() {
     try {
         await wasmService.init();
+
+        // Enable mock mode if configured
+        if (config.dbMockMode) {
+            dbService.setMockMode(true);
+        }
+
         await dbService.init();
         app.listen(config.servePort, () => {
             console.log(`Server running on port ${config.servePort}`);
