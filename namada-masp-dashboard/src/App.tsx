@@ -13,6 +13,9 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { retryPolicy, retryDelay } from "./api/apiClient";
 import ChartContainer from "./components/chart/ChartContainer";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import Estimator from './pages/Estimator';
 
 // Create a client
 const defaultOptions: DefaultOptions = {
@@ -108,7 +111,6 @@ function App() {
                 fallback={
                     <div className="min-h-screen bg-[#121212] text-white p-8">
                         <div className="max-w-7xl mx-auto">
-                            <Header />
                             <div className="mt-12">
                                 <div className="text-2xl font-medium mb-4">
                                     Something went wrong
@@ -132,24 +134,12 @@ function App() {
                     </div>
                 }
             >
-                <div className="min-h-screen flex flex-col p-[24px] bg-white dark:bg-[#121212] text-black dark:text-white">
-                    <header className="flex justify-between items-center">
-                        <Header />
-                        {/* <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-md bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button> */}
-                    </header>
-
-                    <main className="flex-1 pb-16">
-                        <InfoGridContainer />
-                        <ChartContainer />
-                        <AssetTableContainer />
-                        <IbcChannelsContainer />
-                    </main>
-                </div>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/" element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} />
+                        <Route path="/estimator" element={<Estimator darkMode={darkMode} setDarkMode={setDarkMode} />} />
+                    </Routes>
+                </BrowserRouter>
                 <ReactQueryDevtools initialIsOpen={false} />
             </ErrorBoundary>
         </QueryClientProvider>

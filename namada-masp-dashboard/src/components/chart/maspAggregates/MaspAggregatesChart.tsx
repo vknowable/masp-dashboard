@@ -41,6 +41,7 @@ export default function MaspAggregatesChart({
         const timeWindowData = maspAggregates.filter(
             (a) => a.timeWindow === timeWindow
         );
+        console.log(timeWindowData);
 
         // If "All" is selected, return data for all assets
         if (selectedAssets.includes("All")) {
