@@ -13,6 +13,9 @@ const REPO_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/refs/heads/${
 const COSMOS_REGISTRY_REPO = "cosmos/chain-registry";
 const COSMOS_REGISTRY_URL = `https://raw.githubusercontent.com/${COSMOS_REGISTRY_REPO}/refs/heads/master`;
 
+// Chains that are not present in the Cosmos Chain Registry
+const EXCLUDED_CHAINS = ['penumbra', 'nym'];
+
 async function fetchRegistryJson<T>(url: string): Promise<T | null> {
     try {
         const { data } = await apiClient.get<T>(url);
@@ -124,6 +127,10 @@ export async function fetchChainMetadata(
                     ibcMetadata.push(fileData);
 
                     // Check if counterparty chain exists in Cosmos Chain Registry
+                    if (EXCLUDED_CHAINS.includes(counterPartyChainName)) {
+                        return;
+                    }
+
                     const counterPartyExists = await fetch(
                         `https://api.github.com/repos/${COSMOS_REGISTRY_REPO}/contents/${counterPartyChainName}`
                     ).then(res => {

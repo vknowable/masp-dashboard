@@ -15,6 +15,7 @@ export const MASP_ADDRESS = "tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah";
 interface Parameters {
     apr: string;
     nativeTokenAddress: string;
+    chainId: string;
     // ... other parameters exist but we don't need them now
 }
 

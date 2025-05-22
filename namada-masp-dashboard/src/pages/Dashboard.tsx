@@ -3,6 +3,8 @@ import InfoGridContainer from "../components/infoGrid/InfoGridContainer";
 import AssetTableContainer from "../components/assetTable/AssetTableContainer";
 import IbcChannelsContainer from "../components/ibcChannels/IbcChannelsContainer";
 import ChartContainer from "../components/chart/ChartContainer";
+import StakingRewardsContainer from "../components/stakingRewards/StakingRewardsContainer";
+import ShieldedRewardsContainer from "../components/shieldedRewards/ShieldedRewardsContainer";
 
 interface DashboardProps {
     darkMode: boolean;
@@ -23,9 +25,11 @@ const Dashboard = ({ darkMode, setDarkMode }: DashboardProps) => {
             </header>
 
             <main className="flex-1 pb-16">
-                <InfoGridContainer />
-                <ChartContainer />
+                <StakingRewardsContainer />
+                <ShieldedRewardsContainer />
                 <AssetTableContainer />
+                {/* <InfoGridContainer /> */}
+                <ChartContainer />
                 <IbcChannelsContainer />
             </main>
         </div>

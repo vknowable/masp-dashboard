@@ -39,6 +39,7 @@ export interface ChainMetrics {
     rewardsPerEpoch: number | null;
     epoch: string | null;
     maspTxCount: number | null;
+    chainId: string | null;
 }
 
 export interface ChainInfo {
@@ -248,6 +249,7 @@ export function useChainInfo(): ChainInfo {
             rewardsPerEpoch: null,
             epoch: epochInfo?.epoch ?? null,
             maspTxCount: maspTxs,
+            chainId: parameters?.chainId ?? null,
         },
         isLoading: isLoadingParams,
         isError: paramsError !== null,
