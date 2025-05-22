@@ -67,7 +67,7 @@ function ChartContainer() {
                         checkColor="white"
                     />
                 </div>
-                <div className="text-xs text-white/50">Note: All USD values calculated using <span className="text-white">current price</span>, not historical price</div>
+                <div className="text-xs text-white/50">Note: All USD values calculated using <span>current price</span>, not historical price</div>
             </div>
 
             {/* Charts */}

@@ -1,29 +1,28 @@
 import { useMaspBalances } from "../../hooks/useMaspBalances";
 import { useTransparentBalances } from "../../hooks/useTransparentBalances";
-import { useRegistryData } from "../../hooks/useRegistryData";
 import { useTokenPrices } from "../../hooks/useTokenPrices";
 import { ViewMode } from "./AssetTableContainer";
 import MetricsRow from "./MetricsRow";
 // import ViewToggle from './ViewToggle'
 import "../../styles/shared.css";
+import { RegistryAsset } from "../../types/chainRegistry";
 
 interface MetricsColumnProps {
     viewMode: ViewMode;
     onViewChange: (view: ViewMode) => void;
+    sortedAssets: RegistryAsset[];
 }
 
 function MetricsColumn({
     viewMode: _viewMode,
     onViewChange: _onViewChange,
+    sortedAssets,
 }: MetricsColumnProps) {
-    const { assets, isLoading: isLoadingRegistry } = useRegistryData();
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices();
-    const { data: maspBalances, isLoading: isLoadingMaspBalances } =
-        useMaspBalances();
-    const { data: transparentBalances, isLoading: isLoadingTransparentBalances } =
-        useTransparentBalances();
+    const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances();
+    const { data: transparentBalances, isLoading: isLoadingTransparentBalances } = useTransparentBalances();
 
-    if (isLoadingRegistry || !assets) {
+    if (!sortedAssets) {
         return (
             <div>
             </div>
@@ -46,7 +45,7 @@ function MetricsColumn({
                 </div>
             </div>
             <div className="flex flex-col gap-2">
-                {assets.map((token) => (
+                {sortedAssets.map((token) => (
                     <MetricsRow
                         key={token.address}
                         token={token}

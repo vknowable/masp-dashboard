@@ -1,26 +1,23 @@
 import AssetRow from "./AssetRow";
-import { useRegistryData } from "../../hooks/useRegistryData";
 import { useTokenSupplies } from "../../hooks/useTokenSupplies";
 import { useTokenPrices } from "../../hooks/useTokenPrices";
 import "../../styles/shared.css";
 import { useTokenList } from "../../hooks/useTokenList";
 import { Token, IbcToken } from "../../types/token";
+import { RegistryAsset } from "../../types/chainRegistry";
 
-function AssetColumn() {
-    const { assets, isLoading: isLoadingRegistry } = useRegistryData();
+interface AssetColumnProps {
+    sortedAssets: RegistryAsset[];
+}
+
+function AssetColumn({ sortedAssets }: AssetColumnProps) {
     const { data: tokenList, isLoading: isLoadingTokenList } = useTokenList();
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices();
-    const { data: tokenSupplies, isLoading: isLoadingSupplies } =
-        useTokenSupplies();
+    const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies();
 
-    if (isLoadingRegistry || !assets) {
+    if (!sortedAssets) {
         return (
             <div className="p-4">
-                {/* <div className="animate-pulse space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-gray-700 rounded" />
-                    ))}
-                </div> */}
             </div>
         );
     }
@@ -47,7 +44,7 @@ function AssetColumn() {
 
             {/* Asset rows */}
             <div className="flex flex-col gap-2">
-                {assets.map((token) => (
+                {sortedAssets.map((token) => (
                     <AssetRow
                         key={token.address}
                         token={token}
