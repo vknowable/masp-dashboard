@@ -33,11 +33,18 @@ function ChartContainer() {
 
     return (
         <div className="container-surface mt-8 py-4 px-4">
-            <div className="section-heading text-xl md:text-2xl mb-8">Namada Metrics</div>
+            {/* <div className="section-heading text-xl md:text-2xl mb-8">Namada Metrics</div> */}
 
             {/* Chart Toggles */}
             <div className="flex flex-col gap-4 mb-8">
                 <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                    <CustomCheckbox
+                        checked={visibility.maspBalances}
+                        onChange={() => toggleChart("maspBalances")}
+                        label="Masp Asset Values"
+                        borderColor="grey"
+                        checkColor="white"
+                    />
                     <CustomCheckbox
                         checked={visibility.maspAggregates}
                         onChange={() => toggleChart("maspAggregates")}
@@ -49,13 +56,6 @@ function ChartContainer() {
                         checked={visibility.maspTxVolume}
                         onChange={() => toggleChart("maspTxVolume")}
                         label="MASP Tx Volume"
-                        borderColor="grey"
-                        checkColor="white"
-                    />
-                    <CustomCheckbox
-                        checked={visibility.maspBalances}
-                        onChange={() => toggleChart("maspBalances")}
-                        label="Masp Asset Values"
                         borderColor="grey"
                         checkColor="white"
                     />
@@ -72,6 +72,15 @@ function ChartContainer() {
 
             {/* Charts */}
             <div className="space-y-24">
+                {visibility.maspBalances && (
+                    <ErrorBoundary>
+                        <MaspBalancesChartContainer
+                            isLoading={isLoadingRegistry}
+                            assets={assets}
+                        />
+                    </ErrorBoundary>
+                )}
+
                 {visibility.maspAggregates && (
                     <ErrorBoundary>
                         <MaspAggregatesChartContainer
@@ -84,15 +93,6 @@ function ChartContainer() {
                 {visibility.maspTxVolume && (
                     <ErrorBoundary>
                         <MaspTxVolumeChartContainer
-                            isLoading={isLoadingRegistry}
-                            assets={assets}
-                        />
-                    </ErrorBoundary>
-                )}
-
-                {visibility.maspBalances && (
-                    <ErrorBoundary>
-                        <MaspBalancesChartContainer
                             isLoading={isLoadingRegistry}
                             assets={assets}
                         />

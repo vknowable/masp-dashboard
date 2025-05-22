@@ -228,7 +228,7 @@ export default function MaspBalancesChart({
             name: "Distribution",
             type: "pie" as const,
             radius: "30%",
-            center: ["82%", "35%"],
+            center: ["80%", "35%"],
             data: pieData,
             emphasis: {
                 focus: "self" as const,
@@ -284,7 +284,7 @@ export default function MaspBalancesChart({
                 text: window.innerWidth < 1100 ? "" : "Value Distribution",
                 left: "82%",
                 textAlign: "center",
-                top: 14,
+                top: window.innerWidth < 1400 ? 30 : 14,
                 textStyle: {
                     color: "#FFF",
                     fontSize: 16,
@@ -293,9 +293,9 @@ export default function MaspBalancesChart({
             },
             grid: {
                 left: "6%",
-                right: window.innerWidth < 1100 ? "6%" : "30%",
+                right: window.innerWidth < 1100 ? "12%" : "40%",
                 bottom: "3%",
-                top: window.innerWidth < 1100 ? 60 : 10,
+                top: window.innerWidth < 1400 ? 60 : 10,
                 containLabel: true,
             },
             xAxis: {
@@ -312,7 +312,7 @@ export default function MaspBalancesChart({
                 },
                 axisLabel: {
                     rotate: 90,
-                    interval: window.innerWidth < 1100 ? 3 : 0, // Show every 3rd label on mobile
+                    interval: window.innerWidth < 1400 ? 3 : 0, // Show every 3rd label on mobile
                     align: "right" as const,
                     padding: [0, 12, 0, 0],
                     color: "#CCC",
@@ -385,7 +385,7 @@ export default function MaspBalancesChart({
                     color: "#CCC",
                 },
                 align: 'right' as const,
-                orient: window.innerWidth < 1100 ? 'horizontal' as const : 'vertical' as const,
+                orient: window.innerWidth < 1400 ? 'horizontal' as const : 'vertical' as const,
                 top: 0,
                 right: 0,
             },
