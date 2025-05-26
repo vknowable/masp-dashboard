@@ -137,6 +137,10 @@ export function parseIbcConnections(registryData: ChainMetadata, tokenList: Toke
                     const channelId = traceParts[1]; // Get the channel ID from the trace
                     return channelId === channelId1;
                 })
+                // Remove duplicates based on token address
+                .filter((token, index, self) =>
+                    index === self.findIndex((t) => t.address === token.address)
+                )
                 .map(token => {
                     const registryAsset = registryData.assetList.assets.find(
                         asset => asset.address === token.address
