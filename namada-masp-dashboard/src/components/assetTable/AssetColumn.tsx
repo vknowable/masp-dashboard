@@ -1,19 +1,21 @@
 import AssetRow from "./AssetRow";
-import { useTokenSupplies } from "../../hooks/useTokenSupplies";
 import { useTokenPrices } from "../../hooks/useTokenPrices";
 import "../../styles/shared.css";
 import { useTokenList } from "../../hooks/useTokenList";
 import { Token, IbcToken } from "../../types/token";
 import { RegistryAsset } from "../../types/chainRegistry";
+import { ViewMode } from "./AssetTableContainer";
+import { useMaspBalances } from "../../hooks/useMaspBalances";
 
 interface AssetColumnProps {
     sortedAssets: RegistryAsset[];
+    viewMode: ViewMode;
 }
 
-function AssetColumn({ sortedAssets }: AssetColumnProps) {
+function AssetColumn({ sortedAssets, viewMode }: AssetColumnProps) {
     const { data: tokenList, isLoading: isLoadingTokenList } = useTokenList();
     const { data: tokenPrices, isLoading: isLoadingPrices } = useTokenPrices();
-    const { data: tokenSupplies, isLoading: isLoadingSupplies } = useTokenSupplies();
+    const { data: maspBalances, isLoading: isLoadingMaspBalances } = useMaspBalances();
 
     if (!sortedAssets) {
         return (
@@ -37,7 +39,9 @@ function AssetColumn({ sortedAssets }: AssetColumnProps) {
                 <div className="h-[40px] gap-12 px-4 flex items-center">
                     <div className="flex gap-10 column-heading-text">
                         <div className="">Token</div>
-                        <div className="flex-1">Total Value held in Namada</div>
+                        <div className="flex-1">
+                            Current Value Shielded
+                        </div>
                     </div>
                 </div>
             </div>
@@ -56,12 +60,12 @@ function AssetColumn({ sortedAssets }: AssetColumnProps) {
                         trace={(tokenList?.find(
                             (entry: Token) => entry.address === token.address,
                         ) as IbcToken)?.trace}
-                        tokenSupplies={
-                            tokenSupplies?.supplies.find(
-                                (entry) => entry.address === token.address,
+                        maspBalances={
+                            maspBalances?.balances.find(
+                                (entry) => entry.tokenAddress === token.address,
                             ) ?? null
                         }
-                        isLoading={isLoadingSupplies}
+                        isLoading={isLoadingMaspBalances}
                     />
                 ))}
             </div>

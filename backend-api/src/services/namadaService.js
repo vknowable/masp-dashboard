@@ -12,6 +12,7 @@ class NamadaService {
         this.totalRewards = null;
         this.maspEpoch = null;
         this.maspInflation = [];
+        this.pgfBalance = null;
         this.startUpdates();
         // Initialize WASM module
         wasmService.init().catch(console.error);
@@ -107,6 +108,8 @@ class NamadaService {
 
                     // Decode the ABCI value using WASM
                     const decodedBalance = wasmService.decodeAbciAmount(balanceResponse.data.result.response.value);
+                    // Store the PGF balance
+                    this.pgfBalance = decodedBalance.toString();
                     return (decodedSupply - decodedBalance).toString();
                 }
 
@@ -261,6 +264,15 @@ class NamadaService {
     async fetchMaspInflation() {
         console.log("Fetching MASP inflation data");
         try {
+            // Get latest block height
+            const currentHeight = await this.fetchLatestBlock();
+            if (!currentHeight) {
+                throw new Error("Failed to fetch latest block height");
+            }
+
+            // Calculate historical heights
+            const heights = this.calculateHistoricalHeights(currentHeight);
+
             // Get list of registered assets
             const assetList = await this.fetchAssetList();
             if (!assetList || assetList.length === 0) {
@@ -271,25 +283,55 @@ class NamadaService {
             const inflationData = [];
             for (const asset of assetList) {
                 try {
-                    // Query last inflation
+                    // Query current inflation
                     const params = {
                         path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_inflation"`
                     };
-                    const queryString = new URLSearchParams(params).toString();
-                    // console.log('Inflation Query URL:', `${config.namadaRpcUrl}/abci_query?${queryString}`);
                     const inflationResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
                         params
                     });
 
-                    // Query last locked amount
+                    // Query current locked amount
                     const lockedParams = {
                         path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_locked_amount"`
                     };
-                    const lockedQueryString = new URLSearchParams(lockedParams).toString();
-                    // console.log('Locked Amount Query URL:', `${config.namadaRpcUrl}/abci_query?${lockedQueryString}`);
                     const lockedResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
                         params: lockedParams
                     });
+
+                    // Query historical inflation values
+                    const [oneDayAgoInflation, sevenDaysAgoInflation, thirtyDaysAgoInflation] = await Promise.all([
+                        this.queryWithRetry(async () => {
+                            const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                                params: {
+                                    ...params,
+                                    height: heights.oneDayAgo.toString()
+                                }
+                            });
+                            return response.data?.result?.response?.value ?
+                                wasmService.decodeAbciAmount(response.data.result.response.value) : null;
+                        }).catch(() => null),
+                        this.queryWithRetry(async () => {
+                            const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                                params: {
+                                    ...params,
+                                    height: heights.sevenDaysAgo.toString()
+                                }
+                            });
+                            return response.data?.result?.response?.value ?
+                                wasmService.decodeAbciAmount(response.data.result.response.value) : null;
+                        }).catch(() => null),
+                        this.queryWithRetry(async () => {
+                            const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                                params: {
+                                    ...params,
+                                    height: heights.thirtyDaysAgo.toString()
+                                }
+                            });
+                            return response.data?.result?.response?.value ?
+                                wasmService.decodeAbciAmount(response.data.result.response.value) : null;
+                        }).catch(() => null)
+                    ]);
 
                     if (!inflationResponse.data?.result?.response?.value ||
                         !lockedResponse.data?.result?.response?.value) {
@@ -297,7 +339,12 @@ class NamadaService {
                         inflationData.push({
                             address: asset.address,
                             last_locked: null,
-                            last_inflation: null
+                            last_inflation: null,
+                            historical_inflation: {
+                                '1dAgo': null,
+                                '7dAgo': null,
+                                '30dAgo': null
+                            }
                         });
                         continue;
                     }
@@ -309,7 +356,12 @@ class NamadaService {
                     inflationData.push({
                         address: asset.address,
                         last_locked: lastLocked,
-                        last_inflation: lastInflation
+                        last_inflation: lastInflation,
+                        historical_inflation: {
+                            '1dAgo': oneDayAgoInflation,
+                            '7dAgo': sevenDaysAgoInflation,
+                            '30dAgo': thirtyDaysAgoInflation
+                        }
                     });
 
                     // Add delay between assets
@@ -319,7 +371,12 @@ class NamadaService {
                     inflationData.push({
                         address: asset.address,
                         last_locked: null,
-                        last_inflation: null
+                        last_inflation: null,
+                        historical_inflation: {
+                            '1dAgo': null,
+                            '7dAgo': null,
+                            '30dAgo': null
+                        }
                     });
                 }
             }
@@ -365,6 +422,35 @@ class NamadaService {
 
     getMaspInflation() {
         return this.maspInflation;
+    }
+
+    getPgfBalance() {
+        return this.pgfBalance;
+    }
+
+    async fetchPosParams() {
+        console.log("Fetching POS parameters");
+        return this.queryWithRetry(async () => {
+            try {
+                const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                    params: {
+                        path: '"/vp/pos/pos_params"'
+                    }
+                });
+
+                if (!response.data?.result?.response?.value) {
+                    console.log('No POS parameters data available');
+                    return null;
+                }
+
+                // Decode the ABCI value using WASM
+                const decodedParams = wasmService.decodeAbciPosParams(response.data.result.response.value);
+                return decodedParams;
+            } catch (error) {
+                console.log(`POS parameters query failed: ${error.message}`);
+                return null;
+            }
+        });
     }
 }
 

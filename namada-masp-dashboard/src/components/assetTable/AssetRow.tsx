@@ -1,6 +1,6 @@
 import { formatNumber, denomAmount } from "../../utils/numbers";
 import { RegistryAsset } from "../../types/chainRegistry";
-import { TransformedTokenSupply } from "../../api/chain";
+import { TransformedTokenAmount } from "../../api/chain";
 import NetChangeSpans from "./NetChangeSpans";
 import "../../styles/shared.css";
 import { useRewardTokens } from "../../hooks/useMaspData";
@@ -8,7 +8,7 @@ import { useRewardTokens } from "../../hooks/useMaspData";
 interface AssetRowProps {
     token: RegistryAsset;
     tokenPrice: number | null;
-    tokenSupplies: TransformedTokenSupply | null;
+    maspBalances: TransformedTokenAmount | null;
     isLoading?: boolean;
     trace?: string;
 }
@@ -16,7 +16,7 @@ interface AssetRowProps {
 function AssetRow({
     token,
     tokenPrice,
-    tokenSupplies,
+    maspBalances,
     isLoading,
     trace,
 }: AssetRowProps) {
@@ -30,8 +30,7 @@ function AssetRow({
         );
     }
 
-    // TODO: Add loading state for token supplies, so we can still show the token symbol and icon
-    if (!tokenSupplies) {
+    if (!maspBalances) {
         return (
             <div className={`h-[94px] p-4 pr-32 flex gap-12 items-center bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>
                 {/* Token Column */}
@@ -72,8 +71,8 @@ function AssetRow({
         );
     }
 
-    const rawCurrentSupply = tokenSupplies.supplies.current;
-    const denomCurrentSupply = denomAmount(rawCurrentSupply, 6);
+    const rawCurrentMasp = maspBalances.balances.current;
+    const denomCurrentMasp = denomAmount(rawCurrentMasp, 6);
     const { data: rewardTokens } = useRewardTokens();
 
     const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
@@ -107,25 +106,20 @@ function AssetRow({
                         </div>
                     </div>
                 </div>
-
-                {/* Token Symbol */}
-                {/* <div className="text-sm text-white">
-                    {token.symbol}
-                </div> */}
             </div>
 
-            {/* Total Value Column */}
+            {/* Shielded Value Column */}
             <div className="flex-1">
                 <div className="asset-amt-text">
-                    {formatNumber(denomCurrentSupply, 2)} {token.symbol}
+                    {formatNumber(denomCurrentMasp, 2)} {token.symbol}
                 </div>
                 <div className="asset-amt-usd-text">
                     $
-                    {tokenPrice && denomCurrentSupply
-                        ? formatNumber(denomCurrentSupply * tokenPrice, 2)
+                    {tokenPrice && denomCurrentMasp
+                        ? formatNumber(denomCurrentMasp * tokenPrice, 2)
                         : "--"}
                 </div>
-                <NetChangeSpans changes={tokenSupplies.supplies.changes} />
+                <NetChangeSpans changes={maspBalances.balances.changes} />
             </div>
         </div>
     );

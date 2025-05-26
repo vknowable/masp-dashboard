@@ -2,6 +2,7 @@ import { useChainInfo } from "../hooks/useChainInfo";
 import { denomAmount, formatMagnitude } from "../utils/numbers";
 import { useTokenPrices } from "../hooks/useTokenPrices";
 import { useRegistryData } from "../hooks/useRegistryData";
+import { usePgfInfo } from "../hooks/usePgfInfo";
 import { useQuery } from "@tanstack/react-query";
 import { fetchChainParameters } from "../api/chain";
 
@@ -9,6 +10,7 @@ function Header() {
     const { metrics } = useChainInfo();
     const { data: tokenPrices } = useTokenPrices();
     const { assets } = useRegistryData();
+    const { data: pgfInfo } = usePgfInfo();
     const { data: parameters } = useQuery({
         queryKey: ["chainParameters"],
         queryFn: fetchChainParameters,
@@ -17,7 +19,12 @@ function Header() {
 
     const supply = metrics.totalSupply ? denomAmount(metrics.totalSupply) : null;
     const formattedSupply = supply ?
-        `${supply.toLocaleString()} NAM ${formatMagnitude(supply)}` :
+        `${Math.round(supply).toLocaleString()} NAM ${formatMagnitude(supply)}` :
+        "Loading...";
+
+    const pgfBalance = pgfInfo?.balance ? denomAmount(pgfInfo.balance) : null;
+    const formattedPgfBalance = pgfBalance ?
+        `${Math.round(pgfBalance).toLocaleString()} NAM ${formatMagnitude(pgfBalance)}` :
         "Loading...";
 
     // Find NAM token in registry and get its price
@@ -52,7 +59,7 @@ function Header() {
                     <span className="text-white/50">|</span>
                     <span>NAM Supply: {formattedSupply}</span>
                     <span className="text-white/50">|</span>
-                    <span>PGF Treasury: 25,000,000</span>
+                    <span>PGF Treasury: {formattedPgfBalance}</span>
                     <span className="text-white/50">|</span>
                     <span>NAM Price: {formattedPrice}</span>
                 </div>

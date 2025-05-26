@@ -14,7 +14,7 @@ interface MetricsColumnProps {
 }
 
 function MetricsColumn({
-    viewMode: _viewMode,
+    viewMode,
     onViewChange: _onViewChange,
     sortedAssets,
 }: MetricsColumnProps) {
@@ -29,18 +29,33 @@ function MetricsColumn({
         );
     }
 
+    const renderColumnHeadings = () => {
+        if (viewMode === 'shielded') {
+            return (
+                <>
+                    <div className="flex-1">Target MASP Amt.</div>
+                    <div className="flex-1">24h Rewards</div>
+                    <div className="w-[150px] flex justify-center">
+                        Est. Rewards Rate
+                    </div>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <div className="flex-1">Current Value Transparent</div>
+                    <div className="flex-1">Total Value Held in Namada</div>
+                </>
+            );
+        }
+    };
+
     return (
         <div className="h-full">
-            <div className="column-heading-container justify-end rounded-tr-[5px]">
+            <div className="column-heading-container bg-[#010101] h-[80px] justify-end rounded-tr-[5px]">
                 <div className="h-[40px] px-4 flex items-center">
                     <div className="flex column-heading-text w-full pl-8">
-                        <>
-                            <div className="flex-1">Current Value Shielded</div>
-                            <div className="flex-1">Current Value Transparent</div>
-                            <div className="w-[150px] flex justify-center">
-                                Est. Rewards Rate
-                            </div>
-                        </>
+                        {renderColumnHeadings()}
                     </div>
                 </div>
             </div>
@@ -49,6 +64,7 @@ function MetricsColumn({
                     <MetricsRow
                         key={token.address}
                         token={token}
+                        viewMode={viewMode}
                         tokenPrice={
                             tokenPrices?.price.find(
                                 (entry) => entry.id === token.coingecko_id
@@ -69,6 +85,7 @@ function MetricsColumn({
                             isLoadingTransparentBalances ||
                             isLoadingPrices
                         }
+                        sortedAssets={sortedAssets}
                     />
                 ))}
             </div>

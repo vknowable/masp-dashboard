@@ -19,6 +19,17 @@ interface Parameters {
     // ... other parameters exist but we don't need them now
 }
 
+export interface PosParams {
+    owned: OwnedPosParams;
+    max_proposal_period: number;
+}
+
+interface OwnedPosParams {
+    max_inflation_rate: string;
+    target_staked_ratio: string;
+    // ... other parameters exist but we don't need them now
+}
+
 export interface BlockHeight {
     block: string;
 }
@@ -43,6 +54,11 @@ interface VotingPower {
 
 interface EpochResponse {
     epoch: string;
+}
+
+export interface PgfTreasuryResponse {
+    address: string;
+    balance: string;
 }
 
 export interface TokenPrice {
@@ -325,5 +341,15 @@ export async function fetchIbcTxSeries(
 
 export async function fetchMaspTxCount(): Promise<MaspTxCountResponse> {
     const { data } = await apiClient.get(`${apiUrl}/api/v1/masp/count`);
+    return data;
+}
+
+export async function fetchPosParams(): Promise<PosParams> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/pos/params`);
+    return data;
+}
+
+export async function fetchPgfTreasury(): Promise<PgfTreasuryResponse> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/pgf/treasury`);
     return data;
 }
