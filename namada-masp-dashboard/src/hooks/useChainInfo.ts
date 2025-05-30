@@ -113,7 +113,7 @@ const calculateTotalShieldedAssets = (
         );
         const exponent =
             metadata?.denom_units?.find((unit) => unit.denom === metadata.display)
-                ?.exponent ?? null;
+                ?.exponent ?? 6;
         if (!metadata?.coingecko_id || !exponent) {
             return total;
         }
