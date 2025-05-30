@@ -74,6 +74,19 @@ function AssetRow({
     const rawCurrentMasp = maspBalances.balances.current;
     const denomCurrentMasp = denomAmount(rawCurrentMasp, 6);
     const { data: rewardTokens } = useRewardTokens();
+    // Uncomment for testing prior to rewards being enabled
+    // const rewardTokens = {
+    //     rewardTokens: [
+    //         {
+    //             name: token.symbol,
+    //             address: token.address,
+    //             max_reward_rate: 0.05,
+    //             kp_gain: 0.1,
+    //             kd_gain: 0.1,
+    //             locked_amount_target: 1000000
+    //         }
+    //     ]
+    // };
 
     const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
         return rewardToken.address === token.address;
