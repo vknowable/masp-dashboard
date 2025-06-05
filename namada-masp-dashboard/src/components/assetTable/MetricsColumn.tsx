@@ -34,9 +34,9 @@ function MetricsColumn({
             return (
                 <>
                     <div className="flex-1">Target MASP Amt.</div>
-                    <div className="flex-1">24h Rewards</div>
+                    <div className="flex-1">Last 24h Rewards</div>
                     <div className="w-[150px] flex justify-center">
-                        Est. Rewards Rate
+                        Est. Next Rewards
                     </div>
                 </>
             );

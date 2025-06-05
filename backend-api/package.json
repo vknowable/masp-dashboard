@@ -6,7 +6,8 @@
     "main": "src/app.js",
     "scripts": {
         "start": "node src/app.js",
-        "dev": "NODE_ENV=development nodemon src/app.js"
+        "dev": "NODE_ENV=development nodemon src/app.js",
+        "postinstall": "patch-package"
     },
     "keywords": [],
     "author": "",
@@ -20,5 +21,9 @@
         "express-rate-limit": "^7.5.0",
         "masp_dashboard_wasm": "file:../pkg",
         "pg": "^8.14.1"
+    },
+    "devDependencies": {
+        "patch-package": "^8.0.0",
+        "postinstall-postinstall": "^2.1.0"
     }
 }

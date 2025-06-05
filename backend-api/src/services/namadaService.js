@@ -4,6 +4,11 @@ import { wasmService } from "./wasmService.js";
 
 export const pgfAddress = "tnam1pgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkhgajr"
 export const MASP_ADDRESS = "tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah";
+// needed to sync shielded context
+export const DUMMY_VIEWING_KEY = {
+    key: "zvknam1qvde8lfyqqqqpqryctpy3fkrlfq77g90mupqgxfkjgdcr7633llu8muvj2nys386kfpnh730szzzjda2ewcnlplcns5egsggcvk7dxs2mfme73se4pydcalm7y4rqaqtktjawwmwywlxst0d4f77gkz56st2lgz4lc2u5mvrdnmhnrpgyk9jg5gef97u6fjerp2axsfpyrryr8f6l5ukwnmxyuhtk2evs4cl2d99tka4p78nredyulukwkw5ly0eluht984a995272gudulkf",
+    birthday: 0
+}
 
 class NamadaService {
     constructor() {
@@ -13,9 +18,17 @@ class NamadaService {
         this.maspEpoch = null;
         this.maspInflation = [];
         this.pgfBalance = null;
-        this.startUpdates();
-        // Initialize WASM module
-        wasmService.init().catch(console.error);
+        this.simulatedRewards = null;
+
+        // Initialize WASM module first, then start updates
+        wasmService.init()
+            .then(() => {
+                console.log("WASM initialized, starting updates");
+                this.startUpdates();
+            })
+            .catch(error => {
+                console.error("Failed to initialize WASM:", error);
+            });
     }
 
     async delay(ms) {
@@ -390,18 +403,107 @@ class NamadaService {
         }
     }
 
+    async fetchSimulatedRewards() {
+        console.log("Starting fetchSimulatedRewards");
+        return this.queryWithRetry(async () => {
+            try {
+                if (!config.chainId) {
+                    console.error("Chain ID not configured in config");
+                    throw new Error("Chain ID not configured");
+                }
+                console.log("Using chain ID:", config.chainId);
+
+                // First sync the shielded context with empty viewing keys
+                console.log("Attempting to sync shielded context...");
+                try {
+                    await wasmService.getNamadaSdk().rpc.shieldedSync([DUMMY_VIEWING_KEY], config.chainId);
+                    console.log("Shielded context synced successfully");
+                } catch (syncError) {
+                    console.error("Failed to sync shielded context:", syncError);
+                    throw syncError;
+                }
+
+                console.log("Fetching asset list...");
+                const assets = await this.fetchAssetList();
+                if (!assets || assets.length === 0) {
+                    console.log('No assets available for simulated rewards');
+                    return null;
+                }
+                console.log(`Found ${assets.length} assets to process`);
+
+                const rewards = [];
+                for (const asset of assets) {
+                    try {
+                        console.log(`Processing asset: ${asset.address}`);
+                        console.log(config.chainId);
+                        // Simulate rewards for 1 token as a baseline
+                        console.log(`Simulating rewards for ${asset.address}...`);
+                        const simulatedAmount = await wasmService.getNamadaSdk().rpc.simulateShieldedRewards(
+                            config.chainId,
+                            asset.address,
+                            "1"
+                        );
+                        console.log(`Simulation result for ${asset.address}:`, simulatedAmount.toString());
+
+                        rewards.push({
+                            token_address: asset.address,
+                            raw_amount: simulatedAmount.toString()
+                        });
+
+                        // Add delay between assets
+                        console.log(`Waiting 1 second before next asset...`);
+                        await this.delay(1000);
+                    } catch (error) {
+                        console.error(`Simulated rewards query failed for ${asset.address}:`, error);
+                        console.error("Error details:", {
+                            message: error.message,
+                            stack: error.stack
+                        });
+                        rewards.push({
+                            token_address: asset.address,
+                            raw_amount: "0"
+                        });
+                    }
+                }
+
+                const result = {
+                    timestamp: Date.now(),
+                    rewards: rewards
+                };
+
+                console.log("Completed fetchSimulatedRewards with results:", {
+                    timestamp: result.timestamp,
+                    rewardCount: rewards.length
+                });
+
+                this.simulatedRewards = result;
+                return result;
+            } catch (error) {
+                console.error("Top level error in fetchSimulatedRewards:", error);
+                console.error("Error details:", {
+                    message: error.message,
+                    stack: error.stack
+                });
+                return null;
+            }
+        });
+    }
+
     startUpdates() {
-        const refreshMillis = 60000; // 60 seconds
+        const refreshMillis = config.refreshSecs * 1000;
         setInterval(() => this.fetchAllTokenSupplies(), refreshMillis);
         setInterval(() => this.fetchRewardTokens(), refreshMillis);
         setInterval(() => this.fetchTotalRewards(), refreshMillis);
         setInterval(() => this.fetchMaspEpoch(), refreshMillis);
         setInterval(() => this.fetchMaspInflation(), refreshMillis);
+        setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
+
         this.fetchAllTokenSupplies(); // Initial fetch
         this.fetchRewardTokens(); // Initial fetch
         this.fetchTotalRewards(); // Initial fetch
         this.fetchMaspEpoch(); // Initial fetch
         this.fetchMaspInflation(); // Initial fetch
+        this.fetchSimulatedRewards(); // Initial fetch
     }
 
     getTokenSupplies() {
@@ -426,6 +528,10 @@ class NamadaService {
 
     getPgfBalance() {
         return this.pgfBalance;
+    }
+
+    getSimulatedRewards() {
+        return this.simulatedRewards;
     }
 
     async fetchPosParams() {

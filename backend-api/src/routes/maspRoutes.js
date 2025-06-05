@@ -226,4 +226,17 @@ router.get('/count', async (req, res) => {
     }
 });
 
+router.get("/simulated_rewards", async (req, res) => {
+    try {
+        const simulatedRewards = namadaService.getSimulatedRewards();
+        if (!simulatedRewards) {
+            return res.status(404).json({ error: "Simulated rewards data not available" });
+        }
+        res.json(simulatedRewards);
+    } catch (error) {
+        console.error("Error fetching simulated rewards:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router; 

@@ -38,20 +38,20 @@ function MetricsRow({
     viewMode,
     sortedAssets,
 }: MetricsRowProps) {
-    const { data: rewardTokens } = useRewardTokens();
+    // const { data: rewardTokens } = useRewardTokens();
     // Uncomment for testing prior to rewards being enabled
-    // const rewardTokens = {
-    //     rewardTokens: [
-    //         {
-    //             name: token.symbol,
-    //             address: token.address,
-    //             max_reward_rate: 0.05,
-    //             kp_gain: 0.1,
-    //             kd_gain: 0.1,
-    //             locked_amount_target: 250000000000
-    //         }
-    //     ]
-    // };
+    const rewardTokens = {
+        rewardTokens: [
+            {
+                name: token.symbol,
+                address: token.address,
+                max_reward_rate: 0.05,
+                kp_gain: 0.1,
+                kd_gain: 0.1,
+                locked_amount_target: 250000000000
+            }
+        ]
+    };
     const { data: tokenSupplies } = useTokenSupplies();
     const { data: tokenPrices } = useTokenPrices();
     const { data: lastInflation } = useLastInflation();
