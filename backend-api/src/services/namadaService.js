@@ -1,6 +1,7 @@
 import axios from "axios";
 import { config } from "../config.js";
 import { wasmService } from "./wasmService.js";
+import { Pool } from 'pg';
 
 export const pgfAddress = "tnam1pgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkhgajr"
 export const MASP_ADDRESS = "tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah";
@@ -19,6 +20,23 @@ class NamadaService {
         this.maspInflation = [];
         this.pgfBalance = null;
         this.simulatedRewards = null;
+        this.chainStatistics = { transactionCount: 0, uniqueAddressCount: 0 }; // Initialize chain statistics
+
+        // Initialize Database Pool if not in mock mode
+        if (!config.dbMockMode) {
+            this.pool = new Pool({
+                user: config.dbUser,
+                host: config.dbHost,
+                database: config.dbName,
+                password: config.dbPassword,
+                port: config.dbPort,
+            });
+
+            this.pool.on('error', (err, client) => {
+                console.error('Unexpected error on idle client', err);
+                process.exit(-1);
+            });
+        }
 
         // Initialize WASM module first, then start updates
         wasmService.init()
@@ -489,6 +507,36 @@ class NamadaService {
         });
     }
 
+    async fetchChainStatistics() {
+        console.log("Fetching chain statistics");
+        if (config.dbMockMode) {
+            console.log("DB Mock Mode: Updating with dummy chain statistics");
+            this.chainStatistics = {
+                transactionCount: 12345, // Dummy transaction count
+                uniqueAddressCount: 6789   // Dummy unique address count
+            };
+            return; // Exit early for mock mode
+        }
+
+        if (!this.pool) {
+            console.error("Database pool is not initialized. Cannot fetch chain statistics.");
+            return;
+        }
+
+        try {
+            const txCountResult = await this.pool.query('SELECT COUNT(*) AS tx_count FROM public.inner_transactions');
+            const uniqueAddressCountResult = await this.pool.query('SELECT COUNT(*) AS address_count FROM public.balances');
+
+            const transactionCount = parseInt(txCountResult.rows[0].tx_count, 10);
+            const uniqueAddressCount = parseInt(uniqueAddressCountResult.rows[0].address_count, 10);
+
+            this.chainStatistics = { transactionCount, uniqueAddressCount };
+            console.log("Chain statistics updated:", this.chainStatistics);
+        } catch (error) {
+            console.error("Error fetching chain statistics for caching:", error);
+        }
+    }
+
     startUpdates() {
         const refreshMillis = config.refreshSecs * 1000;
         setInterval(() => this.fetchAllTokenSupplies(), refreshMillis);
@@ -497,6 +545,7 @@ class NamadaService {
         setInterval(() => this.fetchMaspEpoch(), refreshMillis);
         setInterval(() => this.fetchMaspInflation(), refreshMillis);
         setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
+        setInterval(() => this.fetchChainStatistics(), refreshMillis); // Add chain statistics to periodic updates
 
         this.fetchAllTokenSupplies(); // Initial fetch
         this.fetchRewardTokens(); // Initial fetch
@@ -504,6 +553,7 @@ class NamadaService {
         this.fetchMaspEpoch(); // Initial fetch
         this.fetchMaspInflation(); // Initial fetch
         this.fetchSimulatedRewards(); // Initial fetch
+        this.fetchChainStatistics(); // Initial fetch for chain statistics
     }
 
     getTokenSupplies() {
@@ -532,6 +582,11 @@ class NamadaService {
 
     getSimulatedRewards() {
         return this.simulatedRewards;
+    }
+
+    // Synchronous getter for cached chain statistics
+    getChainStatistics() {
+        return this.chainStatistics;
     }
 
     async fetchPosParams() {

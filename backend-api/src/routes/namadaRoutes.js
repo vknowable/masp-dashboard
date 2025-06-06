@@ -67,4 +67,22 @@ router.get('/masp/inflation', async (req, res) => {
     }
 });
 
+// Get transaction count and unique addresses from cache
+router.get('/api/v1/tx/count', (req, res) => {
+    try {
+        const stats = namadaService.getChainStatistics();
+
+        res.json({
+            timestamp: new Date().toISOString(),
+            count: stats.transactionCount,
+            unique_addresses: stats.uniqueAddressCount
+        });
+    } catch (error) {
+        console.error("Error retrieving cached chain statistics:", error);
+        res.status(500).json({
+            error: "Internal server error while retrieving chain statistics"
+        });
+    }
+});
+
 export default router; 
