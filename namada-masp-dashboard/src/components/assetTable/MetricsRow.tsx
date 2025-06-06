@@ -1,5 +1,6 @@
 import { TransformedTokenAmount } from "../../api/chain";
 import { useRewardTokens, useLastInflation } from "../../hooks/useMaspData";
+import { useSimulatedRewards } from "../../hooks/useSimulatedRewards";
 import { RegistryAsset } from "../../types/chainRegistry";
 import { denomAmount, formatNumber, formatPercentage } from "../../utils/numbers";
 import NetChangeSpans from "./NetChangeSpans";
@@ -52,6 +53,8 @@ function MetricsRow({
             }
         ]
     };
+
+    const { data: simulatedRewards } = useSimulatedRewards();
     const { data: tokenSupplies } = useTokenSupplies();
     const { data: tokenPrices } = useTokenPrices();
     const { data: lastInflation } = useLastInflation();
@@ -85,6 +88,12 @@ function MetricsRow({
     const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
         return rewardToken.address === token.address;
     });
+
+    // Find simulated reward for this token
+    const simulatedReward = simulatedRewards?.rewards.find(
+        (reward) => reward.token_address === token.address
+    );
+
     const ssrEligible = (tokenRewardRate?.max_reward_rate ?? 0) > 0 ? true : false;
     const borderClass = ssrEligible ? "border border-[#FFFF00] border-l-0 " : "";
 
@@ -93,7 +102,7 @@ function MetricsRow({
         const decimals = token.denom_units.find(unit => unit.denom === token.display)?.exponent ?? 6;
         const denomTargetAmount = rawTargetAmount === 0 ? null : denomAmount(rawTargetAmount, decimals);
 
-        const percentageOfTarget = denomTargetAmount && denomCurrentMasp
+        const percentageOfTarget = denomTargetAmount && denomCurrentMasp !== null
             ? (denomCurrentMasp / denomTargetAmount) * 100
             : null;
 
@@ -202,11 +211,24 @@ function MetricsRow({
                 </div>
 
                 {/* Rewards Rate Column */}
-                <div className="w-[150px] text-[#FFFF00] flex items-center justify-center">
+                <div className="w-[150px] text-[#FFFF00] flex flex-col items-center justify-center">
                     {ssrEligible ? (
-                        tokenRewardRate?.max_reward_rate !== undefined
-                            ? `${formatPercentage(tokenRewardRate.max_reward_rate * 100)}`
-                            : "--"
+                        simulatedReward?.raw_amount !== undefined ? (
+                            <>
+                                {/* Total estimated rewards in yellow */}
+                                <div className="text-[#FFFF00]">
+                                    {denomCurrentMasp !== null && denomCurrentMasp !== undefined
+                                        ? formatNumber(denomCurrentMasp * (denomAmount(simulatedReward.raw_amount, 6) ?? 0), 2)
+                                        : "--"} NAM
+                                </div>
+                                {/* Per-token rate in smaller grey text */}
+                                <div className="asset-amt-usd-text">
+                                    {formatNumber(denomAmount(simulatedReward.raw_amount, 6) ?? 0, 2)} <span className="text-xs">NAM per {token.symbol}</span>
+                                </div>
+                            </>
+                        ) : (
+                            "--"
+                        )
                     ) : (
                         "N/A"
                     )}

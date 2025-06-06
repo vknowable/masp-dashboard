@@ -14,6 +14,7 @@ export const DUMMY_VIEWING_KEY = {
 
 class NamadaService {
     constructor() {
+        this.currentHeight = 0;
         this.tokenSupplies = [];
         this.rewardTokens = null;
         this.totalRewards = null;
@@ -141,7 +142,10 @@ class NamadaService {
                     // Decode the ABCI value using WASM
                     const decodedBalance = wasmService.decodeAbciAmount(balanceResponse.data.result.response.value);
                     // Store the PGF balance
-                    this.pgfBalance = decodedBalance.toString();
+                    if (parseInt(height) === parseInt(this.currentHeight)) {
+                        console.log("Setting pgf balance:", decodedBalance);
+                        this.pgfBalance = decodedBalance.toString();
+                    }
                     return (decodedSupply - decodedBalance).toString();
                 }
 
@@ -162,6 +166,7 @@ class NamadaService {
             if (!currentHeight) {
                 throw new Error("Failed to fetch latest block height");
             }
+            this.currentHeight = currentHeight;
 
             // Calculate historical heights
             const heights = this.calculateHistoricalHeights(currentHeight);

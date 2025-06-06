@@ -67,6 +67,16 @@ export interface TxCountResponse {
     unique_addresses: number;
 }
 
+export interface SimulatedRewardsResponse {
+    timestamp: number;
+    rewards: SimulatedReward[];
+}
+
+export interface SimulatedReward {
+    token_address: string;
+    raw_amount: string;
+}
+
 export interface TokenPrice {
     id: string;
     usd: number;
@@ -294,6 +304,11 @@ export async function fetchMaspEpoch(): Promise<MaspEpochResponse> {
 
 export async function fetchTotalRewards(): Promise<MaspTotalRewardsResponse> {
     const { data } = await apiClient.get(`${apiUrl}/api/v1/masp/total_rewards`);
+    return data;
+}
+
+export async function fetchSimulatedRewards(): Promise<SimulatedRewardsResponse> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/masp/simulated_rewards`);
     return data;
 }
 
