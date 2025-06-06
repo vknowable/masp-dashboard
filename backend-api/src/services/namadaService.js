@@ -1,7 +1,8 @@
 import axios from "axios";
 import { config } from "../config.js";
 import { wasmService } from "./wasmService.js";
-import { Pool } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 export const pgfAddress = "tnam1pgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkhgajr"
 export const MASP_ADDRESS = "tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah";
