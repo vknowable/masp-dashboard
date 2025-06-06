@@ -37,6 +37,40 @@ function ShieldedRewardsContainer() {
         (item) => item.address === NATIVE_NAM_ADDRESS
     );
 
+    // Find native NAM token from registry assets where display == 'nam'
+    const namToken = assets?.find((asset) => asset.display.toLowerCase() === 'nam');
+
+    // Calculate total shielded inflation rate
+    const calculateTotalShieldedInflationRate = (): string | null => {
+        if (!lastInflation?.data || !namToken || !tokenSupplies?.supplies) {
+            return null;
+        }
+
+        // Sum all last_inflation values across all tokens (shielded rewards inflation)
+        const totalShieldedInflation = lastInflation.data.reduce((sum, tokenData) => {
+            if (!tokenData.last_inflation) return sum;
+            return sum + parseFloat(tokenData.last_inflation);
+        }, 0);
+
+        // Get native token total supply
+        const namSupplyData = tokenSupplies.supplies.find(
+            (supply) => supply.address === namToken.address
+        );
+
+        if (!namSupplyData?.supplies.current) {
+            return null;
+        }
+
+        const namTotalSupply = namSupplyData.supplies.current;
+
+        // Calculate: (total_shielded_inflation / native_total_supply) * 365 * 100
+        const annualizedShieldedInflationRate = (totalShieldedInflation / namTotalSupply) * 365 * 100;
+
+        return annualizedShieldedInflationRate.toFixed(2);
+    };
+
+    const totalShieldedInflationRate = calculateTotalShieldedInflationRate();
+
     const totalShieldedAssets = metrics.totalShieldedAssets;
     const { current, changes } = totalShieldedAssets ?? {};
 
@@ -121,8 +155,8 @@ function ShieldedRewardsContainer() {
                         bottomText={`${formatNumber(denomAmount(metrics.totalRewardsMinted))} NAM`}
                     />
                     <InfoCardSecondary
-                        topText="Total Inflation Rate"
-                        bottomText={nativeInflationData ? `${nativeInflationData.last_inflation}%` : "--"}
+                        topText="Total Shielded Inflation Rate"
+                        bottomText={totalShieldedInflationRate ? `${totalShieldedInflationRate}%` : "--"}
                     />
                     <InfoCardSecondary
                         topText="MASP Transactions to Date"
