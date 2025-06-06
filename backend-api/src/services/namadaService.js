@@ -461,7 +461,7 @@ class NamadaService {
                         const simulatedAmount = await wasmService.getNamadaSdk().rpc.simulateShieldedRewards(
                             config.chainId,
                             asset.address,
-                            "1"
+                            "1000000"
                         );
                         console.log(`Simulation result for ${asset.address}:`, simulatedAmount.toString());
 
