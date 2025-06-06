@@ -685,8 +685,8 @@ class DbService {
                     memo TEXT,
                     token_address VARCHAR(45) NOT NULL,
                     raw_amount NUMERIC(78, 0) NOT NULL,
-                    source VARCHAR(64) NOT NULL,
-                    target VARCHAR(64) NOT NULL,
+                    source VARCHAR(150) NOT NULL,
+                    target VARCHAR(150) NOT NULL,
                     direction VARCHAR(10) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
