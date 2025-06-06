@@ -68,7 +68,7 @@ router.get('/masp/inflation', async (req, res) => {
 });
 
 // Get transaction count and unique addresses from cache
-router.get('/api/v1/tx/count', (req, res) => {
+router.get('/tx/count', (req, res) => {
     try {
         const stats = namadaService.getChainStatistics();
 

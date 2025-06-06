@@ -61,6 +61,12 @@ export interface PgfTreasuryResponse {
     balance: string;
 }
 
+export interface TxCountResponse {
+    timestamp: string;
+    count: number;
+    unique_addresses: number;
+}
+
 export interface TokenPrice {
     id: string;
     usd: number;
@@ -351,5 +357,10 @@ export async function fetchPosParams(): Promise<PosParams> {
 
 export async function fetchPgfTreasury(): Promise<PgfTreasuryResponse> {
     const { data } = await apiClient.get(`${apiUrl}/api/v1/pgf/treasury`);
+    return data;
+}
+
+export async function fetchTxCount(): Promise<TxCountResponse> {
+    const { data } = await apiClient.get(`${apiUrl}/api/v1/tx/count`);
     return data;
 }

@@ -5,6 +5,7 @@ import {
     fetchVotingPower,
     fetchLatestEpoch,
     fetchTotalRewards,
+    fetchTxCount,
     TransformedTokenAmounts,
     TokenPricesResponse,
 } from "../api/chain";
@@ -39,6 +40,8 @@ export interface ChainMetrics {
     rewardsPerEpoch: number | null;
     epoch: string | null;
     maspTxCount: number | null;
+    txCount: number | null;
+    addressCount: number | null;
     chainId: string | null;
 }
 
@@ -215,6 +218,15 @@ export function useChainInfo(): ChainInfo {
         staleTime: 60000, // Consider fresh for 1 minute
     });
 
+    // Get transaction/address count
+    const { data: txCount, isLoading: isLoadingTxCount } = useQuery({
+        queryKey: ["txCount"],
+        queryFn: fetchTxCount,
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+        staleTime: 60000, // Consider fresh for 1 minute
+    });
+
     // Calculate block time from the last 5 blocks
     // const blockTime = blockchainInfo?.result.block_metas
     //     ? calculateAverageBlockTime(blockchainInfo.result.block_metas)
@@ -260,6 +272,8 @@ export function useChainInfo(): ChainInfo {
             rewardsPerEpoch,
             epoch: epochInfo?.epoch ?? null,
             maspTxCount: maspTxs,
+            txCount: txCount?.count ?? null,
+            addressCount: txCount?.unique_addresses ?? null,
             chainId: parameters?.chainId ?? null,
         },
         isLoading: isLoadingParams || isLoadingLastInflation,
