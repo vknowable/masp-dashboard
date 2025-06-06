@@ -435,6 +435,7 @@ class NamadaService {
                 // First sync the shielded context with empty viewing keys
                 console.log("Attempting to sync shielded context...");
                 try {
+                    await wasmService.ensureRequiredFiles();
                     await wasmService.getNamadaSdk().rpc.shieldedSync([DUMMY_VIEWING_KEY], config.chainId);
                     console.log("Shielded context synced successfully");
                 } catch (syncError) {

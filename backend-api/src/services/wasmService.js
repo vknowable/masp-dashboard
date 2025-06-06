@@ -16,6 +16,19 @@ class WasmService {
         this.initialized = false;
     }
 
+    async ensureRequiredFiles() {
+        const dataDir = config.dataDir;
+        const requiredFiles = ['shielded.dat', 'shielded_sync.cache', 'speculative_shielded.dat'];
+        for (const fileName of requiredFiles) {
+            const filePath = path.join(dataDir, fileName);
+            try {
+                await fs.promises.access(filePath);
+            } catch (error) {
+                await fs.promises.writeFile(filePath, '');
+            }
+        }
+    }
+
     async init() {
         if (this.initialized) return;
 
@@ -30,21 +43,9 @@ class WasmService {
             console.log('namadaChainId', config.chainId);
             console.log('maspIndexerUrl', config.maspIndexerUrl);
 
-            const dataDir = config.dataDir;
+            await this.ensureRequiredFiles();
 
-            const requiredFiles = ['shielded.dat', 'shielded_sync.cache', 'speculative_shielded.dat'];
-            for (const fileName of requiredFiles) {
-                const filePath = path.join(dataDir, fileName);
-                try {
-                    await fs.promises.access(filePath);
-                    // console.log(`${fileName} exists.`);
-                } catch (error) {
-                    // File does not exist, create it
-                    // console.log(`${fileName} does not exist, creating...`);
-                    await fs.promises.writeFile(filePath, '');
-                    // console.log(`${fileName} created.`);
-                }
-            }
+            const dataDir = config.dataDir;
 
             // Initialize SDK with proper storage path
             this.namadaSdk = getSdk(
