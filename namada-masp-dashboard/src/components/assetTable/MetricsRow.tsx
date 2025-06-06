@@ -216,10 +216,32 @@ function MetricsRow({
                         simulatedReward?.raw_amount !== undefined ? (
                             <>
                                 {/* Total estimated rewards in yellow */}
-                                <div className="text-[#FFFF00]">
-                                    {denomCurrentMasp !== null && denomCurrentMasp !== undefined
-                                        ? formatNumber(denomCurrentMasp * (denomAmount(simulatedReward.raw_amount, 6) ?? 0), 2)
-                                        : "--"} NAM
+                                <div className="text-[#FFFF00] flex items-center gap-2">
+                                    <span>
+                                        {denomCurrentMasp !== null && denomCurrentMasp !== undefined
+                                            ? formatNumber(denomCurrentMasp * (denomAmount(simulatedReward.raw_amount, 6) ?? 0), 2)
+                                            : "--"} NAM
+                                    </span>
+                                    <a
+                                        href="https://rewardsim.luminara.icu"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[#FFFF00] hover:text-[#CCCC00] transition-colors duration-200 relative group"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                            className="w-4 h-4"
+                                        >
+                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                                        </svg>
+                                        {/* Custom tooltip with fast appearance */}
+                                        <div className="absolute right-0 bottom-full mb-1 px-2 py-1 bg-black text-white text-xs rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-100 delay-100 z-50">
+                                            Open Reward Simulator
+                                        </div>
+                                    </a>
                                 </div>
                                 {/* Per-token rate in smaller grey text */}
                                 <div className="asset-amt-usd-text">
