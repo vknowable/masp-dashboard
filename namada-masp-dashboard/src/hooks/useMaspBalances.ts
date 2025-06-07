@@ -34,21 +34,23 @@ export function useMaspBalances() {
     return useQuery<TransformedTokenAmounts, AxiosError>({
         queryKey: ["maspBalances"],
         queryFn: async () => {
-            const [currentBalances, dayAgoBalances, weekAgoBalances, monthAgoBalances] = await Promise.all([
-                fetchMaspBalancesAtTime(new Date().toISOString()),
+            const [currentBalancesResponse, dayAgoBalances, weekAgoBalances, monthAgoBalances] = await Promise.all([
+                fetchMaspBalances(),
                 fetchMaspBalancesAtTime(getTimestampForDaysAgo(1)),
                 fetchMaspBalancesAtTime(getTimestampForDaysAgo(7)),
                 fetchMaspBalancesAtTime(getTimestampForDaysAgo(30)),
             ]);
 
+            const currentBalances = currentBalancesResponse.balances;
+
             return {
                 balances: currentBalances.map((balance) => {
-                    const currentBalance = Number(balance.raw_amount);
+                    const currentBalance = Number(balance.minDenomAmount);
 
                     // Find historical balances for this token
-                    const dayAgoBalance = dayAgoBalances.find(b => b.token === balance.token)?.raw_amount;
-                    const weekAgoBalance = weekAgoBalances.find(b => b.token === balance.token)?.raw_amount;
-                    const monthAgoBalance = monthAgoBalances.find(b => b.token === balance.token)?.raw_amount;
+                    const dayAgoBalance = dayAgoBalances.find(b => b.token === balance.tokenAddress)?.raw_amount;
+                    const weekAgoBalance = weekAgoBalances.find(b => b.token === balance.tokenAddress)?.raw_amount;
+                    const monthAgoBalance = monthAgoBalances.find(b => b.token === balance.tokenAddress)?.raw_amount;
 
                     // Calculate changes
                     const changes = {
@@ -59,7 +61,7 @@ export function useMaspBalances() {
                     };
 
                     return {
-                        tokenAddress: balance.token,
+                        tokenAddress: balance.tokenAddress,
                         balances: {
                             current: currentBalance,
                             "1dAgo": dayAgoBalance ? Number(dayAgoBalance) : null,
