@@ -57,6 +57,22 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
             .join(" ");
     };
 
+    // Function to truncate address for mobile views
+    const truncateAddress = (address: string) => {
+        if (address.length <= 12) return address;
+        return `${address.slice(0, 8)}...${address.slice(-4)}`;
+    };
+
+    // Function to format trace with line breaks for mobile
+    const formatTraceForMobile = (trace: string) => {
+        const parts = trace.split('/');
+        return parts.map((part, index) => (
+            <div key={index}>
+                {part}{index < parts.length - 1 ? '/' : ''}
+            </div>
+        ));
+    };
+
     return (
         <div className="bg-[#010101] rounded-[5px] p-6">
             <div className="space-y-8">
@@ -151,10 +167,20 @@ function IbcChannelCard({ channel }: IbcChannelCardProps) {
                             <ul className="space-y-1 text-[#B9B9B9]">
                                 {channel.associatedAssets.map((asset, index) => (
                                     <li key={index} className="flex flex-col">
-                                        <div className="text-white font-light tracking-[0.2px] flex gap-2 items-center mt-1">
-                                            <div className="text-white font-normal">{asset.symbol}:</div>
-                                            <div className="text-[#B9B9B9]">{asset.trace}</div>
-                                            <div className="text-[#B9B9B9] break-all">({asset.address})</div>
+                                        <div className="text-white font-light tracking-[0.2px] flex items-center mt-1">
+                                            <div className="text-white font-normal flex-shrink-0 w-20">{asset.symbol}:</div>
+                                            <div className="flex gap-2 items-center flex-1 justify-between">
+                                                <div className="text-[#B9B9B9]">
+                                                    <span className="hidden sm:inline">{asset.trace}</span>
+                                                    <div className="sm:hidden">
+                                                        {formatTraceForMobile(asset.trace)}
+                                                    </div>
+                                                </div>
+                                                <div className="text-[#B9B9B9]">
+                                                    (<span className="hidden xl:inline break-all">{asset.address}</span>
+                                                    <span className="xl:hidden">{truncateAddress(asset.address)}</span>)
+                                                </div>
+                                            </div>
                                         </div>
                                     </li>
                                 ))}

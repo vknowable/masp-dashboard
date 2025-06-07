@@ -37,31 +37,57 @@ function Header() {
         "$ --";
 
     return (
-        <div className="flex items-center justify-start bg-inherit gap-4 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-start bg-inherit gap-3 sm:gap-4 p-3 sm:p-4">
             <img
                 src="/images/masp.png"
                 alt="Masp logo"
-                className="w-[55px] h-[55px] rounded-lg"
+                className="hidden sm:block w-[55px] h-[55px] rounded-lg flex-shrink-0"
             />
-            <div className="flex flex-col">
-                <div className="flex items-baseline gap-6">
-                    <h1 className="font-xl text-[24px] leading-[2.8rem] tracking-[0.1px] text-black dark:text-[#FFFF00]">
+            <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6">
+                    <h1 className="font-xl text-xl sm:text-[24px] leading-tight sm:leading-[2.8rem] tracking-[0.1px] text-black dark:text-[#FFFF00]">
                         {"Namada Metrics".toUpperCase()}
                     </h1>
-                    <span className="text-sm text-white/50">
+                    <span className="text-xs sm:text-sm text-white/50 truncate">
                         {metrics.chainId || "Loading..."}
                     </span>
                 </div>
-                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300">
-                    <span>
+
+                {/* Mobile metrics - stacked vertically */}
+                <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-300 sm:hidden mt-2">
+                    <div className="flex justify-between">
+                        <span className="text-white/70">Block Height:</span>
+                        <span>{metrics.blockHeight?.toLocaleString() || "Loading..."}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-white/70">Epoch:</span>
+                        <span>{metrics.epoch || "Loading..."}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-white/70">NAM Supply:</span>
+                        <span className="truncate ml-2">{formattedSupply}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-white/70">PGF Treasury:</span>
+                        <span className="truncate ml-2">{formattedPgfBalance}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-white/70">NAM Price:</span>
+                        <span>{formattedPrice}</span>
+                    </div>
+                </div>
+
+                {/* Desktop metrics - horizontal layout */}
+                <div className="hidden sm:flex gap-4 text-sm text-gray-600 dark:text-gray-300 flex-wrap">
+                    <span className="whitespace-nowrap">
                         Block Height: {metrics.blockHeight?.toLocaleString() || "Loading..."} / Epoch: {metrics.epoch || "Loading..."}
                     </span>
                     <span className="text-white/50">|</span>
-                    <span>NAM Supply: {formattedSupply}</span>
+                    <span className="whitespace-nowrap">NAM Supply: {formattedSupply}</span>
                     <span className="text-white/50">|</span>
-                    <span>PGF Treasury: {formattedPgfBalance}</span>
+                    <span className="whitespace-nowrap">PGF Treasury: {formattedPgfBalance}</span>
                     <span className="text-white/50">|</span>
-                    <span>NAM Price: {formattedPrice}</span>
+                    <span className="whitespace-nowrap">NAM Price: {formattedPrice}</span>
                 </div>
             </div>
             {/* <button className="bg-gray-300 text-white px-4 py-2 rounded-md" disabled={true}>
