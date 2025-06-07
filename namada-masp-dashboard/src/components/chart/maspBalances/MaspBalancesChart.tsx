@@ -1,5 +1,5 @@
 import ReactECharts from "echarts-for-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { RegistryAsset } from "../../../types/chainRegistry";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
 import { useMaspBalanceSeries } from "../../../hooks/useMaspBalanceSeries";
@@ -61,7 +61,14 @@ export default function MaspBalancesChart({
     const { data: tokenPrices } = useTokenPrices();
     const { data: balanceSeriesResponse } = useMaspBalanceSeries(startTime, endTime, resolution);
     const chartRef = useRef<any>(null);
-    const [currentTimeIndex, setCurrentTimeIndex] = useState(0);
+    const [currentTimeIndex, setCurrentTimeIndex] = useState<number>(0);
+
+    // Update currentTimeIndex when data becomes available
+    useEffect(() => {
+        if (balanceSeriesResponse?.series?.length) {
+            setCurrentTimeIndex(balanceSeriesResponse.series.length - 1);
+        }
+    }, [balanceSeriesResponse]);
 
     // Define a consistent color palette for both charts
     const colorPalette = useMemo(() => {
@@ -208,7 +215,7 @@ export default function MaspBalancesChart({
     const pieData = useMemo(() => {
         const pieData: PieDataItem[] = Array.from(tokenBalances.entries()).map(([token, balances], index) => {
             const asset = assets.find(a => a.address === token);
-            const value = balances[currentTimeIndex] || 0;
+            const value = balances[currentTimeIndex ?? 0] || 0;
             return {
                 name: asset?.symbol ?? token,
                 value: value,

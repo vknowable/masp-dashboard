@@ -46,7 +46,7 @@ function MetricsRow({
             {
                 name: token.symbol,
                 address: token.address,
-                max_reward_rate: 0.05,
+                max_reward_rate: sortedAssets.indexOf(token) % 3 === 0 ? 0 : 0.05,
                 kp_gain: 0.1,
                 kd_gain: 0.1,
                 locked_amount_target: 250000000000
@@ -218,9 +218,7 @@ function MetricsRow({
                                 {/* Total estimated rewards in yellow */}
                                 <div className="text-[#FFFF00] flex items-center gap-2">
                                     <span>
-                                        {denomCurrentMasp !== null && denomCurrentMasp !== undefined
-                                            ? formatNumber(denomCurrentMasp * (denomAmount(simulatedReward.raw_amount, 6) ?? 0), 2)
-                                            : "--"} NAM
+                                        {denomLastInflation !== null ? formatNumber(denomLastInflation, 2) : "--"} NAM
                                     </span>
                                     <a
                                         href="https://rewardsim.luminara.icu"
@@ -245,14 +243,14 @@ function MetricsRow({
                                 </div>
                                 {/* Per-token rate in smaller grey text */}
                                 <div className="asset-amt-usd-text">
-                                    {formatNumber(denomAmount(simulatedReward.raw_amount, 6) ?? 0, 2)} <span className="text-xs">NAM per {token.symbol}</span>
+                                    {formatNumber(simulatedReward.raw_amount ?? 0, 2)} <span className="text-xs">NAM per {token.symbol}</span>
                                 </div>
                             </>
                         ) : (
                             "--"
                         )
                     ) : (
-                        "N/A"
+                        <div className="asset-amt-text text-[#B9B9B9]">N/A</div>
                     )}
                 </div>
             </div>

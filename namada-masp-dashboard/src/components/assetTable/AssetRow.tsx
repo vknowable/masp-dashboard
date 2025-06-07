@@ -11,6 +11,7 @@ interface AssetRowProps {
     maspBalances: TransformedTokenAmount | null;
     isLoading?: boolean;
     trace?: string;
+    sortedAssets: RegistryAsset[];
 }
 
 function AssetRow({
@@ -19,6 +20,7 @@ function AssetRow({
     maspBalances,
     isLoading,
     trace,
+    sortedAssets,
 }: AssetRowProps) {
     if (isLoading) {
         return (
@@ -80,10 +82,10 @@ function AssetRow({
             {
                 name: token.symbol,
                 address: token.address,
-                max_reward_rate: 0.05,
+                max_reward_rate: sortedAssets.indexOf(token) % 3 === 0 ? 0 : 0.05,
                 kp_gain: 0.1,
                 kd_gain: 0.1,
-                locked_amount_target: 1000000
+                locked_amount_target: 250000000000
             }
         ]
     };

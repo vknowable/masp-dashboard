@@ -66,6 +66,7 @@ function AssetColumn({ sortedAssets, viewMode }: AssetColumnProps) {
                             ) ?? null
                         }
                         isLoading={isLoadingMaspBalances}
+                        sortedAssets={sortedAssets}
                     />
                 ))}
             </div>
