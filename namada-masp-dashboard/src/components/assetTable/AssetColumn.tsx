@@ -47,7 +47,7 @@ function AssetColumn({ sortedAssets, viewMode }: AssetColumnProps) {
             </div>
 
             {/* Asset rows */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4">
                 {sortedAssets.map((token) => (
                     <AssetRow
                         key={token.address}

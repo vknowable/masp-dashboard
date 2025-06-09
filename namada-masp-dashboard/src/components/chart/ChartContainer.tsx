@@ -41,21 +41,21 @@ function ChartContainer() {
                     <CustomCheckbox
                         checked={visibility.maspBalances}
                         onChange={() => toggleChart("maspBalances")}
-                        label="Masp Asset Values"
+                        label="Shielded Pool Asset Values"
                         borderColor="grey"
                         checkColor="white"
                     />
                     <CustomCheckbox
                         checked={visibility.maspAggregates}
                         onChange={() => toggleChart("maspAggregates")}
-                        label="MASP Inflow/Outflow"
+                        label="Shielded Inflow/Outflow"
                         borderColor="grey"
                         checkColor="white"
                     />
                     <CustomCheckbox
                         checked={visibility.maspTxVolume}
                         onChange={() => toggleChart("maspTxVolume")}
-                        label="MASP Tx Volume"
+                        label="Shielded Tx Volume"
                         borderColor="grey"
                         checkColor="white"
                     />

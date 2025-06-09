@@ -33,7 +33,7 @@ function MetricsColumn({
         if (viewMode === 'shielded') {
             return (
                 <>
-                    <div className="flex-1">Target MASP Amt.</div>
+                    <div className="flex-1">Target Shielded Amt.</div>
                     <div className="flex-1">Last 24h Rewards</div>
                     <div className="w-[150px] flex justify-center">
                         Est. Next Rewards
@@ -59,7 +59,7 @@ function MetricsColumn({
                     </div>
                 </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4">
                 {sortedAssets.map((token) => (
                     <MetricsRow
                         key={token.address}

@@ -75,26 +75,26 @@ function AssetRow({
 
     const rawCurrentMasp = maspBalances.balances.current;
     const denomCurrentMasp = denomAmount(rawCurrentMasp, 6);
-    // const { data: rewardTokens } = useRewardTokens();
+    const { data: rewardTokens } = useRewardTokens();
     // Uncomment for testing prior to rewards being enabled
-    const rewardTokens = {
-        rewardTokens: [
-            {
-                name: token.symbol,
-                address: token.address,
-                max_reward_rate: sortedAssets.indexOf(token) % 3 === 0 ? 0 : 0.05,
-                kp_gain: 0.1,
-                kd_gain: 0.1,
-                locked_amount_target: 250000000000
-            }
-        ]
-    };
+    // const rewardTokens = {
+    //     rewardTokens: [
+    //         {
+    //             name: token.symbol,
+    //             address: token.address,
+    //             max_reward_rate: sortedAssets.indexOf(token) % 3 === 0 ? 0 : 0.05,
+    //             kp_gain: 0.1,
+    //             kd_gain: 0.1,
+    //             locked_amount_target: 250000000000
+    //         }
+    //     ]
+    // };
 
     const tokenRewardRate = rewardTokens?.rewardTokens.find((rewardToken) => {
         return rewardToken.address === token.address;
     });
     const ssrEligible = (tokenRewardRate?.max_reward_rate ?? 0) > 0 ? true : false;
-    const borderClass = ssrEligible ? "border border-[#FFFF00] border-r-0 " : "";
+    const borderClass = ssrEligible ? "border border-[#FFFF00]/70 border-r-0 " : "border border-[#FFFFFF]/30 border-r-0 ";
 
     return (
         <div className={`h-[94px] p-4 pr-32 flex gap-12 items-center ${borderClass} bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>

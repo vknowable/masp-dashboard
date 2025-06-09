@@ -145,7 +145,7 @@ export default function MaspAggregatesChartTopBar({
                 <CustomCheckbox
                     checked={showShieldedInflow}
                     onChange={onShieldedInflowToggle}
-                    label="MASP Inflow"
+                    label="Shielded Inflow"
                     borderColor="yellow"
                     checkColor="black"
                     fill="yellow"
@@ -154,7 +154,7 @@ export default function MaspAggregatesChartTopBar({
                 <CustomCheckbox
                     checked={showShieldedOutflow}
                     onChange={onShieldedOutflowToggle}
-                    label="MASP Outflow"
+                    label="Shielded Outflow"
                     borderColor="grey"
                     checkColor="black"
                     fill="grey"

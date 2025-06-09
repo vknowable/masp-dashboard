@@ -10,7 +10,7 @@ function StakingRewardsContainer() {
 
     return (
         <div className="pb-8 pt-4 px-4 mt-8 h-full w-full">
-            <div className="section-heading text-xl md:text-2xl mb-8">Staking Rewards</div>
+            <div className="section-heading text-xl md:text-2xl mb-8">Staking Metrics</div>
             <ErrorBoundary>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <InfoCardSecondary
@@ -18,15 +18,15 @@ function StakingRewardsContainer() {
                         bottomText={metrics.stakingApr ? `${formatPercentage(metrics.stakingApr * 100)}` : "--"}
                     />
                     <InfoCardSecondary
-                        topText="Percent Staked"
+                        topText="NAM Supply Staked"
                         bottomText={metrics.percentStaked ? `${formatPercentage(metrics.percentStaked)}` : "--"}
                     />
                     <InfoCardSecondary
-                        topText="Target"
+                        topText="Staking Target"
                         bottomText={posParams?.owned.target_staked_ratio ? `${formatPercentage(Number(posParams.owned.target_staked_ratio) * 100)}` : "--"}
                     />
                     <InfoCardSecondary
-                        topText="Inflation"
+                        topText="Supply Inflation"
                         bottomText={posParams?.owned.max_inflation_rate ? `${formatPercentage(Number(posParams.owned.max_inflation_rate) * 100)}` : "--"}
                     />
                 </div>

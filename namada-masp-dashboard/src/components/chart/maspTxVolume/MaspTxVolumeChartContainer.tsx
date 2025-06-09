@@ -78,7 +78,7 @@ export default function MaspTxVolumeChartContainer({
     return (
         <div className="flex flex-col gap-4">
             <div className="section-heading text-center text-xl md:text-2xl">
-                MASP Transaction Volume
+                Shielded Transaction Volume
             </div>
 
             <div className="flex items-center gap-4 px-4">

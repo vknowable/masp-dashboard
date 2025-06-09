@@ -18,7 +18,7 @@ function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
                 `}
                 onClick={() => onViewChange("shielded")}
             >
-                Shielded Rewards
+                Shielded Metrics
             </button>
             <button
                 className={`

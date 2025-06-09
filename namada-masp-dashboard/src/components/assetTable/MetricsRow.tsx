@@ -39,20 +39,20 @@ function MetricsRow({
     viewMode,
     sortedAssets,
 }: MetricsRowProps) {
-    // const { data: rewardTokens } = useRewardTokens();
+    const { data: rewardTokens } = useRewardTokens();
     // Uncomment for testing prior to rewards being enabled
-    const rewardTokens = {
-        rewardTokens: [
-            {
-                name: token.symbol,
-                address: token.address,
-                max_reward_rate: sortedAssets.indexOf(token) % 3 === 0 ? 0 : 0.05,
-                kp_gain: 0.1,
-                kd_gain: 0.1,
-                locked_amount_target: 250000000000
-            }
-        ]
-    };
+    // const rewardTokens = {
+    //     rewardTokens: [
+    //         {
+    //             name: token.symbol,
+    //             address: token.address,
+    //             max_reward_rate: sortedAssets.indexOf(token) % 3 === 0 ? 0 : 0.05,
+    //             kp_gain: 0.1,
+    //             kd_gain: 0.1,
+    //             locked_amount_target: 250000000000
+    //         }
+    //     ]
+    // };
 
     const { data: simulatedRewards } = useSimulatedRewards();
     const { data: tokenSupplies } = useTokenSupplies();
@@ -95,7 +95,7 @@ function MetricsRow({
     );
 
     const ssrEligible = (tokenRewardRate?.max_reward_rate ?? 0) > 0 ? true : false;
-    const borderClass = ssrEligible ? "border border-[#FFFF00] border-l-0 " : "";
+    const borderClass = ssrEligible ? "border border-[#FFFF00]/70 border-l-0 " : "border border-[#FFFFFF]/30 border-l-0 ";
 
     if (viewMode === 'shielded') {
         const rawTargetAmount = tokenRewardRate?.locked_amount_target;
@@ -129,6 +129,7 @@ function MetricsRow({
         const inflationData = lastInflation?.data?.find(infl => infl.address === token.address);
         const lastInflationAmount = inflationData?.last_inflation;
         const denomLastInflation = lastInflationAmount ? denomAmount(lastInflationAmount, namDecimals) : null;
+        const rewardPerToken = simulatedReward?.raw_amount ?? 0;
 
         // Get historical inflation data
         const historicalInflation = {
@@ -243,7 +244,7 @@ function MetricsRow({
                                 </div>
                                 {/* Per-token rate in smaller grey text */}
                                 <div className="asset-amt-usd-text">
-                                    {formatNumber(simulatedReward.raw_amount ?? 0, 2)} <span className="text-xs">NAM per {token.symbol}</span>
+                                    {formatNumber(rewardPerToken, 2)} <span className="text-xs">NAM per {token.symbol}</span>
                                 </div>
                             </>
                         ) : (
