@@ -4,11 +4,14 @@ import { TransformedTokenAmount } from "../../api/chain";
 import NetChangeSpans from "./NetChangeSpans";
 import "../../styles/shared.css";
 import { useRewardTokens } from "../../hooks/useMaspData";
+import { AggregatesResponse } from "../../types/token";
+import { useTokenPrices } from "../../hooks/useTokenPrices";
 
 interface AssetRowProps {
     token: RegistryAsset;
     tokenPrice: number | null;
     maspBalances: TransformedTokenAmount | null;
+    maspAggregates?: AggregatesResponse;
     isLoading?: boolean;
     trace?: string;
     sortedAssets: RegistryAsset[];
@@ -18,6 +21,7 @@ function AssetRow({
     token,
     tokenPrice,
     maspBalances,
+    maspAggregates,
     isLoading,
     trace,
     sortedAssets,
@@ -34,7 +38,7 @@ function AssetRow({
 
     if (!maspBalances) {
         return (
-            <div className={`h-[94px] p-4 pr-32 flex gap-12 items-center bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>
+            <div className={`h-[94px] p-4 pr-32 flex items-center bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>
                 {/* Token Column */}
                 <div className="flex items-center space-x-3">
                     {/* Asset Icon with Tooltip */}
@@ -60,13 +64,26 @@ function AssetRow({
                     </div>
                 </div>
 
-                {/* Total Value Column */}
-                <div className="flex-1">
-                    <div className="asset-amt-text">
-                        {token.symbol}
+                {/* Data Columns Container */}
+                <div className="flex gap-12 ml-12 flex-1">
+                    {/* Total Value Shielded Column */}
+                    <div className="flex-1">
+                        <div className="asset-amt-text">
+                            ---
+                        </div>
+                        <div className="asset-amt-usd-text">
+                            $ ---
+                        </div>
                     </div>
-                    <div className="asset-amt-usd-text">
-                        $ ---
+
+                    {/* Current Value Shielded Column */}
+                    <div className="flex-1">
+                        <div className="asset-amt-text">
+                            {token.symbol}
+                        </div>
+                        <div className="asset-amt-usd-text">
+                            $ ---
+                        </div>
                     </div>
                 </div>
             </div>
@@ -75,6 +92,17 @@ function AssetRow({
 
     const rawCurrentMasp = maspBalances.balances.current;
     const denomCurrentMasp = denomAmount(rawCurrentMasp, 6);
+
+    // Get total inflows for this token from allTime window
+    const allTimeInflows = maspAggregates?.find(
+        (aggregate) =>
+            aggregate.tokenAddress === token.address &&
+            aggregate.timeWindow === 'allTime' &&
+            aggregate.kind === 'inflows'
+    );
+    const rawTotalInflows = allTimeInflows?.totalAmount || '0';
+    const denomTotalInflows = denomAmount(parseFloat(rawTotalInflows), 6);
+
     const { data: rewardTokens } = useRewardTokens();
     // Uncomment for testing prior to rewards being enabled
     // const rewardTokens = {
@@ -97,7 +125,7 @@ function AssetRow({
     const borderClass = ssrEligible ? "border border-[#FFFF00]/70 border-r-0 " : "border border-[#FFFFFF]/30 border-r-0 ";
 
     return (
-        <div className={`h-[94px] p-4 pr-32 flex gap-12 items-center ${borderClass} bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>
+        <div className={`h-[94px] p-4 pr-4 flex items-center ${borderClass} bg-[#010101] rounded-tl-[5px] rounded-bl-[5px]`}>
             {/* Token Column */}
             <div className="flex items-center space-x-3">
                 {/* Asset Icon with Tooltip */}
@@ -123,18 +151,34 @@ function AssetRow({
                 </div>
             </div>
 
-            {/* Shielded Value Column */}
-            <div className="flex-1">
-                <div className="asset-amt-text">
-                    {formatNumber(denomCurrentMasp, 2)} {token.symbol}
+            {/* Data Columns Container */}
+            <div className="flex gap-12 ml-12 flex-1">
+                {/* Total Value Shielded Column */}
+                <div className="w-[200px] flex flex-col justify-center">
+                    <div className="asset-amt-text">
+                        {formatNumber(denomTotalInflows, 2)} {token.symbol}
+                    </div>
+                    <div className="asset-amt-usd-text">
+                        $
+                        {tokenPrice && denomTotalInflows
+                            ? formatNumber(denomTotalInflows * tokenPrice, 2)
+                            : "--"}
+                    </div>
                 </div>
-                <div className="asset-amt-usd-text">
-                    $
-                    {tokenPrice && denomCurrentMasp
-                        ? formatNumber(denomCurrentMasp * tokenPrice, 2)
-                        : "--"}
+
+                {/* Current Value Shielded Column */}
+                <div className="w-[320px] flex flex-col justify-center">
+                    <div className="asset-amt-text">
+                        {formatNumber(denomCurrentMasp, 2)} {token.symbol}
+                    </div>
+                    <div className="asset-amt-usd-text">
+                        $
+                        {tokenPrice && denomCurrentMasp
+                            ? formatNumber(denomCurrentMasp * tokenPrice, 2)
+                            : "--"}
+                    </div>
+                    <NetChangeSpans changes={maspBalances.balances.changes} />
                 </div>
-                <NetChangeSpans changes={maspBalances.balances.changes} />
             </div>
         </div>
     );
