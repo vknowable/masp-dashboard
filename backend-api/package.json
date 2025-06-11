@@ -6,17 +6,24 @@
     "main": "src/app.js",
     "scripts": {
         "start": "node src/app.js",
-        "dev": "NODE_ENV=development nodemon src/app.js"
+        "dev": "NODE_ENV=development nodemon src/app.js",
+        "postinstall": "patch-package"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@namada/sdk": "^0.18.2",
         "axios": "^1.8.1",
         "cors": "^2.8.5",
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
         "express-rate-limit": "^7.5.0",
+        "masp_dashboard_wasm": "file:../pkg",
         "pg": "^8.14.1"
+    },
+    "devDependencies": {
+        "patch-package": "^8.0.0",
+        "postinstall-postinstall": "^2.1.0"
     }
 }

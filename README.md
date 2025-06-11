@@ -21,7 +21,7 @@ backend-api requires a direct connection to the indexer's postgres db
 - Metadata (i.e. chain-registry) is used to get info about the canonical assets (such as their logo, symbol, etc.) and IBC channels. This repo uses the registry at https://github.com/vknowable/mock-registry though it could be subsituted with another
 
 ### Building the project
-- You can find the prebuilt WASM package in `./pkg`; however if you wish to build it yourself, you can do so by first running `rustup target add wasm32-unknown-unknown` followed by `wasm-pack build --target web`. (This will recreate the contents of `./pkg`)
+- You can find the prebuilt WASM package in `./pkg`; however if you wish to build it yourself, you can do so by first running `rustup target add wasm32-unknown-unknown` followed by `wasm-pack build --target nodejs`. (This will recreate the contents of `./pkg`)
 - To build the frontend, first install the dependencies: `cd namada-masp-dashboard` directory, followed by `npm install`. 
 Then, create the file(s) `./namada-masp-dashboard/.env.development` and/or `./namada-masp-dashboard/.env.production` according to the example `.env.sample` (use the former when running `npm run dev` and the later when building with `npm run build`). Finally, run `npm run build` which will produce the `dist` directory containing your build
 

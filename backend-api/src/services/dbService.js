@@ -685,8 +685,8 @@ class DbService {
                     memo TEXT,
                     token_address VARCHAR(45) NOT NULL,
                     raw_amount NUMERIC(78, 0) NOT NULL,
-                    source VARCHAR(45) NOT NULL,
-                    target VARCHAR(45) NOT NULL,
+                    source VARCHAR(150) NOT NULL,
+                    target VARCHAR(150) NOT NULL,
                     direction VARCHAR(10) NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -719,10 +719,10 @@ class DbService {
                         WHEN it.kind = 'ibc_shielding_transfer' THEN 'in'
                         WHEN it.kind = 'ibc_unshielding_transfer' THEN 'out'
                         WHEN it.kind = 'ibc_transparent_transfer' 
-                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') LIKE 'tnam%'
                              THEN 'in'
                         WHEN it.kind = 'ibc_transparent_transfer' 
-                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') LIKE 'tnam%'
                              THEN 'out'
                         ELSE NULL
                     END AS direction,
@@ -810,10 +810,10 @@ class DbService {
                         WHEN it.kind = 'ibc_shielding_transfer' THEN 'in'
                         WHEN it.kind = 'ibc_unshielding_transfer' THEN 'out'
                         WHEN it.kind = 'ibc_transparent_transfer' 
-                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'sources', '0', 'owner') LIKE 'tnam%'
                              THEN 'in'
                         WHEN it.kind = 'ibc_transparent_transfer' 
-                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') = 'tnam1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvtr7x4' 
+                             AND jsonb_extract_path_text(it.data::jsonb, '1', 'targets', '0', 'owner') LIKE 'tnam%'
                              THEN 'out'
                         ELSE NULL
                     END AS direction,

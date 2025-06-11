@@ -140,6 +140,20 @@ module.exports.decode_reward_tokens = function(base64_str) {
     return takeFromExternrefTable0(ret[0]);
 };
 
+/**
+ * @param {string} base64_str
+ * @returns {any}
+ */
+module.exports.decode_pos_params = function(base64_str) {
+    const ptr0 = passStringToWasm0(base64_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.decode_pos_params(ptr0, len0);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+};
+
 module.exports.__wbg_parse_def2e24ef1252aff = function() { return handleError(function (arg0, arg1) {
     const ret = JSON.parse(getStringFromWasm0(arg0, arg1));
     return ret;

@@ -30,30 +30,35 @@ class PriceService {
         }
     }
 
-    async fetchPriceWithRetry(asset) {
+    async fetchPriceWithRetry(assets) {
         let lastError;
 
         for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
             try {
                 const response = await axios.get(`${config.coingeckoBaseUrl}/simple/price`, {
-                    params: { ids: asset, vs_currencies: "usd" },
+                    params: { ids: assets.join(','), vs_currencies: "usd" },
                     headers: {
                         accept: "application/json",
                         "api-key": config.coingeckoApiKey,
                     },
                 });
 
-                if (response.data[asset]?.usd) {
-                    this.prices[asset] = response.data[asset];
-                    return true;
+                // Update prices for all assets in the batch
+                let allSuccessful = true;
+                for (const asset of assets) {
+                    if (response.data[asset]?.usd) {
+                        this.prices[asset] = response.data[asset];
+                    } else {
+                        allSuccessful = false;
+                        console.error(`No price data received for ${asset}`);
+                    }
                 }
-
-                throw new Error(`No price data received for ${asset}`);
+                return allSuccessful;
             } catch (error) {
                 lastError = error;
 
                 if (error.response?.status === 429) {
-                    console.log(`Rate limited on attempt ${attempt} for ${asset}, backing off...`);
+                    console.log(`Rate limited on attempt ${attempt} for batch ${assets.join(',')}, backing off...`);
                     await this.backoff(attempt);
                 } else {
                     await this.delay(2000);
@@ -61,7 +66,7 @@ class PriceService {
             }
         }
 
-        console.error(`Failed to fetch price for ${asset} after ${config.maxRetries} attempts:`, lastError.message);
+        console.error(`Failed to fetch prices for batch ${assets.join(',')} after ${config.maxRetries} attempts:`, lastError.message);
         return false;
     }
 
@@ -69,23 +74,24 @@ class PriceService {
         const assetList = await this.fetchAssetList();
         console.log(`Attempting to fetch prices for ${assetList.length} assets`);
 
-        // Randomize the order of assets
-        const shuffledAssets = [...assetList].sort(() => Math.random() - 0.5);
-
         const results = [];
+        const BATCH_SIZE = 5;
 
-        // Process assets sequentially with delays
-        for (const asset of shuffledAssets) {
-            const success = await this.fetchPriceWithRetry(asset);
-            results.push({ asset, success });
+        // Process assets in batches of 5
+        for (let i = 0; i < assetList.length; i += BATCH_SIZE) {
+            const batch = assetList.slice(i, i + BATCH_SIZE);
+            const success = await this.fetchPriceWithRetry(batch);
+            results.push({ assets: batch, success });
 
-            // Use a fixed 5-second delay between requests
-            await this.delay(5000);
+            // Use a fixed 5-second delay between batches
+            if (i + BATCH_SIZE < assetList.length) {
+                await this.delay(5000);
+            }
         }
 
         const failedAssets = results
             .filter(result => !result.success)
-            .map(result => result.asset);
+            .flatMap(result => result.assets);
 
         if (failedAssets.length > 0) {
             console.warn(`Failed to fetch prices for ${failedAssets.length} assets:`, failedAssets);

@@ -1,5 +1,5 @@
 import ReactECharts from "echarts-for-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { RegistryAsset } from "../../../types/chainRegistry";
 import { useTokenPrices } from "../../../hooks/useTokenPrices";
 import { useMaspBalanceSeries } from "../../../hooks/useMaspBalanceSeries";
@@ -61,7 +61,14 @@ export default function MaspBalancesChart({
     const { data: tokenPrices } = useTokenPrices();
     const { data: balanceSeriesResponse } = useMaspBalanceSeries(startTime, endTime, resolution);
     const chartRef = useRef<any>(null);
-    const [currentTimeIndex, setCurrentTimeIndex] = useState(0);
+    const [currentTimeIndex, setCurrentTimeIndex] = useState<number>(0);
+
+    // Update currentTimeIndex when data becomes available
+    useEffect(() => {
+        if (balanceSeriesResponse?.series?.length) {
+            setCurrentTimeIndex(balanceSeriesResponse.series.length - 1);
+        }
+    }, [balanceSeriesResponse]);
 
     // Define a consistent color palette for both charts
     const colorPalette = useMemo(() => {
@@ -208,7 +215,7 @@ export default function MaspBalancesChart({
     const pieData = useMemo(() => {
         const pieData: PieDataItem[] = Array.from(tokenBalances.entries()).map(([token, balances], index) => {
             const asset = assets.find(a => a.address === token);
-            const value = balances[currentTimeIndex] || 0;
+            const value = balances[currentTimeIndex ?? 0] || 0;
             return {
                 name: asset?.symbol ?? token,
                 value: value,
@@ -228,7 +235,7 @@ export default function MaspBalancesChart({
             name: "Distribution",
             type: "pie" as const,
             radius: "30%",
-            center: ["82%", "35%"],
+            center: ["80%", "35%"],
             data: pieData,
             emphasis: {
                 focus: "self" as const,
@@ -284,7 +291,7 @@ export default function MaspBalancesChart({
                 text: window.innerWidth < 1100 ? "" : "Value Distribution",
                 left: "82%",
                 textAlign: "center",
-                top: 14,
+                top: window.innerWidth < 1400 ? 30 : 14,
                 textStyle: {
                     color: "#FFF",
                     fontSize: 16,
@@ -293,9 +300,9 @@ export default function MaspBalancesChart({
             },
             grid: {
                 left: "6%",
-                right: window.innerWidth < 1100 ? "6%" : "30%",
+                right: window.innerWidth < 1100 ? "12%" : "40%",
                 bottom: "3%",
-                top: window.innerWidth < 1100 ? 60 : 10,
+                top: window.innerWidth < 1400 ? 60 : 10,
                 containLabel: true,
             },
             xAxis: {
@@ -312,7 +319,7 @@ export default function MaspBalancesChart({
                 },
                 axisLabel: {
                     rotate: 90,
-                    interval: window.innerWidth < 1100 ? 3 : 0, // Show every 3rd label on mobile
+                    interval: window.innerWidth < 1400 ? 3 : 0, // Show every 3rd label on mobile
                     align: "right" as const,
                     padding: [0, 12, 0, 0],
                     color: "#CCC",
@@ -385,7 +392,7 @@ export default function MaspBalancesChart({
                     color: "#CCC",
                 },
                 align: 'right' as const,
-                orient: window.innerWidth < 1100 ? 'horizontal' as const : 'vertical' as const,
+                orient: window.innerWidth < 1400 ? 'horizontal' as const : 'vertical' as const,
                 top: 0,
                 right: 0,
             },

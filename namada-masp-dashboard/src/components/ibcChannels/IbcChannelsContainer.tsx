@@ -68,7 +68,7 @@ function IbcChannelsContainer() {
             <ErrorBoundary>
                 {channels.length === 0 ? (
                     <div className="text-gray-400 text-center py-8">
-                        No IBC channels found
+                        Could not load IBC channel info
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

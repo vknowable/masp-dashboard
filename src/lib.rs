@@ -1,9 +1,10 @@
 extern crate thiserror;
 extern crate wasm_bindgen;
-use gloo_utils::format::JsValueSerdeExt;
 use base64::decode;
+use gloo_utils::format::JsValueSerdeExt;
 use namada_sdk::{
-    borsh::BorshDeserialize, masp::MaspTokenRewardData, token::Amount, chain::Epoch,
+    borsh::BorshDeserialize, chain::Epoch, masp::MaspTokenRewardData, proof_of_stake::PosParams,
+    token::Amount,
 };
 use serde::Serialize;
 use thiserror::Error;
@@ -70,9 +71,17 @@ pub fn decode_epoch(base64_str: &str) -> JsResult<JsValue> {
 #[wasm_bindgen]
 pub fn decode_reward_tokens(base64_str: &str) -> JsResult<JsValue> {
     let reward_tokens: Vec<MaspTokenRewardData> = decode_abci_value_str(base64_str)?;
-    let serializable_tokens: Vec<SerializableMaspTokenRewardData> = 
-        reward_tokens.into_iter().map(SerializableMaspTokenRewardData::from).collect();
+    let serializable_tokens: Vec<SerializableMaspTokenRewardData> = reward_tokens
+        .into_iter()
+        .map(SerializableMaspTokenRewardData::from)
+        .collect();
     to_js_result(serializable_tokens)
+}
+
+#[wasm_bindgen]
+pub fn decode_pos_params(base64_str: &str) -> JsResult<JsValue> {
+    let pos_params: PosParams = decode_abci_value_str(base64_str)?;
+    to_js_result(pos_params)
 }
 
 fn decode_abci_value_str<T>(base64_str: &str) -> Result<T, WasmError>

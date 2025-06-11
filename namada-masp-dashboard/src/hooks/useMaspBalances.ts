@@ -34,15 +34,17 @@ export function useMaspBalances() {
     return useQuery<TransformedTokenAmounts, AxiosError>({
         queryKey: ["maspBalances"],
         queryFn: async () => {
-            const [currentBalances, dayAgoBalances, weekAgoBalances, monthAgoBalances] = await Promise.all([
+            const [currentBalancesResponse, dayAgoBalances, weekAgoBalances, monthAgoBalances] = await Promise.all([
                 fetchMaspBalances(),
                 fetchMaspBalancesAtTime(getTimestampForDaysAgo(1)),
                 fetchMaspBalancesAtTime(getTimestampForDaysAgo(7)),
                 fetchMaspBalancesAtTime(getTimestampForDaysAgo(30)),
             ]);
 
+            const currentBalances = currentBalancesResponse.balances;
+
             return {
-                balances: currentBalances.balances.map((balance) => {
+                balances: currentBalances.map((balance) => {
                     const currentBalance = Number(balance.minDenomAmount);
 
                     // Find historical balances for this token

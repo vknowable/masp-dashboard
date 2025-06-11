@@ -5,6 +5,7 @@ import {
     fetchVotingPower,
     fetchLatestEpoch,
     fetchTotalRewards,
+    fetchTxCount,
     TransformedTokenAmounts,
     TokenPricesResponse,
 } from "../api/chain";
@@ -16,7 +17,7 @@ import { useTokenSupplies } from "./useTokenSupplies";
 import { useTokenPrices } from "./useTokenPrices";
 import { useMaspBalances } from "./useMaspBalances";
 import { RegistryAsset } from "../types/chainRegistry";
-import { useMaspTxCount } from "./useMaspData";
+import { useMaspTxCount, useLastInflation } from "./useMaspData";
 
 interface ShieldedAssetsMetrics {
     current: number | null;
@@ -39,6 +40,9 @@ export interface ChainMetrics {
     rewardsPerEpoch: number | null;
     epoch: string | null;
     maspTxCount: number | null;
+    txCount: number | null;
+    addressCount: number | null;
+    chainId: string | null;
 }
 
 export interface ChainInfo {
@@ -152,6 +156,7 @@ export function useChainInfo(): ChainInfo {
     const { data: maspBalances, isLoading: isLoadingMaspBalances } =
         useMaspBalances();
     const { data: maspTxCount, isLoading: isLoadingMaspTxCount } = useMaspTxCount();
+    const { data: lastInflation, isLoading: isLoadingLastInflation } = useLastInflation();
 
     // Get chain parameters (includes APR and native token address)
     const {
@@ -213,6 +218,15 @@ export function useChainInfo(): ChainInfo {
         staleTime: 60000, // Consider fresh for 1 minute
     });
 
+    // Get transaction/address count
+    const { data: txCount, isLoading: isLoadingTxCount } = useQuery({
+        queryKey: ["txCount"],
+        queryFn: fetchTxCount,
+        retry: retryPolicy,
+        retryDelay: retryDelay,
+        staleTime: 60000, // Consider fresh for 1 minute
+    });
+
     // Calculate block time from the last 5 blocks
     // const blockTime = blockchainInfo?.result.block_metas
     //     ? calculateAverageBlockTime(blockchainInfo.result.block_metas)
@@ -235,6 +249,16 @@ export function useChainInfo(): ChainInfo {
         + maspTxCount?.shielded_transfer + maspTxCount?.ibc_shielding_transfer + maspTxCount?.ibc_unshielding_transfer
         : null;
 
+    // Calculate 24h NAM rewards by summing last_inflation values
+    const namToken = assets?.find(asset => asset.symbol === 'NAM');
+    const namDecimals = namToken && namToken.denom_units ?
+        namToken.denom_units.find(unit => unit.denom === namToken.display)?.exponent ?? 6
+        : 6;
+    const rewardsPerEpoch = lastInflation?.data?.reduce((total, token) => {
+        if (!token.last_inflation) return total;
+        return total + (denomAmount(token.last_inflation as string, namDecimals) ?? 0);
+    }, 0) ?? null;
+
     return {
         metrics: {
             blockTime: null,
@@ -245,11 +269,14 @@ export function useChainInfo(): ChainInfo {
             percentStaked,
             totalShieldedAssets,
             totalRewardsMinted: parseNumeric(totalRewards?.totalRewards),
-            rewardsPerEpoch: null,
+            rewardsPerEpoch,
             epoch: epochInfo?.epoch ?? null,
             maspTxCount: maspTxs,
+            txCount: txCount?.count ?? null,
+            addressCount: txCount?.unique_addresses ?? null,
+            chainId: parameters?.chainId ?? null,
         },
-        isLoading: isLoadingParams,
+        isLoading: isLoadingParams || isLoadingLastInflation,
         isError: paramsError !== null,
     };
 }

@@ -53,7 +53,7 @@ export default function MaspAggregatesChartContainer({
     return (
         <div className="px-4 py-4">
             <div className="section-heading text-center text-xl md:text-2xl">
-                MASP Total Inflow/Outflow (USD)
+                Shielded Pool Total Inflow/Outflow (USD)
             </div>
 
             <div className="flex flex-col w-full">

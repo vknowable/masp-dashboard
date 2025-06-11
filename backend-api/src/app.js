@@ -6,6 +6,8 @@ import priceRoutes from "./routes/priceRoutes.js";
 import namadaRoutes from "./routes/namadaRoutes.js";
 import maspRoutes from "./routes/maspRoutes.js";
 import ibcRoutes from "./routes/ibcRoutes.js";
+import pgfRoutes from "./routes/pgfRoutes.js";
+import posRoutes from "./routes/posRoutes.js";
 import { wasmService } from "./services/wasmService.js";
 import { dbService } from "./services/dbService.js";
 
@@ -21,6 +23,8 @@ app.use("/api/v1", priceRoutes);
 app.use("/api/v1", namadaRoutes);
 app.use("/api/v1/masp", maspRoutes);
 app.use("/api/v1/ibc", ibcRoutes);
+app.use("/api/v1/pgf", pgfRoutes);
+app.use("/api/v1/pos", posRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

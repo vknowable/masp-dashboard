@@ -1,20 +1,54 @@
 import axios from "axios";
 import { config } from "../config.js";
 import { wasmService } from "./wasmService.js";
+import pkg from 'pg';
+const { Pool } = pkg;
 
 export const pgfAddress = "tnam1pgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkhgajr"
 export const MASP_ADDRESS = "tnam1pcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzmefah";
+// needed to sync shielded context
+export const DUMMY_VIEWING_KEY = {
+    key: "zvknam1qvde8lfyqqqqpqryctpy3fkrlfq77g90mupqgxfkjgdcr7633llu8muvj2nys386kfpnh730szzzjda2ewcnlplcns5egsggcvk7dxs2mfme73se4pydcalm7y4rqaqtktjawwmwywlxst0d4f77gkz56st2lgz4lc2u5mvrdnmhnrpgyk9jg5gef97u6fjerp2axsfpyrryr8f6l5ukwnmxyuhtk2evs4cl2d99tka4p78nredyulukwkw5ly0eluht984a995272gudulkf",
+    birthday: 0
+}
 
 class NamadaService {
     constructor() {
+        this.currentHeight = 0;
         this.tokenSupplies = [];
         this.rewardTokens = null;
         this.totalRewards = null;
         this.maspEpoch = null;
         this.maspInflation = [];
-        this.startUpdates();
-        // Initialize WASM module
-        wasmService.init().catch(console.error);
+        this.pgfBalance = null;
+        this.simulatedRewards = null;
+        this.chainStatistics = { transactionCount: 0, uniqueAddressCount: 0 }; // Initialize chain statistics
+
+        // Initialize Database Pool if not in mock mode
+        if (!config.dbMockMode) {
+            this.pool = new Pool({
+                user: config.dbUser,
+                host: config.dbHost,
+                database: config.dbName,
+                password: config.dbPassword,
+                port: config.dbPort,
+            });
+
+            this.pool.on('error', (err, client) => {
+                console.error('Unexpected error on idle client', err);
+                process.exit(-1);
+            });
+        }
+
+        // Initialize WASM module first, then start updates
+        wasmService.init()
+            .then(() => {
+                console.log("WASM initialized, starting updates");
+                this.startUpdates();
+            })
+            .catch(error => {
+                console.error("Failed to initialize WASM:", error);
+            });
     }
 
     async delay(ms) {
@@ -107,6 +141,11 @@ class NamadaService {
 
                     // Decode the ABCI value using WASM
                     const decodedBalance = wasmService.decodeAbciAmount(balanceResponse.data.result.response.value);
+                    // Store the PGF balance
+                    if (parseInt(height) === parseInt(this.currentHeight)) {
+                        console.log("Setting pgf balance:", decodedBalance);
+                        this.pgfBalance = decodedBalance.toString();
+                    }
                     return (decodedSupply - decodedBalance).toString();
                 }
 
@@ -127,6 +166,7 @@ class NamadaService {
             if (!currentHeight) {
                 throw new Error("Failed to fetch latest block height");
             }
+            this.currentHeight = currentHeight;
 
             // Calculate historical heights
             const heights = this.calculateHistoricalHeights(currentHeight);
@@ -261,6 +301,15 @@ class NamadaService {
     async fetchMaspInflation() {
         console.log("Fetching MASP inflation data");
         try {
+            // Get latest block height
+            const currentHeight = await this.fetchLatestBlock();
+            if (!currentHeight) {
+                throw new Error("Failed to fetch latest block height");
+            }
+
+            // Calculate historical heights
+            const heights = this.calculateHistoricalHeights(currentHeight);
+
             // Get list of registered assets
             const assetList = await this.fetchAssetList();
             if (!assetList || assetList.length === 0) {
@@ -271,25 +320,55 @@ class NamadaService {
             const inflationData = [];
             for (const asset of assetList) {
                 try {
-                    // Query last inflation
+                    // Query current inflation
                     const params = {
                         path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_inflation"`
                     };
-                    const queryString = new URLSearchParams(params).toString();
-                    // console.log('Inflation Query URL:', `${config.namadaRpcUrl}/abci_query?${queryString}`);
                     const inflationResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
                         params
                     });
 
-                    // Query last locked amount
+                    // Query current locked amount
                     const lockedParams = {
                         path: `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/parameters/last_locked_amount"`
                     };
-                    const lockedQueryString = new URLSearchParams(lockedParams).toString();
-                    // console.log('Locked Amount Query URL:', `${config.namadaRpcUrl}/abci_query?${lockedQueryString}`);
                     const lockedResponse = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
                         params: lockedParams
                     });
+
+                    // Query historical inflation values
+                    const [oneDayAgoInflation, sevenDaysAgoInflation, thirtyDaysAgoInflation] = await Promise.all([
+                        this.queryWithRetry(async () => {
+                            const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                                params: {
+                                    ...params,
+                                    height: heights.oneDayAgo.toString()
+                                }
+                            });
+                            return response.data?.result?.response?.value ?
+                                wasmService.decodeAbciAmount(response.data.result.response.value) : null;
+                        }).catch(() => null),
+                        this.queryWithRetry(async () => {
+                            const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                                params: {
+                                    ...params,
+                                    height: heights.sevenDaysAgo.toString()
+                                }
+                            });
+                            return response.data?.result?.response?.value ?
+                                wasmService.decodeAbciAmount(response.data.result.response.value) : null;
+                        }).catch(() => null),
+                        this.queryWithRetry(async () => {
+                            const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                                params: {
+                                    ...params,
+                                    height: heights.thirtyDaysAgo.toString()
+                                }
+                            });
+                            return response.data?.result?.response?.value ?
+                                wasmService.decodeAbciAmount(response.data.result.response.value) : null;
+                        }).catch(() => null)
+                    ]);
 
                     if (!inflationResponse.data?.result?.response?.value ||
                         !lockedResponse.data?.result?.response?.value) {
@@ -297,7 +376,12 @@ class NamadaService {
                         inflationData.push({
                             address: asset.address,
                             last_locked: null,
-                            last_inflation: null
+                            last_inflation: null,
+                            historical_inflation: {
+                                '1dAgo': null,
+                                '7dAgo': null,
+                                '30dAgo': null
+                            }
                         });
                         continue;
                     }
@@ -309,7 +393,12 @@ class NamadaService {
                     inflationData.push({
                         address: asset.address,
                         last_locked: lastLocked,
-                        last_inflation: lastInflation
+                        last_inflation: lastInflation,
+                        historical_inflation: {
+                            '1dAgo': oneDayAgoInflation,
+                            '7dAgo': sevenDaysAgoInflation,
+                            '30dAgo': thirtyDaysAgoInflation
+                        }
                     });
 
                     // Add delay between assets
@@ -319,7 +408,12 @@ class NamadaService {
                     inflationData.push({
                         address: asset.address,
                         last_locked: null,
-                        last_inflation: null
+                        last_inflation: null,
+                        historical_inflation: {
+                            '1dAgo': null,
+                            '7dAgo': null,
+                            '30dAgo': null
+                        }
                     });
                 }
             }
@@ -333,18 +427,140 @@ class NamadaService {
         }
     }
 
+    async fetchSimulatedRewards() {
+        console.log("Starting fetchSimulatedRewards");
+        return this.queryWithRetry(async () => {
+            try {
+                if (!config.chainId) {
+                    console.error("Chain ID not configured in config");
+                    throw new Error("Chain ID not configured");
+                }
+                console.log("Using chain ID:", config.chainId);
+
+                // First sync the shielded context with empty viewing keys
+                console.log("Attempting to sync shielded context...");
+                try {
+                    await wasmService.ensureRequiredFiles();
+                    await wasmService.getNamadaSdk().rpc.shieldedSync([DUMMY_VIEWING_KEY], config.chainId);
+                    console.log("Shielded context synced successfully");
+                } catch (syncError) {
+                    console.error("Failed to sync shielded context:", syncError);
+                    throw syncError;
+                }
+
+                console.log("Fetching asset list...");
+                const assets = await this.fetchAssetList();
+                if (!assets || assets.length === 0) {
+                    console.log('No assets available for simulated rewards');
+                    return null;
+                }
+                console.log(`Found ${assets.length} assets to process`);
+
+                const rewards = [];
+                for (const asset of assets) {
+                    try {
+                        console.log(`Processing asset: ${asset.address}`);
+                        console.log(config.chainId);
+                        // Simulate rewards for 1 token as a baseline
+                        console.log(`Simulating rewards for ${asset.address}...`);
+                        const simulatedAmount = await wasmService.getNamadaSdk().rpc.simulateShieldedRewards(
+                            config.chainId,
+                            asset.address,
+                            "1000000"
+                        );
+                        console.log(`Simulation result for ${asset.address}:`, simulatedAmount.toString());
+
+                        rewards.push({
+                            token_address: asset.address,
+                            raw_amount: simulatedAmount.toString()
+                        });
+
+                        // Add delay between assets
+                        console.log(`Waiting 1 second before next asset...`);
+                        await this.delay(1000);
+                    } catch (error) {
+                        console.error(`Simulated rewards query failed for ${asset.address}:`, error);
+                        console.error("Error details:", {
+                            message: error.message,
+                            stack: error.stack
+                        });
+                        rewards.push({
+                            token_address: asset.address,
+                            raw_amount: "0"
+                        });
+                    }
+                }
+
+                const result = {
+                    timestamp: Date.now(),
+                    rewards: rewards
+                };
+
+                console.log("Completed fetchSimulatedRewards with results:", {
+                    timestamp: result.timestamp,
+                    rewardCount: rewards.length
+                });
+
+                this.simulatedRewards = result;
+                return result;
+            } catch (error) {
+                console.error("Top level error in fetchSimulatedRewards:", error);
+                console.error("Error details:", {
+                    message: error.message,
+                    stack: error.stack
+                });
+                return null;
+            }
+        });
+    }
+
+    async fetchChainStatistics() {
+        console.log("Fetching chain statistics");
+        if (config.dbMockMode) {
+            console.log("DB Mock Mode: Updating with dummy chain statistics");
+            this.chainStatistics = {
+                transactionCount: 12345, // Dummy transaction count
+                uniqueAddressCount: 6789   // Dummy unique address count
+            };
+            return; // Exit early for mock mode
+        }
+
+        if (!this.pool) {
+            console.error("Database pool is not initialized. Cannot fetch chain statistics.");
+            return;
+        }
+
+        try {
+            const txCountResult = await this.pool.query('SELECT COUNT(*) AS tx_count FROM public.inner_transactions');
+            const uniqueAddressCountResult = await this.pool.query('SELECT COUNT(*) AS address_count FROM public.balances');
+
+            const transactionCount = parseInt(txCountResult.rows[0].tx_count, 10);
+            const uniqueAddressCount = parseInt(uniqueAddressCountResult.rows[0].address_count, 10);
+
+            this.chainStatistics = { transactionCount, uniqueAddressCount };
+            console.log("Chain statistics updated:", this.chainStatistics);
+        } catch (error) {
+            console.error("Error fetching chain statistics for caching:", error);
+        }
+    }
+
     startUpdates() {
-        const refreshMillis = 60000; // 60 seconds
+        const refreshMillis = config.refreshSecs * 1000;
         setInterval(() => this.fetchAllTokenSupplies(), refreshMillis);
         setInterval(() => this.fetchRewardTokens(), refreshMillis);
         setInterval(() => this.fetchTotalRewards(), refreshMillis);
         setInterval(() => this.fetchMaspEpoch(), refreshMillis);
         setInterval(() => this.fetchMaspInflation(), refreshMillis);
+        setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
+        setInterval(() => this.fetchChainStatistics(), refreshMillis); // Add chain statistics to periodic updates
+
         this.fetchAllTokenSupplies(); // Initial fetch
         this.fetchRewardTokens(); // Initial fetch
         this.fetchTotalRewards(); // Initial fetch
         this.fetchMaspEpoch(); // Initial fetch
         this.fetchMaspInflation(); // Initial fetch
+        this.fetchSimulatedRewards(); // Initial fetch
+        this.fetchChainStatistics(); // Initial fetch for chain statistics
     }
 
     getTokenSupplies() {
@@ -365,6 +581,44 @@ class NamadaService {
 
     getMaspInflation() {
         return this.maspInflation;
+    }
+
+    getPgfBalance() {
+        return this.pgfBalance;
+    }
+
+    getSimulatedRewards() {
+        return this.simulatedRewards;
+    }
+
+    // Synchronous getter for cached chain statistics
+    getChainStatistics() {
+        return this.chainStatistics;
+    }
+
+    async fetchPosParams() {
+        console.log("Fetching POS parameters");
+        return this.queryWithRetry(async () => {
+            try {
+                const response = await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                    params: {
+                        path: '"/vp/pos/pos_params"'
+                    }
+                });
+
+                if (!response.data?.result?.response?.value) {
+                    console.log('No POS parameters data available');
+                    return null;
+                }
+
+                // Decode the ABCI value using WASM
+                const decodedParams = wasmService.decodeAbciPosParams(response.data.result.response.value);
+                return decodedParams;
+            } catch (error) {
+                console.log(`POS parameters query failed: ${error.message}`);
+                return null;
+            }
+        });
     }
 }
 

@@ -1,2 +1,6 @@
 .env
+.env.*
 node_modules
+shielded.dat
+shielded_sync.cache
+speculative_shielded.dat
