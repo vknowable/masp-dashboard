@@ -10,6 +10,7 @@ import { useRegistryData } from "../../hooks/useRegistryData";
 import { useMaspBalances } from "../../hooks/useMaspBalances";
 import { useTokenSupplies } from "../../hooks/useTokenSupplies";
 import { useTokenPrices } from "../../hooks/useTokenPrices";
+import { useMaspAggregates } from "../../hooks/useMaspAggregates";
 
 function calculatePercentChange(change: number | null, current: number | null): string | null {
     if (change === null || current === null) return null;
@@ -32,6 +33,7 @@ function ShieldedRewardsContainer() {
     const { data: maspBalances } = useMaspBalances();
     const { data: tokenSupplies } = useTokenSupplies();
     const { data: tokenPrices } = useTokenPrices();
+    const { data: maspAggregates } = useMaspAggregates();
 
     const nativeInflationData = lastInflation?.data?.find(
         (item) => item.address === NATIVE_NAM_ADDRESS
@@ -76,6 +78,46 @@ function ShieldedRewardsContainer() {
 
     const ibcAssetsCount = tokenList?.filter((token): token is IbcToken => 'trace' in token).length ?? 0;
 
+    // Calculate Historical Total Value Shielded
+    const calculateHistoricalTotalValue = (): number | null => {
+        if (!maspAggregates || !assets || !tokenPrices?.price) {
+            return null;
+        }
+
+        // Get all-time inflow data
+        const allTimeInflows = maspAggregates.filter(
+            (aggregate) => aggregate.timeWindow === 'allTime' && aggregate.kind === 'inflows'
+        );
+
+        let totalHistoricalValueUsd = 0;
+
+        // Sum up USD values for each asset
+        for (const inflow of allTimeInflows) {
+            // Find the corresponding asset to get decimals and coingecko_id
+            const asset = assets.find((a) => a.address === inflow.tokenAddress);
+            if (!asset) continue;
+
+            // Get token price from coingecko
+            const tokenPrice = tokenPrices.price.find((p) => p.id === asset.coingecko_id);
+            if (!tokenPrice) continue;
+
+            // Get the correct decimals for the token
+            const decimals = asset.denom_units?.find((unit) => unit.denom === asset.display)?.exponent ?? 6;
+
+            // Convert raw amount to human-readable amount
+            const denomInflowAmount = denomAmount(parseFloat(inflow.totalAmount), decimals);
+            if (denomInflowAmount === null) continue;
+
+            // Calculate USD value
+            const usdValue = denomInflowAmount * tokenPrice.usd;
+            totalHistoricalValueUsd += usdValue;
+        }
+
+        return totalHistoricalValueUsd;
+    };
+
+    const historicalTotalValue = calculateHistoricalTotalValue();
+
     // Find USDC token from registry assets where display == 'usdc'
     // const usdcToken = assets?.find((asset) => asset.display.toLowerCase() === 'usdc');
 
@@ -115,7 +157,7 @@ function ShieldedRewardsContainer() {
             <ErrorBoundary>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <InfoCardSecondary
-                        topText="Total Value Shielded"
+                        topText="Current Value Shielded"
                         bottomText={
                             <div className="flex flex-col">
                                 <div className="text-lg font-bold">
@@ -135,6 +177,16 @@ function ShieldedRewardsContainer() {
                                         (30d)
                                     </div>
                                 </div>
+                            </div>
+                        }
+                    />
+                    <InfoCardSecondary
+                        topText="Historical Value Shielded"
+                        bottomText={
+                            <div className="text-lg font-bold">
+                                {historicalTotalValue !== null
+                                    ? `$${formatNumber(historicalTotalValue)} USD`
+                                    : "--"}
                             </div>
                         }
                     />
