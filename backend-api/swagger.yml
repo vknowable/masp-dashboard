@@ -1,0 +1,561 @@
+openapi: 3.0.0
+info:
+  title: MASP Dashboard API
+  description: API for the MASP Dashboard backend
+  version: 1.0.0
+  contact:
+    name: MASP Dashboard Team
+
+servers:
+  - url: /api/v1
+    description: API v1 base URL
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        message:
+          type: string
+          description: Detailed error message (only in development)
+    PriceResponse:
+      type: object
+      properties:
+        attribution:
+          type: string
+          description: Data source attribution
+        price:
+          type: array
+          items:
+            type: object
+            properties:
+              asset:
+                type: string
+              price:
+                type: number
+    TokenSupply:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        supplies:
+          type: array
+          items:
+            type: object
+            properties:
+              token:
+                type: string
+              supply:
+                type: string
+    MASPTransaction:
+      type: object
+      properties:
+        bucket:
+          type: integer
+        shielded_in:
+          type: array
+          items:
+            type: object
+        shielded_out:
+          type: array
+          items:
+            type: object
+        transparent_in:
+          type: array
+          items:
+            type: object
+        transparent_out:
+          type: array
+          items:
+            type: object
+    IBCTransaction:
+      type: object
+      properties:
+        bucket_index:
+          type: integer
+        tx_type:
+          type: string
+          enum: [shielded_in, shielded_out, transparent_in, transparent_out]
+        transactions:
+          type: array
+          items:
+            type: object
+    PGFBalance:
+      type: object
+      properties:
+        address:
+          type: string
+        balance:
+          type: object
+    POSParams:
+      type: object
+      properties:
+        params:
+          type: object
+
+paths:
+  /all/price:
+    get:
+      summary: Get all token prices
+      description: Retrieve prices for all supported tokens
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '503':
+          description: Price data temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{asset}/price:
+    get:
+      summary: Get price for specific asset
+      parameters:
+        - name: asset
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Asset identifier
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '400':
+          description: Asset parameter is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /token/supplies:
+    get:
+      summary: Get token supplies data
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSupply'
+        '503':
+          description: Token supply data temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /masp/reward_tokens:
+    get:
+      summary: Get MASP reward tokens
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rewardTokens:
+                    type: array
+                    items:
+                      type: string
+
+  /masp/total_rewards:
+    get:
+      summary: Get total MASP rewards
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalRewards:
+                    type: object
+
+  /masp/epoch:
+    get:
+      summary: Get current MASP epoch
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  maspEpoch:
+                    type: integer
+
+  /masp/inflation:
+    get:
+      summary: Get MASP inflation data
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                    format: date-time
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '503':
+          description: MASP inflation data temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /masp/txs:
+    get:
+      summary: Get MASP transactions
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Start time in ISO format
+        - name: endTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: End time in ISO format
+        - name: resolution
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Resolution in hours
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MASPTransaction'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /masp/balances/all:
+    get:
+      summary: Get MASP balances for all assets
+      parameters:
+        - name: height
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Block height (optional)
+        - name: time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Timestamp in ISO format (optional, ignored if height is provided)
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balances:
+                    type: array
+                    items:
+                      type: object
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /masp/balances/series:
+    get:
+      summary: Get MASP balance series
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Start time in ISO format
+        - name: endTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: End time in ISO format
+        - name: resolution
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Resolution in hours
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  owner:
+                    type: string
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                          format: date-time
+                        balances:
+                          type: array
+                          items:
+                            type: object
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /masp/count:
+    get:
+      summary: Get MASP transaction counts
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shielding_transfer:
+                    type: integer
+                  unshielding_transfer:
+                    type: integer
+                  shielded_transfer:
+                    type: integer
+                  ibc_shielding_transfer:
+                    type: integer
+                  ibc_unshielding_transfer:
+                    type: integer
+
+  /masp/simulated_rewards:
+    get:
+      summary: Get simulated MASP rewards
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Simulated rewards data not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ibc/txs:
+    get:
+      summary: Get IBC transactions
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Start time in ISO format
+        - name: endTime
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: End time in ISO format
+        - name: resolution
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Resolution in hours
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IBCTransaction'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ibc/count:
+    get:
+      summary: Get IBC transaction counts
+      parameters:
+        - name: timeWindow
+          in: query
+          schema:
+            type: string
+            enum: [oneDay, sevenDays, thirtyDays, allTime]
+          description: Time window for counting transactions
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    token_address:
+                      type: string
+                    shielded_in:
+                      type: integer
+                    shielded_out:
+                      type: integer
+                    transparent_in:
+                      type: integer
+                    transparent_out:
+                      type: integer
+        '400':
+          description: Invalid time window
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ibc/aggregates:
+    get:
+      summary: Get IBC transaction aggregates
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    tokenAddress:
+                      type: string
+                    timeWindow:
+                      type: string
+                      enum: [oneDay, sevenDays, thirtyDays, allTime]
+                    kind:
+                      type: string
+                    totalAmount:
+                      type: string
+
+  /pgf/treasury:
+    get:
+      summary: Get PGF treasury balance
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PGFBalance'
+        '503':
+          description: PGF treasury balance temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pos/params:
+    get:
+      summary: Get POS parameters
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/POSParams'
+        '503':
+          description: POS parameters temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tx/count:
+    get:
+      summary: Get transaction count and unique addresses statistics
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                    format: date-time
+                  count:
+                    type: integer
+                    description: Total number of transactions
+                  unique_addresses:
+                    type: integer
+                    description: Number of unique addresses
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 
