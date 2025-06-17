@@ -22,6 +22,7 @@ class NamadaService {
         this.maspInflation = [];
         this.pgfBalance = null;
         this.simulatedRewards = null;
+        this.maspBalances = [];
         this.chainStatistics = { transactionCount: 0, uniqueAddressCount: 0 }; // Initialize chain statistics
 
         // Initialize Database Pool if not in mock mode
@@ -514,6 +515,67 @@ class NamadaService {
         });
     }
 
+    async fetchMaspBalances() {
+        console.log("Fetching MASP balances");
+        try {
+            // Get list of registered assets
+            const assetList = await this.fetchAssetList();
+            if (!assetList || assetList.length === 0) {
+                throw new Error("Failed to fetch asset list");
+            }
+
+            console.log(`Fetching MASP balances for ${assetList.length} assets`);
+
+            // Fetch balances for each token at MASP address
+            const maspBalances = [];
+            for (const asset of assetList) {
+                try {
+                    const balancePath = `"/shell/value/#tnam1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqej6juv/#${asset.address}/balance/#${MASP_ADDRESS}"`;
+                    const balanceResponse = await this.queryWithRetry(async () => {
+                        return await axios.get(`${config.namadaRpcUrl}/abci_query`, {
+                            params: {
+                                path: balancePath
+                            }
+                        });
+                    });
+
+                    if (!balanceResponse?.data?.result?.response?.value) {
+                        console.log(`No MASP balance data for token ${asset.address}`);
+                        maspBalances.push({
+                            tokenAddress: asset.address,
+                            minDenomAmount: "0"
+                        });
+                        continue;
+                    }
+
+                    // Decode the ABCI value using WASM
+                    const decodedBalance = wasmService.decodeAbciAmount(balanceResponse.data.result.response.value);
+
+                    maspBalances.push({
+                        tokenAddress: asset.address,
+                        minDenomAmount: decodedBalance.toString()
+                    });
+
+                    // Add delay between assets
+                    await this.delay(500);
+                } catch (error) {
+                    console.log(`MASP balance query failed for ${asset.address}: ${error.message}`);
+                    maspBalances.push({
+                        tokenAddress: asset.address,
+                        minDenomAmount: "0"
+                    });
+                }
+            }
+
+            this.maspBalances = maspBalances;
+            console.log(`Updated MASP balances for ${maspBalances.length} assets`);
+            return maspBalances;
+        } catch (error) {
+            console.error("Error fetching MASP balances:", error);
+            return []; // Return empty array instead of throwing
+        }
+    }
+
     async fetchChainStatistics() {
         console.log("Fetching chain statistics");
         if (config.dbMockMode) {
@@ -553,6 +615,7 @@ class NamadaService {
         setInterval(() => this.fetchMaspInflation(), refreshMillis);
         setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
         setInterval(() => this.fetchChainStatistics(), refreshMillis); // Add chain statistics to periodic updates
+        setInterval(() => this.fetchMaspBalances(), 20000); // Refresh MASP balances every 20 seconds
 
         this.fetchAllTokenSupplies(); // Initial fetch
         this.fetchRewardTokens(); // Initial fetch
@@ -561,6 +624,7 @@ class NamadaService {
         this.fetchMaspInflation(); // Initial fetch
         this.fetchSimulatedRewards(); // Initial fetch
         this.fetchChainStatistics(); // Initial fetch for chain statistics
+        this.fetchMaspBalances(); // Initial fetch for MASP balances
     }
 
     getTokenSupplies() {
@@ -589,6 +653,10 @@ class NamadaService {
 
     getSimulatedRewards() {
         return this.simulatedRewards;
+    }
+
+    getMaspBalances() {
+        return this.maspBalances;
     }
 
     // Synchronous getter for cached chain statistics

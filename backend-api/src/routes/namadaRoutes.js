@@ -1,5 +1,5 @@
 import express from 'express';
-import { namadaService } from '../services/namadaService.js';
+import { namadaService, MASP_ADDRESS } from '../services/namadaService.js';
 
 const router = express.Router();
 
@@ -81,6 +81,26 @@ router.get('/tx/count', (req, res) => {
         console.error("Error retrieving cached chain statistics:", error);
         res.status(500).json({
             error: "Internal server error while retrieving chain statistics"
+        });
+    }
+});
+
+// Get MASP balances for all tokens
+router.get(`/account/${MASP_ADDRESS}`, async (req, res) => {
+    try {
+        const maspBalances = namadaService.getMaspBalances();
+
+        if (!maspBalances || maspBalances.length === 0) {
+            return res.status(503).json({
+                error: "MASP balance data temporarily unavailable"
+            });
+        }
+
+        res.json(maspBalances);
+    } catch (error) {
+        console.error("Error fetching MASP balances:", error);
+        res.status(500).json({
+            error: "Internal server error while fetching MASP balances"
         });
     }
 });
