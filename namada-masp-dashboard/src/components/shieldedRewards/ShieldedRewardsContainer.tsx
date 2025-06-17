@@ -216,7 +216,16 @@ function ShieldedRewardsContainer() {
                     />
                     <InfoCardSecondary
                         topText="Total Transactions to Date"
-                        bottomText={metrics.maspTxCount ? formatNumber(metrics.txCount, 0) : "--"}
+                        bottomText={
+                            <div className="flex flex-col">
+                                <div className="text-lg font-bold">
+                                    {metrics.txCount ? formatNumber(metrics.txCount, 0) : "--"}
+                                </div>
+                                <div className="text-sm text-gray-500 mt-1">
+                                    {metrics.feesCollected ? `$${formatNumber(metrics.feesCollected, 2)} USD fees collected` : ""}
+                                </div>
+                            </div>
+                        }
                     />
                     <InfoCardSecondary
                         topText="Unique Addresses"

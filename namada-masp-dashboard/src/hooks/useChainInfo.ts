@@ -43,6 +43,7 @@ export interface ChainMetrics {
     txCount: number | null;
     addressCount: number | null;
     chainId: string | null;
+    feesCollected: number | null;
 }
 
 export interface ChainInfo {
@@ -275,6 +276,7 @@ export function useChainInfo(): ChainInfo {
             txCount: txCount?.count ?? null,
             addressCount: txCount?.unique_addresses ?? null,
             chainId: parameters?.chainId ?? null,
+            feesCollected: parseNumeric(txCount?.fees_collected_usd),
         },
         isLoading: isLoadingParams || isLoadingLastInflation,
         isError: paramsError !== null,
