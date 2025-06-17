@@ -75,7 +75,8 @@ router.get('/tx/count', (req, res) => {
         res.json({
             timestamp: new Date().toISOString(),
             count: stats.transactionCount,
-            unique_addresses: stats.uniqueAddressCount
+            unique_addresses: stats.uniqueAddressCount,
+            fees_collected_usd: stats.feesCollected
         });
     } catch (error) {
         console.error("Error retrieving cached chain statistics:", error);

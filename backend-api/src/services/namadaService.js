@@ -1,6 +1,7 @@
 import axios from "axios";
 import { config } from "../config.js";
 import { wasmService } from "./wasmService.js";
+import { priceService } from "./priceService.js";
 import pkg from 'pg';
 const { Pool } = pkg;
 
@@ -23,7 +24,7 @@ class NamadaService {
         this.pgfBalance = null;
         this.simulatedRewards = null;
         this.maspBalances = [];
-        this.chainStatistics = { transactionCount: 0, uniqueAddressCount: 0 }; // Initialize chain statistics
+        this.chainStatistics = { transactionCount: 0, uniqueAddressCount: 0, feesCollected: "0" }; // Initialize chain statistics
 
         // Initialize Database Pool if not in mock mode
         if (!config.dbMockMode) {
@@ -576,13 +577,110 @@ class NamadaService {
         }
     }
 
+    async calculateFeesCollected() {
+        if (config.dbMockMode) {
+            return "123.45"; // Return dummy value for mock mode
+        }
+
+        if (!this.pool) {
+            console.error("Database pool is not initialized. Cannot calculate fees collected.");
+            return "0";
+        }
+
+        try {
+            console.log("Calculating total fees collected...");
+
+            // Get all wrapper transactions with fee_token and gas_limit
+            const result = await this.pool.query(
+                'SELECT fee_token, gas_limit FROM public.wrapper_transactions'
+            );
+
+            if (result.rows.length === 0) {
+                console.log("No wrapper transactions found");
+                return "0";
+            }
+
+            // Get asset list to map tokens to their decimals and coingecko_ids
+            const assetList = await this.fetchAssetList();
+            if (!assetList || assetList.length === 0) {
+                console.error("Failed to fetch asset list for fees calculation");
+                return "0";
+            }
+
+            // Create a map of token address to asset info
+            const assetMap = new Map();
+            assetList.forEach(asset => {
+                assetMap.set(asset.address, asset);
+            });
+
+            let totalFeesUsd = 0;
+            const processedTokens = new Set(); // Track which tokens we've processed to avoid logging duplicate warnings
+
+            for (const row of result.rows) {
+                const { fee_token, gas_limit } = row;
+
+                if (!fee_token || !gas_limit) {
+                    continue; // Skip rows with missing data
+                }
+
+                // Look up asset info
+                const asset = assetMap.get(fee_token);
+                let decimals = 6; // Default to 6 decimals if asset not found
+                let coingeckoId = null;
+
+                if (asset) {
+                    decimals = asset.decimals ?? 6; // Use asset decimals or default to 6
+                    coingeckoId = asset.coingecko_id;
+                } else {
+                    if (!processedTokens.has(fee_token)) {
+                        console.warn(`Asset not found for fee token: ${fee_token}, using default decimals (6)`);
+                        processedTokens.add(fee_token);
+                    }
+                }
+
+                // Calculate actual fee amount using decimals
+                const feeAmount = parseFloat(gas_limit) / Math.pow(10, decimals);
+
+                // Get USD price for this token (skip if no coingecko_id available)
+                if (!coingeckoId) {
+                    if (!processedTokens.has(fee_token)) {
+                        console.warn(`No coingecko_id available for token: ${fee_token}, skipping price lookup`);
+                        processedTokens.add(fee_token);
+                    }
+                    continue;
+                }
+
+                const priceData = priceService.getPrice(coingeckoId);
+                if (!priceData || !priceData.usd) {
+                    if (!processedTokens.has(fee_token)) {
+                        console.warn(`Price not available for token: ${coingeckoId}`);
+                        processedTokens.add(fee_token);
+                    }
+                    continue;
+                }
+
+                // Calculate USD value and add to total
+                const feeUsd = feeAmount * priceData.usd;
+                totalFeesUsd += feeUsd;
+            }
+
+            console.log(`Total fees collected: $${totalFeesUsd.toFixed(2)} USD`);
+            return totalFeesUsd.toFixed(2);
+
+        } catch (error) {
+            console.error("Error calculating fees collected:", error);
+            return "0";
+        }
+    }
+
     async fetchChainStatistics() {
         console.log("Fetching chain statistics");
         if (config.dbMockMode) {
             console.log("DB Mock Mode: Updating with dummy chain statistics");
             this.chainStatistics = {
                 transactionCount: 12345, // Dummy transaction count
-                uniqueAddressCount: 6789   // Dummy unique address count
+                uniqueAddressCount: 6789,   // Dummy unique address count
+                feesCollected: "123.45" // Dummy fees collected
             };
             return; // Exit early for mock mode
         }
@@ -593,13 +691,16 @@ class NamadaService {
         }
 
         try {
-            const txCountResult = await this.pool.query('SELECT COUNT(*) AS tx_count FROM public.inner_transactions');
-            const uniqueAddressCountResult = await this.pool.query('SELECT COUNT(*) AS address_count FROM public.balances');
+            const [txCountResult, uniqueAddressCountResult, feesCollected] = await Promise.all([
+                this.pool.query('SELECT COUNT(*) AS tx_count FROM public.inner_transactions'),
+                this.pool.query('SELECT COUNT(*) AS address_count FROM public.balances'),
+                this.calculateFeesCollected()
+            ]);
 
             const transactionCount = parseInt(txCountResult.rows[0].tx_count, 10);
             const uniqueAddressCount = parseInt(uniqueAddressCountResult.rows[0].address_count, 10);
 
-            this.chainStatistics = { transactionCount, uniqueAddressCount };
+            this.chainStatistics = { transactionCount, uniqueAddressCount, feesCollected };
             console.log("Chain statistics updated:", this.chainStatistics);
         } catch (error) {
             console.error("Error fetching chain statistics for caching:", error);
@@ -613,7 +714,7 @@ class NamadaService {
         setInterval(() => this.fetchTotalRewards(), refreshMillis);
         setInterval(() => this.fetchMaspEpoch(), refreshMillis);
         setInterval(() => this.fetchMaspInflation(), refreshMillis);
-        setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
+        // setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
         setInterval(() => this.fetchChainStatistics(), refreshMillis); // Add chain statistics to periodic updates
         setInterval(() => this.fetchMaspBalances(), 20000); // Refresh MASP balances every 20 seconds
 
@@ -622,7 +723,7 @@ class NamadaService {
         this.fetchTotalRewards(); // Initial fetch
         this.fetchMaspEpoch(); // Initial fetch
         this.fetchMaspInflation(); // Initial fetch
-        this.fetchSimulatedRewards(); // Initial fetch
+        // this.fetchSimulatedRewards(); // Initial fetch
         this.fetchChainStatistics(); // Initial fetch for chain statistics
         this.fetchMaspBalances(); // Initial fetch for MASP balances
     }

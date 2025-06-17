@@ -65,6 +65,7 @@ export interface TxCountResponse {
     timestamp: string;
     count: number;
     unique_addresses: number;
+    fees_collected_usd: string;
 }
 
 export interface SimulatedRewardsResponse {
@@ -277,7 +278,8 @@ export async function fetchTokenList(): Promise<Token[]> {
 
 export async function fetchMaspBalances(): Promise<MaspBalances> {
     const { data } = await apiClient.get(
-        `${indexerUrl}/api/v1/account/${MASP_ADDRESS}`,
+        // `${indexerUrl}/api/v1/account/${MASP_ADDRESS}`,
+        `${apiUrl}/api/v1/account/${MASP_ADDRESS}`,
     );
     return { balances: data };
 }
