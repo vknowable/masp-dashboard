@@ -33,7 +33,7 @@ function Header() {
         tokenPrices?.price?.find(p => p.id === namToken.coingecko_id)?.usd :
         null;
     const formattedPrice = namPrice ?
-        `$${namPrice.toFixed(2)}` :
+        `$${namPrice.toFixed(3)}` :
         "$ --";
 
     return (
