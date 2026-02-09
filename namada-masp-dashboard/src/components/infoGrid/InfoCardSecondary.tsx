@@ -35,7 +35,7 @@ function InfoCardSecondary({ topText, bottomText }: InfoCardSecondaryProps) {
     const { main, secondary, isStructured } = formatBottomText(bottomText);
 
     return (
-        <div className="rounded-[5px] flex flex-col p-3 md:p-4 h-[100px] md:h-[120px] bg-[#F5F5F5] dark:bg-[#191919]">
+        <div className="rounded-[5px] flex flex-col p-3 md:p-4 min-h-[100px] md:min-h-[120px] h-full bg-[#F5F5F5] dark:bg-[#191919]">
             {/* Top text */}
             <div className="font-normal text-[14px] md:text-[16px] leading-[1.2rem] md:leading-[1.5rem] text-black dark:text-white tracking-[0.2px] mb-2">
                 {topText}

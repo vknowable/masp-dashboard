@@ -516,6 +516,70 @@ class NamadaService {
         });
     }
 
+    async fetchSimulatedRewards2() {
+        console.log("Starting fetchSimulatedRewards2");
+        try {
+            // Check if maspInflation data is available
+            if (!this.maspInflation || this.maspInflation.length === 0) {
+                console.log('No MASP inflation data available for simulated rewards calculation');
+                return null;
+            }
+
+            console.log(`Calculating simulated rewards for ${this.maspInflation.length} assets`);
+
+            const rewards = [];
+            for (const inflationData of this.maspInflation) {
+                const { address, last_inflation, last_locked } = inflationData;
+
+                try {
+                    let rawAmount = "0";
+
+                    // Calculate rewards as last_inflation / last_locked
+                    if (last_inflation !== null && last_locked !== null && last_locked > 0) {
+                        const rewardRate = last_inflation / last_locked;
+                        rawAmount = rewardRate.toString();
+                        console.log(`Calculated reward rate for ${address}: ${rawAmount} (inflation: ${last_inflation}, locked: ${last_locked})`);
+                    } else {
+                        console.log(`Skipping ${address} - missing or invalid inflation/locked data (inflation: ${last_inflation}, locked: ${last_locked})`);
+                    }
+
+                    rewards.push({
+                        token_address: address,
+                        raw_amount: rawAmount
+                    });
+
+                } catch (error) {
+                    console.error(`Error calculating rewards for ${address}:`, error);
+                    rewards.push({
+                        token_address: address,
+                        raw_amount: "0"
+                    });
+                }
+            }
+
+            const result = {
+                timestamp: Date.now(),
+                rewards: rewards
+            };
+
+            console.log("Completed fetchSimulatedRewards2 with results:", {
+                timestamp: result.timestamp,
+                rewardCount: rewards.length
+            });
+
+            this.simulatedRewards = result;
+            return result;
+
+        } catch (error) {
+            console.error("Top level error in fetchSimulatedRewards2:", error);
+            console.error("Error details:", {
+                message: error.message,
+                stack: error.stack
+            });
+            return null;
+        }
+    }
+
     async fetchMaspBalances() {
         console.log("Fetching MASP balances");
         try {
@@ -714,7 +778,7 @@ class NamadaService {
         setInterval(() => this.fetchTotalRewards(), refreshMillis);
         setInterval(() => this.fetchMaspEpoch(), refreshMillis);
         setInterval(() => this.fetchMaspInflation(), refreshMillis);
-        // setInterval(() => this.fetchSimulatedRewards(), refreshMillis);
+        setInterval(() => this.fetchSimulatedRewards2(), refreshMillis);
         setInterval(() => this.fetchChainStatistics(), refreshMillis); // Add chain statistics to periodic updates
         setInterval(() => this.fetchMaspBalances(), 20000); // Refresh MASP balances every 20 seconds
 
@@ -723,7 +787,7 @@ class NamadaService {
         this.fetchTotalRewards(); // Initial fetch
         this.fetchMaspEpoch(); // Initial fetch
         this.fetchMaspInflation(); // Initial fetch
-        // this.fetchSimulatedRewards(); // Initial fetch
+        this.fetchSimulatedRewards2(); // Initial fetch
         this.fetchChainStatistics(); // Initial fetch for chain statistics
         this.fetchMaspBalances(); // Initial fetch for MASP balances
     }

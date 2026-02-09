@@ -118,6 +118,77 @@ function ShieldedRewardsContainer() {
 
     const historicalTotalValue = calculateHistoricalTotalValue();
 
+    // Calculate Current Value Breakdown (Native vs Non-Native)
+    const calculateCurrentValueBreakdown = (): { native: number | null; nonNative: number | null } => {
+        if (!maspBalances?.balances || !assets || !tokenPrices?.price || !namToken) {
+            return { native: null, nonNative: null };
+        }
+
+        let nativeValueUsd = 0;
+        let nonNativeValueUsd = 0;
+
+        for (const balance of maspBalances.balances) {
+            const asset = assets.find((a) => a.address === balance.tokenAddress);
+            if (!asset || !balance.balances.current) continue;
+
+            const tokenPrice = tokenPrices.price.find((p) => p.id === asset.coingecko_id);
+            if (!tokenPrice) continue;
+
+            const decimals = asset.denom_units?.find((unit) => unit.denom === asset.display)?.exponent ?? 6;
+            const denomBalanceAmount = denomAmount(balance.balances.current, decimals);
+            if (denomBalanceAmount === null) continue;
+
+            const usdValue = denomBalanceAmount * tokenPrice.usd;
+
+            if (asset.address === namToken.address) {
+                nativeValueUsd += usdValue;
+            } else {
+                nonNativeValueUsd += usdValue;
+            }
+        }
+
+        return { native: nativeValueUsd, nonNative: nonNativeValueUsd };
+    };
+
+    // Calculate Historical Value Breakdown (Native vs Non-Native)
+    const calculateHistoricalValueBreakdown = (): { native: number | null; nonNative: number | null } => {
+        if (!maspAggregates || !assets || !tokenPrices?.price || !namToken) {
+            return { native: null, nonNative: null };
+        }
+
+        const allTimeInflows = maspAggregates.filter(
+            (aggregate) => aggregate.timeWindow === 'allTime' && aggregate.kind === 'inflows'
+        );
+
+        let nativeValueUsd = 0;
+        let nonNativeValueUsd = 0;
+
+        for (const inflow of allTimeInflows) {
+            const asset = assets.find((a) => a.address === inflow.tokenAddress);
+            if (!asset) continue;
+
+            const tokenPrice = tokenPrices.price.find((p) => p.id === asset.coingecko_id);
+            if (!tokenPrice) continue;
+
+            const decimals = asset.denom_units?.find((unit) => unit.denom === asset.display)?.exponent ?? 6;
+            const denomInflowAmount = denomAmount(parseFloat(inflow.totalAmount), decimals);
+            if (denomInflowAmount === null) continue;
+
+            const usdValue = denomInflowAmount * tokenPrice.usd;
+
+            if (asset.address === namToken.address) {
+                nativeValueUsd += usdValue;
+            } else {
+                nonNativeValueUsd += usdValue;
+            }
+        }
+
+        return { native: nativeValueUsd, nonNative: nonNativeValueUsd };
+    };
+
+    const currentValueBreakdown = calculateCurrentValueBreakdown();
+    const historicalValueBreakdown = calculateHistoricalValueBreakdown();
+
     // Find USDC token from registry assets where display == 'usdc'
     // const usdcToken = assets?.find((asset) => asset.display.toLowerCase() === 'usdc');
 
@@ -155,13 +226,25 @@ function ShieldedRewardsContainer() {
         <div className="pb-8 pt-4 px-4 mt-8 h-full w-full">
             <div className="section-heading text-xl md:text-2xl mb-8">Shielded Pool Metrics</div>
             <ErrorBoundary>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
                     <InfoCardSecondary
                         topText="Current Value Shielded"
                         bottomText={
                             <div className="flex flex-col">
-                                <div className="text-lg font-bold">
-                                    ${formatNumber(current)} USD
+                                <div className="flex items-baseline gap-2">
+                                    <div className="text-lg font-bold">
+                                        {currentValueBreakdown.nonNative !== null
+                                            ? `$${formatNumber(currentValueBreakdown.nonNative)} USD`
+                                            : "--"}
+                                    </div>
+                                    <div className="text-sm" style={{ color: '#FFFF00' }}>(non-native)</div>
+                                </div>
+                                <div className="flex flex-col mt-1" style={{ color: '#FFFF00', opacity: 0.8 }}>
+                                    <div className="text-sm">
+                                        {currentValueBreakdown.native !== null
+                                            ? `$${formatNumber(currentValueBreakdown.native)} USD (NAM)`
+                                            : "-- (NAM)"}
+                                    </div>
                                 </div>
                                 <div className="flex flex-row mt-2">
                                     <div className="text-sm text-gray-500 mr-3">
@@ -183,10 +266,22 @@ function ShieldedRewardsContainer() {
                     <InfoCardSecondary
                         topText="Historical Value Shielded"
                         bottomText={
-                            <div className="text-lg font-bold">
-                                {historicalTotalValue !== null
-                                    ? `$${formatNumber(historicalTotalValue)} USD`
-                                    : "--"}
+                            <div className="flex flex-col">
+                                <div className="flex items-baseline gap-2">
+                                    <div className="text-lg font-bold">
+                                        {historicalValueBreakdown.nonNative !== null
+                                            ? `$${formatNumber(historicalValueBreakdown.nonNative)} USD`
+                                            : "--"}
+                                    </div>
+                                    <div className="text-sm" style={{ color: '#FFFF00' }}>(non-native)</div>
+                                </div>
+                                <div className="flex flex-col mt-1" style={{ color: '#FFFF00', opacity: 0.8 }}>
+                                    <div className="text-sm">
+                                        {historicalValueBreakdown.native !== null
+                                            ? `$${formatNumber(historicalValueBreakdown.native)} USD (NAM)`
+                                            : "-- (NAM)"}
+                                    </div>
+                                </div>
                             </div>
                         }
                     />
@@ -196,7 +291,7 @@ function ShieldedRewardsContainer() {
                     /> */}
                     <InfoCardSecondary
                         topText="24h Shielded Rewards"
-                        bottomText={metrics.rewardsPerEpoch ? `${formatNumber(denomAmount(metrics.rewardsPerEpoch))} NAM` : "--"}
+                        bottomText={metrics.rewardsPerEpoch ? `${formatNumber(metrics.rewardsPerEpoch)} NAM` : "--"}
                     />
                     <InfoCardSecondary
                         topText="Rewards Minted to Date"
