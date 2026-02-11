@@ -13,10 +13,7 @@ export const config = {
     rateLimitWindow: 60 * 1000, // 1 minute
     coingeckoBaseUrl: "https://api.coingecko.com/api/v3",
     namadaRpcUrl: process.env.NAMADA_RPC_URL,
-    maspIndexerUrl: process.env.NAMADA_MASP_INDEXER_URL,
     namTokenAddress: process.env.NAM_TOKEN_ADDRESS,
-    dataDir: process.env.SHIELDED_CONTEXT_DIR,
-    chainId: process.env.CHAIN_ID,
     // Database configuration
     dbUser: process.env.DB_USER,
     dbHost: process.env.DB_HOST,
